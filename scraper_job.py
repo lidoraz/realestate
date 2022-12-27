@@ -153,8 +153,8 @@ def close_scrapers():
 
 if __name__ == '__main__':
     import time
-    # print("Sleeping...")
-    # time.sleep(60*3)
+    print("Sleeping...")
+    time.sleep(60*60*5)
     print("Starting with new config, good luck...")
     days_before = 35
     n_workers = 12  # 16
@@ -162,8 +162,8 @@ if __name__ == '__main__':
     start_threads(n_workers)
 
 
-    # all_dates = pd.date_range('2022-03-22', '2022-06-21')
-    all_dates = pd.date_range('2022-06-23', datetime.today() - timedelta(days=days_before))
+    all_dates = pd.date_range('2022-02-04', '2022-02-21')  # TODO: next to fill
+    # all_dates = pd.date_range('2022-06-23', datetime.today() - timedelta(days=days_before))
     all_dates_str = [d for d in all_dates]
 
     run_multiple(all_dates)

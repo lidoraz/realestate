@@ -41,5 +41,5 @@ def copy_csv_files_to_db():
     # df['insertionDate'] = datetime.today()
     # db.insert_ignore(df)
 
-calc_missing_files()
-# copy_csv_files_to_db()
+# calc_missing_files()
+copy_csv_files_to_db()
