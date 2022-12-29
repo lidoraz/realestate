@@ -15,6 +15,7 @@ import logging
 import tempfile
 import uuid
 import os
+import random
 
 logging.basicConfig(
     format='%(asctime)s %(levelname)-8s %(message)s',
@@ -133,6 +134,7 @@ class Scraper:
         self.driver.get("about:config")
         host = proxy.split(':')[0]
         port = proxy.split(':')[1]
+        user_agent = f"{random.choice(user_agents)} {str(uuid.uuid4())}"
         setupScript = f"""var
             prefs = Components.classes["@mozilla.org/preferences-service;1"].getService(Components.interfaces.nsIPrefBranch);
             prefs.setIntPref("network.proxy.type", 1);
@@ -142,6 +144,7 @@ class Scraper:
             prefs.setIntPref("network.proxy.ssl_port", "{port}");
             prefs.setCharPref("network.proxy.ftp", "{host}");
             prefs.setIntPref("network.proxy.ftp_port", "{port}");
+            prefs.setCharPref("general.useragent.override", "{user_agent}");
             """
         self.driver.execute_script(setupScript)
         time.sleep(.5)

@@ -7,41 +7,9 @@ import pandas as pd
 from datetime import datetime, timedelta
 from proxy.scrapeproxies import find_location
 from scraper_logic import Scraper
+from utils import get_missing_combinations, generate_job_comb
 
 TIMEOUT_SEC = 120
-room_ranges = [
-    ["1", "3.5"],
-    # ["3", "3.5"],
-    ["4", "4.5"],
-    ["5", ""],
-    # ["6", ""]
-]
-# year_ranges = [
-#     ["1800", "1970"],
-#     ["1971", "1980"],
-#     ["1981", "1990"],
-#     ["1991", "2000"],
-#     ["2001", "2010"],
-#     ["2011", "2100"]]
-year_ranges = [
-    ["1800", "1960"],
-    ["1961", "1970"],
-    ["1971", "1980"],
-    ["1981", "1985"],
-    ["1986", "1990"],
-    ["1991", "1995"],
-    ["1996", "2000"],
-    ["2001", "2005"],
-    ["2006", "2010"],
-    ["2011", "2015"],
-    ["2016", "2018"],
-    ["2019", "2020"],
-    ["2021", "2021"],
-    ["2022", "2022"],
-    ["2023", "2100"],
-    # ["2023", "2023"],
-    # ["2024", "2100"]
-]
 
 
 def get_daily_filtered_rooms_years(scraper, from_gush, to_gush, date, room_range, year_range):
@@ -80,6 +48,7 @@ def get_daily_filtered_rooms_years(scraper, from_gush, to_gush, date, room_range
     # gc.collect()
     return dict(file_name=file_name, status_code=status_code)
 
+
 # PriorityQueue for not putting back tasks
 # https://docs.python.org/3/library/queue.html
 
@@ -96,10 +65,11 @@ def run():
         proxy = proxy_queue.get()
         params = task_queue.get()
         try:
-            scraper.change_proxy(proxy)
+            if proxy is not None:
+                scraper.change_proxy(proxy)
             # scraper.driver.get("https://mylocation.org/")
             # res = {'status_code': 0}
-            print(f"Started job: {params}, {proxy}, location = {find_location(proxy)}")
+            print(f"Started job: {params}, {proxy}, location = {find_location(proxy)}, {task_queue.qsize()}")
             res = get_daily_filtered_rooms_years(scraper, *params)
             if res['status_code'] == 1:  # task failed
                 task_queue.put(params)
@@ -115,12 +85,11 @@ def run():
         task_queue.task_done()
         proxy_queue.put(proxy)
 
-def run_multiple(dates):
-    task_queue.queue.clear()
-    year_room_comb = list(itertools.product(*[dates, room_ranges, year_ranges]))
 
-    print(f" THERE ARE {len(year_room_comb)} combinations!")
-    tasks_params = [["1", "999999", *x] for x in year_room_comb]
+def run_multiple(jobs_list):
+    task_queue.queue.clear()
+    print(f" THERE ARE {len(jobs_list)} combinations!")
+    tasks_params = [["1", "999999", *x] for x in jobs_list]
     # random.shuffle(tasks_params)
     for item in tasks_params:
         task_queue.put(item)
@@ -129,11 +98,14 @@ def run_multiple(dates):
     print('All work completed')
 
 
-def load_proxies():
+def load_proxies(no_proxy=False):
     with open('proxyscrape_premium_http_proxies.txt', 'r') as f:
         proxies = f.read().splitlines()
         random.shuffle(proxies)
         for proxy in proxies:
+            if no_proxy:
+                proxy = None
+                # proxy = "134.238.252.143:8080"
             # proxy = None # for disabling it
             proxy_queue.put(proxy)
 
@@ -151,21 +123,30 @@ def close_scrapers():
         scraper.close()
 
 
-if __name__ == '__main__':
-    import time
-    print("Sleeping...")
-    time.sleep(60*60*5)
-    print("Starting with new config, good luck...")
+def run_logic():
+    # import time
+    # print("Sleeping...")
+    # time.sleep(60 * 60 * 5)
     days_before = 35
-    n_workers = 12  # 16
-    load_proxies()
-    start_threads(n_workers)
+      # 16
 
+    # nice when no proxy works, it goes to sleep for 10 min automatically because of code.
+    no_proxy = True
+    if no_proxy:
+        n_workers = 1
+    else:
+        n_workers = 12
+    load_proxies(no_proxy=no_proxy)
+    start_threads(n_workers)
 
     all_dates = pd.date_range('2022-02-04', '2022-02-21')  # TODO: next to fill
     # all_dates = pd.date_range('2022-06-23', datetime.today() - timedelta(days=days_before))
     all_dates_str = [d for d in all_dates]
-
-    run_multiple(all_dates)
+    jobs_list = get_missing_combinations(all_dates)
+    # jobs_list = generate_job_comb(all_dates)
+    run_multiple(jobs_list)
     close_scrapers()
 
+
+if __name__ == '__main__':
+    run_logic()

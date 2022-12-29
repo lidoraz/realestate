@@ -14,7 +14,7 @@ import sqlite3
 # GEO PANDAS HAS BETTER INTEGRATION WITH DASH
 # https://plotly.com/python/scattermapbox/?_ga=2.136324342.718238851.1672097943-81810637.1672097941
 
-con = sqlite3.connect("nadlan.db")
+con = sqlite3.connect("nadlan.db", check_same_thread=False)
 df = pd.read_sql("select * from trans", con=con)
 len(df)
 central_cities = ['רמת גן',
@@ -29,7 +29,7 @@ color_rooms = {1: 'black', 2: 'gray', 3: 'green', 4: 'cadetblue', 5: 'darkpurple
 df_s = df.sample(500)
 
 live_update = True
-title = 'Crypto Live Feed'
+title = 'Nadlan'
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.CYBORG],
                 meta_tags=[{'name': 'viewport', 'content': 'width=device-width, initial-scale=1'}])
@@ -52,23 +52,33 @@ right_portion_html = html.Div(id='right-portion',
                                            style={'display': 'flex', 'alignItems': 'center', 'flexWrap': 'wrap',
                                                   'boxSizing': 'borderBox', 'columnGap': '7%'})],
                               )
+from datetime import date
 app.layout = html.Div([
     html.Div(children=[
         title_html,
         coin_html,
-        dcc.Input(
-            id="input-lookahead",
-            type="number",
-            value=14,
-            placeholder="lookahead",
-            style=dict(width='30pt')),
-        live_update_html,
+        html.Div(dcc.RangeSlider(1, 6, 1, value=[3, 5], id='my-range-slider'), style={"width":"30%"}),
+
+        dcc.DatePickerRange(
+            id='my-date-picker-range',
+            start_date_placeholder_text=date(2022, 1, 1),
+            display_format='D-M-Y', # -Q
+            end_date_placeholder_text="End Period",
+            # calendar_orientation='vertical',
+        ),
+        # dcc.Input(
+        #     id="input-lookahead",
+        #     type="number",
+        #     value=14,
+        #     placeholder="lookahead",
+        #     style=dict(width='30pt')),
+        # live_update_html,
         right_portion_html],
         style={'display': 'flex', 'alignItems': 'center', 'flexWrap': 'wrap'},
     ),
     html.Div(id='graph-container', children=[
-        #TODO: fix here height of getting to bottom
-        html.Iframe(id='map', srcDoc=None, width='100%', height='800px', hidden=False),
+        # TODO: fix here height of getting to bottom
+        html.Iframe(id='map', srcDoc=None, width='100%', height='100%', hidden=False),
         #           # TODO important https://stackoverflow.com/questions/46287189/how-can-i-change-the-size-of-my-dash-graph
         #           ),
         # https://stackoverflow.com/questions/68188107/how-to-add-create-a-custom-loader-with-dash-plotly
@@ -80,7 +90,7 @@ app.layout = html.Div([
         ),
         # dcc.Interval(id='interval-component', interval=INTERVAL_UPDATE_SECONDS * 1000, n_intervals=0,
         #              disabled=not live_update)
-    ])  # style=dict(height='100vh')
+    ], style=dict(height='100vh'))  #
 ])
 
 
@@ -131,9 +141,19 @@ app.layout = html.Div([
 #               Input('input-lookahead', 'value'),
 #               Input('show-legend', 'value'), )
 @app.callback(Output('map', 'srcDoc'),
-              Input('show-legend', 'value'))
-def update_graph_live(show_legend):
+              Input('my-range-slider', 'value'),
+              Input('my-date-picker-range', 'start_date'),
+              Input('my-date-picker-range', 'end_date'))
+def update_graph_live(slider, start_date: date, end_date):
+
     m = folium.Map(location=[*trans_itm_to_wgs84.transform(185118, 666233)], zoom_start=8)
+    if start_date is not None and end_date is not None:
+        df_s = pd.read_sql(f"SELECT * FROM trans where tarIska between {pd.to_datetime(start_date).strftime('%Y%m%d')}"
+                           f" and {pd.to_datetime(end_date).strftime('%Y%m%d')}"
+                           f" and misHadarim between {slider[0]} and {slider[1]}", con)
+        df_s = df_s.sample(100) if len(df_s) > 100 else df_s
+    else:
+        df_s = df.sample(100)
     for idx, row in df_s.iterrows():
         if row['corX'] == 0 and row['corY'] == 0:
             continue
