@@ -48,7 +48,8 @@ right_portion_html = html.Div(id='right-portion',
                                   html.Div(id='live-switch-update-container',  # , style={'padding-left': '3%'}
                                            children=[dbc.Switch(id='show-legend', label='Legend ', value=True),
                                                      dbc.Switch(id="live-update-button", label="Live Update",
-                                                                value=live_update)],
+                                                                value=live_update),
+                                                     html.Button("Refresh", id="refresh")],
                                            style={'display': 'flex', 'alignItems': 'center', 'flexWrap': 'wrap',
                                                   'boxSizing': 'borderBox', 'columnGap': '7%'})],
                               )
@@ -143,8 +144,9 @@ app.layout = html.Div([
 @app.callback(Output('map', 'srcDoc'),
               Input('my-range-slider', 'value'),
               Input('my-date-picker-range', 'start_date'),
-              Input('my-date-picker-range', 'end_date'))
-def update_graph_live(slider, start_date: date, end_date):
+              Input('my-date-picker-range', 'end_date'),
+              Input('refresh', 'n_clicks'))
+def update_graph_live(slider, start_date: date, end_date, n_clicks):
 
     m = folium.Map(location=[*trans_itm_to_wgs84.transform(185118, 666233)], zoom_start=8)
     if start_date is not None and end_date is not None:

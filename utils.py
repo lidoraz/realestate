@@ -46,13 +46,14 @@ def generate_job_comb(dates):
     return year_room_comb
 
 
-def get_saved_files():
+def get_saved_files(verbose=False):
     path = "job_res"
     dirs = os.listdir(path)
     all_csv = []
     for d in sorted(dirs):
         all_csv += os.listdir(os.path.join(path, d))
-        # print(d, len(os.listdir(os.path.join(path, d))))
+        if verbose:
+            print(d, len(os.listdir(os.path.join(path, d))))
         # # TODO: jsut do it again tommorow....
         # for f in os.listdir(os.path.join(path, d)):
         #     if d not in f:
@@ -71,6 +72,8 @@ def get_saved_files():
 
 import requests
 
+PROXY_API_KEY = "vsij00e8k9kh3nmrvss6"
+
 
 def clear_and_add_my_ip():
     auth_ip = requests.get(
@@ -81,10 +84,8 @@ def clear_and_add_my_ip():
         f"https://api.proxyscrape.com/v2/account/datacenter_shared/whitelist?auth={PROXY_API_KEY}&type=remove&ip[]={ips[0]}"
     my_ip = requests.get("https://api.ipify.org?format=json").json()['ip']
     res = requests.get(
-        f"https://api.proxyscrape.com/v2/account/datacenter_shared/whitelist?auth={PROXY_API_KEY}&type=add&ip[]=my_ip{my_ip}")
-    return
-
-
+        f"https://api.proxyscrape.com/v2/account/datacenter_shared/whitelist?auth={PROXY_API_KEY}&type=add&ip[]=my_ip:{my_ip}")
+    print(res)
 def get_proxies():
     res = requests.get(
         f'https://api.proxyscrape.com/v2/account/datacenter_shared/proxy-list?auth={PROXY_API_KEY}&type=getproxies&country[]=all&protocol=http&format=normal&status=all')
@@ -101,9 +102,10 @@ def get_missing_combinations(all_dates):
     jobs_list = generate_job_comb(all_dates)
     job_list_str = [format_job_to_file_csv(x) for x in jobs_list]
 
-    missing_jobs = [job for job, job_str in zip(jobs_list, job_list_str) if job_str not in all_csv]
-    # for f in sorted(missing_jobs):
-    #     print(f)
+    missing_jobs_packed = [(job, job_str) for job, job_str in zip(jobs_list, job_list_str) if job_str not in all_csv]
+    missing_jobs, missing_jobs_str = list(zip(*missing_jobs_packed))
+    with open("missing_jobs_str.txt", "w") as f:
+        f.write('\n'.join(missing_jobs_str))
     return missing_jobs
 
 
@@ -113,7 +115,7 @@ def copy_csv_files_to_db():
     import glob
     all_files = []
     for filename in glob.iglob(path + '**/**', recursive=True):
-        if filename.endswith('.csv'):
+        if filename.endswith('.csv') and not filename.startswith("."):
             all_files.append(filename)
 
     with ThreadPoolExecutor(os.cpu_count()) as executor:
@@ -135,18 +137,21 @@ def copy_csv_files_to_db():
     # db.insert_ignore(df)
 
 
-def tests():
-    all_csv = get_saved_files()
-
+def test_missing_combinations():
     all_dates = pd.date_range('2022-02-04', '2022-11-21')  # TODO: next to fill
     get_missing_combinations(all_dates)
 
 
-if __name__ == '__main__':
-    tests()
+def test_num_downloaded_files():
+    get_saved_files(True)
 
+
+if __name__ == '__main__':
+    # clear_and_add_my_ip()
+    # copy_csv_files_to_db()
+    test_missing_combinations()
+    test_num_downloaded_files()
 # clear_and_add_my_ip()
 # get_proxies()
-# all_csv = get_saved_files()
 # print(len(all_csv))
 # copy_csv_files_to_db()

@@ -1,5 +1,5 @@
 import sqlite3
-
+from tqdm import tqdm
 columns = dict(
     ezor="TEXT",
     gush="TEXT",
@@ -104,15 +104,16 @@ class DB:
     def insert_ignore(self, df: pd.DataFrame):
         # Inserts one by one as the limit for using primary key, will also add casting to price and stuff.
         cnt = 0
-        for idx, row in df.iterrows():
+        for idx, row in tqdm(df.iterrows(), total=len(df)):
             try:
                 values = [convert(value, col_name) for col_name, value in row.items()]
                 values_str = ','.join(values)
                 self.con.execute(f"INSERT INTO trans VALUES({values_str})")
                 cnt += 1
             except sqlite3.IntegrityError as e:
+                pass
                 # can also use INSERT OR IGNORE
-                print("Failed to insert row, Already exists - ", row.tolist())
+                # print("Failed to insert row, Already exists - ", row.tolist())
             except Exception as e:
                 print("Error in insertion", e)
         self.con.commit()

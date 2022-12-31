@@ -131,15 +131,16 @@ def run_logic():
       # 16
 
     # nice when no proxy works, it goes to sleep for 10 min automatically because of code.
-    no_proxy = True
+    no_proxy = False
     if no_proxy:
         n_workers = 1
     else:
         n_workers = 12
+        n_workers = 1
     load_proxies(no_proxy=no_proxy)
     start_threads(n_workers)
 
-    all_dates = pd.date_range('2022-02-04', '2022-02-21')  # TODO: next to fill
+    all_dates = pd.date_range('2022-10-16', '2022-11-30')  # TODO: next to fill
     # all_dates = pd.date_range('2022-06-23', datetime.today() - timedelta(days=days_before))
     all_dates_str = [d for d in all_dates]
     jobs_list = get_missing_combinations(all_dates)

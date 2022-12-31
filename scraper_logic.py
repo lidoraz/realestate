@@ -26,7 +26,7 @@ trans_itm_to_wgs84 = Transformer.from_crs(2039, 4326)
 trans_wgs84_itm = Transformer.from_crs(4326, 2039)
 SLEEP_THROTTLE_TIME_SEC = 10 * 60  # was 12 check if 14 is better
 WAIT_TIME_TIMEOUT = 120  # wait for load issues...
-THROTTLE_LIMIT_BEFORE_SLEEP = 70  # 80
+THROTTLE_LIMIT_BEFORE_SLEEP = 80  # 80
 
 main_table_id = "ContentUsersPage_GridMultiD1"
 back_id = "ContentUsersPage_btHazaraStart"
@@ -156,11 +156,10 @@ class Scraper:
     # below
     # driver.executeScript(setupScript);
     def fill_details(self, from_gush, to_gush, from_helka=None, to_helka=None):
-        # TODO: I think that  rewriting the text here raises some flag, maybe try to first check if equal and edit if needed only.
         self.wait_for_id("rbMegush", WAIT_TIME_TIMEOUT)
         try:
             self.driver.find_element("id", "rbMegush").click()
-            self.throttle()
+            self.throttle()  # TODO: maybe not needed here, but so far no delays even at night
             self.driver.find_element("id", "txtmegusha").clear()
             self.driver.find_element("id", "txtmegusha").send_keys(from_gush)
             self.driver.find_element("id", "txtadGush").clear()
