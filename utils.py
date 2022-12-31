@@ -6,6 +6,19 @@ import pandas as pd
 from DB import DB
 import itertools
 
+import platform
+
+# curr_platform = "Win" if platform.platform().startswith("Windows") else "Mac" if platform.platform().startswith(
+#     "macOS") else "Linux"
+# if curr_platform == "Win":
+#     DRIVER_LOCATION = "geckodriver.exe"
+# elif curr_platform == "Mac":
+#     DRIVER_LOCATION = "geckodriver"
+# else:
+#     print("Unknown platform")
+# TESS_LOCATION =
+
+
 room_ranges = [
     ["1", "3.5"],
     # ["3", "3.5"],
@@ -86,6 +99,8 @@ def clear_and_add_my_ip():
     res = requests.get(
         f"https://api.proxyscrape.com/v2/account/datacenter_shared/whitelist?auth={PROXY_API_KEY}&type=add&ip[]=my_ip:{my_ip}")
     print(res)
+
+
 def get_proxies():
     res = requests.get(
         f'https://api.proxyscrape.com/v2/account/datacenter_shared/proxy-list?auth={PROXY_API_KEY}&type=getproxies&country[]=all&protocol=http&format=normal&status=all')
@@ -148,9 +163,9 @@ def test_num_downloaded_files():
 
 if __name__ == '__main__':
     # clear_and_add_my_ip()
-    # copy_csv_files_to_db()
-    test_missing_combinations()
-    test_num_downloaded_files()
+    copy_csv_files_to_db()
+    # test_missing_combinations()
+    # test_num_downloaded_files()
 # clear_and_add_my_ip()
 # get_proxies()
 # print(len(all_csv))

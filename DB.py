@@ -1,5 +1,7 @@
 import sqlite3
 from tqdm import tqdm
+import pandas as pd
+
 columns = dict(
     ezor="TEXT",
     gush="TEXT",
@@ -56,43 +58,6 @@ def q_create_table(table_name, column_types, primary_keys):
     primary_key_str = ','.join(primary_keys)
     builder = builder.format(table_name, cols_str, primary_key_str)
     return builder
-
-#
-# create_table_statement = """
-# CREATE TABLE IF NOT EXISTS "trans" (
-# "ezor" TEXT,
-# "gush" TEXT NOT NULL,
-# "tarIska" TEXT NOT NULL,
-# "yeshuv" TEXT,
-# "rechov" TEXT,
-# "bayit" TEXT,
-# "knisa" TEXT,
-# "dira" TEXT,
-# "mcirMozhar" TEXT,
-# "mcirMorach" TEXT,
-# "shetachBruto" TEXT,
-# "shetachNeto" TEXT,
-# "shnatBniya" TEXT,
-# "misHadarim" TEXT,
-# "lblKoma" TEXT,
-# "misKomot" TEXT,
-# "dirotBnyn" TEXT,
-# "hanaya" TEXT,
-# "malit" TEXT,
-# "sugIska" TEXT,
-# "tifkudBnyn" TEXT,
-# "tifkudYchida" TEXT,
-# "shumaHalakim" TEXT,
-# "mofaGush" TEXT,
-# "tava" TEXT,
-# "mahutZchut" TEXT,
-# "insertionDate" TIMESTAMP,
-# PRIMARY KEY ("gush", "tarIska")
-# )
-#
-# """
-
-import pandas as pd
 
 
 class DB:
