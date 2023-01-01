@@ -64,7 +64,7 @@ def get_over_monthly():
     # print("SLEEPING BEFORE")
     # time.sleep(15 * 60)  # TODO: REmove this later
     scraper = Scraper()
-    from scraper_logic import sleep
+    from utils import sleep
     t_tries = 4
     # days_delta = 14  # should be 1
 

@@ -16,6 +16,7 @@ def get_daily_filtered_rooms_years(scraper, from_gush, to_gush, date, room_range
     date_en = date.strftime('%Y-%m-%d')
     date_heb = date.strftime('%d/%m/%Y')
     file_name = f"{date_en}_{from_gush}_{to_gush}_{room_range[0]}_{room_range[1]}_{year_range[0]}_{year_range[1]}"
+    n_rows = -1
     try:
         scraper.get_page(timeout=TIMEOUT_SEC)
         scraper._from_gush = from_gush
@@ -35,6 +36,7 @@ def get_daily_filtered_rooms_years(scraper, from_gush, to_gush, date, room_range
             dir_path = f"job_res/{date_en}"
             os.makedirs(dir_path, exist_ok=True)
             df.to_csv(os.path.join(dir_path, f'{file_name}.csv'), index=False)
+            n_rows = len(df)
         elif status_code == -2:
             with open("failed_due_to_too_many_deals.txt", 'a') as f:
                 f.write(f'{file_name}\n')
@@ -46,7 +48,7 @@ def get_daily_filtered_rooms_years(scraper, from_gush, to_gush, date, room_range
         status_code = 1
     # import gc
     # gc.collect()
-    return dict(file_name=file_name, status_code=status_code)
+    return dict(file_name=file_name, status_code=status_code, n_rows=n_rows)
 
 
 # PriorityQueue for not putting back tasks
@@ -58,7 +60,7 @@ proxy_queue = Queue()
 scrapers = []
 
 
-def run():
+def start_routine():
     scraper = Scraper()
     scrapers.append(scraper)
     while True:
@@ -112,7 +114,7 @@ def load_proxies(no_proxy=False):
 
 def start_threads(n_workers):
     import threading
-    threads = [threading.Thread(target=run, daemon=True) for _ in range(n_workers)]
+    threads = [threading.Thread(target=start_routine, daemon=True) for _ in range(n_workers)]
     for t in threads:
         t.start()
     return threads
@@ -123,24 +125,38 @@ def close_scrapers():
         scraper.close()
 
 
-def run_logic():
+def run_daily_job():
+    # ADD HERE DO EVERY ONE DAY BLAH BLAH....
+    # This does not need any fancy proxies, as it will only use 1 thread to get all the data throughout the day
+    days_before = 30
+    curr_date = datetime.today() - timedelta(days=days_before)
+    jobs_list = generate_job_comb(pd.date_range(curr_date, curr_date))
+    load_proxies(no_proxy=True)
+    start_threads(1)
+    run_multiple(jobs_list)
+
+
+def run_custom_job():
     # import time
     # print("Sleeping...")
     # time.sleep(60 * 60 * 5)
     days_before = 35
-      # 16
-
+    # 16
+    # TODO: When blocked the block will be for 1 week, or atleast 5 days (wednsday to sunday)
+    #  They block entire IP outside of Israel, not specific ones
     # nice when no proxy works, it goes to sleep for 10 min automatically because of code.
     no_proxy = False
     if no_proxy:
         n_workers = 1
     else:
-        n_workers = 12
-        n_workers = 1
+        n_workers = 2
+        # n_workers = 1
     load_proxies(no_proxy=no_proxy)
     start_threads(n_workers)
 
-    all_dates = pd.date_range('2022-10-16', '2022-11-30')  # TODO: next to fill
+    # all_dates = pd.date_range('2021-12-01', '2022-01-31')  # TODO: next to fill
+    all_dates = pd.date_range('2021-10-01', '2021-11-30')  # TODO: next to fill
+    all_dates = all_dates.tolist()[::-1]  # Reverse them
     # all_dates = pd.date_range('2022-06-23', datetime.today() - timedelta(days=days_before))
     all_dates_str = [d for d in all_dates]
     jobs_list = get_missing_combinations(all_dates)
@@ -150,4 +166,4 @@ def run_logic():
 
 
 if __name__ == '__main__':
-    run_logic()
+    run_custom_job()

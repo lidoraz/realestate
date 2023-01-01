@@ -1,7 +1,10 @@
+import logging
 import os
+import time
 from concurrent.futures import ThreadPoolExecutor
 
 import pandas as pd
+from tqdm import tqdm
 
 from DB import DB
 import itertools
@@ -54,6 +57,16 @@ year_ranges = [
 ]
 
 
+def sleep(ts):
+    # ts = 5
+    for _ in tqdm(list(range(ts)), desc="Waiting...", position=0, leave=True):
+        try:
+            time.sleep(1)
+        except KeyboardInterrupt:
+            logging.info("Oh! You have sent a Keyboard Interrupt to me.\nBye, Bye")
+            break
+
+
 def generate_job_comb(dates):
     year_room_comb = list(itertools.product(*[dates, room_ranges, year_ranges]))
     return year_room_comb
@@ -89,16 +102,23 @@ PROXY_API_KEY = "vsij00e8k9kh3nmrvss6"
 
 
 def clear_and_add_my_ip():
+    my_ip = requests.get("https://api.ipify.org?format=json").json()['ip']
     auth_ip = requests.get(
         f"https://api.proxyscrape.com/v2/account/datacenter_shared/whitelist?auth={PROXY_API_KEY}&type=get")
     # requests.get(f"https://api.proxyscrape.com/v2/account/datacenter_shared/whitelist?auth={key}&type=remove&ip[]=1.1.1.1")
-    ips = auth_ip.json()['whitelisted']
-    if len(ips):
-        f"https://api.proxyscrape.com/v2/account/datacenter_shared/whitelist?auth={PROXY_API_KEY}&type=remove&ip[]={ips[0]}"
-    my_ip = requests.get("https://api.ipify.org?format=json").json()['ip']
-    res = requests.get(
-        f"https://api.proxyscrape.com/v2/account/datacenter_shared/whitelist?auth={PROXY_API_KEY}&type=add&ip[]=my_ip:{my_ip}")
-    print(res)
+    whitelisted_ips = auth_ip.json()['whitelisted']
+    if my_ip not in whitelisted_ips:
+        if len(whitelisted_ips):
+            f"https://api.proxyscrape.com/v2/account/datacenter_shared/whitelist?auth={PROXY_API_KEY}&type=remove&ip[]={whitelisted_ips[0]}"
+        res = requests.get(
+            f"https://api.proxyscrape.com/v2/account/datacenter_shared/whitelist?auth={PROXY_API_KEY}&type=add&ip[]=my_ip:{my_ip}")
+        if res.status_code == 200:
+            print("Added IP to whitelist, now sleeping for 10MIN to allow smooth transit of proxies.")
+            sleep(60*10)
+        else:
+            print("There was a problem...")
+    else:
+        print("IP already in system.")
 
 
 def get_proxies():
@@ -162,11 +182,13 @@ def test_num_downloaded_files():
 
 
 if __name__ == '__main__':
-    # clear_and_add_my_ip()
+    pass
+    clear_and_add_my_ip()
+    test_num_downloaded_files()
     copy_csv_files_to_db()
     # test_missing_combinations()
-    # test_num_downloaded_files()
-# clear_and_add_my_ip()
+
+# cear_and_add_my_ip()
 # get_proxies()
 # print(len(all_csv))
 # copy_csv_files_to_db()

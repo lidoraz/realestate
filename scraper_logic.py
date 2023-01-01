@@ -1,21 +1,20 @@
-from tqdm import tqdm
 import time
 import requests
-from selenium import webdriver  # , WebDriverWait
 from selenium import webdriver
-from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from selenium.webdriver.support.ui import Select
 from selenium.common.exceptions import NoSuchElementException
 import pandas as pd
 from datetime import datetime
 from DB import columns
-from gcloud_test import OCR, OCR1
+from gcloud_test import OCR1
 from pyproj import Transformer
 import logging
 import tempfile
 import uuid
 import os
 import random
+
+from utils import sleep
 
 logging.basicConfig(
     format='%(asctime)s %(levelname)-8s %(message)s',
@@ -56,16 +55,6 @@ user_agents = [
 ]
 
 
-def sleep(ts):
-    # ts = 5
-    for _ in tqdm(list(range(ts)), desc="Waiting...", position=0, leave=True):
-        try:
-            time.sleep(1)
-        except KeyboardInterrupt:
-            logging.info("Oh! You have sent a Keyboard Interrupt to me.\nBye, Bye")
-            break
-
-
 def convert_itm_to_wgs84(x, y):
     return trans_itm_to_wgs84.transform(x, y)
 
@@ -97,6 +86,7 @@ class Scraper:
         # old = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36"
         profile.set_preference("general.useragent.override", f"{random.choice(user_agents)} {str(uuid.uuid4())}")
         self.driver = webdriver.Firefox(executable_path=PATH, options=firefox_options)  # , firefox_profile=profile
+        self.driver.minimize_window()
         self.ocr = OCR1()
         self.url = "https://nadlan.taxes.gov.il/svinfonadlan2010/startpageNadlanNewDesign.aspx"
         # FIND GUSH HELKA: https://www.gov.il/apps/mapi/parcel_address/parcel_address.html
@@ -287,10 +277,10 @@ class Scraper:
                     logging.warning(f"Retrying to click on link {id_link_log} again ({tried + 1}/{tries})")
 
                 info = self.parse_info_page()
-                logging.info(f"Parsed element - {id_link_log} - {info['gush']} ({self.throttle_total_fetched})")
-                results.append(info)
                 self.driver.find_element("id", "ContentUsersPage_btHazara").click()
                 self.wait_for_id(main_table_id, WAIT_TIME_TIMEOUT)
+                logging.info(f"Parsed element - {id_link_log} - {info['gush']} ({self.throttle_total_fetched})")
+                results.append(info)
                 self.throttle()
             except Exception as e:
                 logging.error(f"WARNING Check this issue {id_link_log}, {type(e)}")
