@@ -7,7 +7,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 from proxy.scrapeproxies import find_location
 from scraper_logic import Scraper
-from utils import get_missing_combinations, generate_job_comb
+from utils import get_missing_combinations, generate_job_comb, clear_and_add_my_ip
 
 TIMEOUT_SEC = 120
 
@@ -149,13 +149,17 @@ def run_custom_job():
     if no_proxy:
         n_workers = 1
     else:
-        n_workers = 2
+        clear_and_add_my_ip()
+        n_workers = 18
         # n_workers = 1
     load_proxies(no_proxy=no_proxy)
     start_threads(n_workers)
 
     # all_dates = pd.date_range('2021-12-01', '2022-01-31')  # TODO: next to fill
-    all_dates = pd.date_range('2021-10-01', '2021-11-30')  # TODO: next to fill
+    # all_dates = pd.date_range('2021-10-01', '2021-11-30')  # TODO: next to fill
+    # all_dates = pd.date_range('2021-07-01', '2021-11-30')
+    all_dates = pd.date_range('2021-01-01', '2021-06-30')
+    # all_dates = [pd.to_datetime('2021-07-05'), pd.to_datetime('2021-10-31')]
     all_dates = all_dates.tolist()[::-1]  # Reverse them
     # all_dates = pd.date_range('2022-06-23', datetime.today() - timedelta(days=days_before))
     all_dates_str = [d for d in all_dates]

@@ -107,6 +107,7 @@ class Scraper:
     def close(self):
         self.driver.close()
         self.driver.quit()
+
     def get_page(self, timeout=20):
         self.driver.set_page_load_timeout(timeout)
         self.driver.get(self.url)
@@ -276,11 +277,17 @@ class Scraper:
                         break
                     logging.warning(f"Retrying to click on link {id_link_log} again ({tried + 1}/{tries})")
 
-                info = self.parse_info_page()
+                if "perutOfDira" in self.driver.current_url:  # perutOfDira
+                    info = self.parse_info_page()
+                    logging.info(f"Parsed element - {id_link_log} - {info['gush']} ({self.throttle_total_fetched})")
+                    results.append(info)
+                else:
+                    # perutOfKarka, perutOfhanut
+                    # sometimes there are bugs in the system, it displays land instead of dira.
+                    logging.warning(
+                        f"Ignoring due to perut not relatd to dira... - can't parse this - {self.driver.current_url}")
                 self.driver.find_element("id", "ContentUsersPage_btHazara").click()
                 self.wait_for_id(main_table_id, WAIT_TIME_TIMEOUT)
-                logging.info(f"Parsed element - {id_link_log} - {info['gush']} ({self.throttle_total_fetched})")
-                results.append(info)
                 self.throttle()
             except Exception as e:
                 logging.error(f"WARNING Check this issue {id_link_log}, {type(e)}")
@@ -336,6 +343,9 @@ class Scraper:
             return next_page_links
 
         df_all = self.go_over_dira_links()
+        if len(df_all) == 0:
+            # Special case when there is no real data despite having a row
+            return df_all
         next_page_links = get_links(curr_page)
 
         if len(next_page_links) and len(df_all) < 12:

@@ -21,7 +21,6 @@ import platform
 #     print("Unknown platform")
 # TESS_LOCATION =
 
-
 room_ranges = [
     ["1", "3.5"],
     # ["3", "3.5"],
@@ -55,6 +54,7 @@ year_ranges = [
     # ["2023", "2023"],
     # ["2024", "2100"]
 ]
+
 
 
 def sleep(ts):
@@ -183,7 +183,7 @@ def test_num_downloaded_files():
 
 if __name__ == '__main__':
     pass
-    clear_and_add_my_ip()
+    # clear_and_add_my_ip()
     test_num_downloaded_files()
     copy_csv_files_to_db()
     # test_missing_combinations()
