@@ -139,7 +139,7 @@ def run_daily_job():
 def run_custom_job():
     # import time
     # print("Sleeping...")
-    # time.sleep(60 * 60 * 5)
+    # time.sleep(60 * 60 * 1)
     days_before = 35
     # 16
     # TODO: When blocked the block will be for 1 week, or atleast 5 days (wednsday to sunday)
@@ -150,15 +150,17 @@ def run_custom_job():
         n_workers = 1
     else:
         clear_and_add_my_ip()
-        n_workers = 18
-        # n_workers = 1
+        n_workers = 12
     load_proxies(no_proxy=no_proxy)
     start_threads(n_workers)
 
-    # all_dates = pd.date_range('2021-12-01', '2022-01-31')  # TODO: next to fill
+    all_dates = pd.date_range('2022-12-01', '2022-12-15')  # TODO: next to fill
     # all_dates = pd.date_range('2021-10-01', '2021-11-30')  # TODO: next to fill
     # all_dates = pd.date_range('2021-07-01', '2021-11-30')
-    all_dates = pd.date_range('2021-01-01', '2021-06-30')
+    # all_dates = pd.date_range('2021-01-01', '2021-06-30')
+    #####
+    # all_dates = pd.date_range('2021-01-01', '2021-11-30')  # missing 3 jobs, that cant be taken
+    # ((Timestamp('2021-10-31 00:00:00', freq='D'), ['1', '3.5'], ['1800', '1960']), (Timestamp('2021-07-05 00:00:00', freq='D'), ['1', '3.5'], ['1800', '1960']), (Timestamp('2021-07-05 00:00:00', freq='D'), ['4', '4.5'], ['2021', '2021']))
     # all_dates = [pd.to_datetime('2021-07-05'), pd.to_datetime('2021-10-31')]
     all_dates = all_dates.tolist()[::-1]  # Reverse them
     # all_dates = pd.date_range('2022-06-23', datetime.today() - timedelta(days=days_before))
