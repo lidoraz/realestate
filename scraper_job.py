@@ -1,7 +1,7 @@
 import logging
 import os
 from queue import Queue
-import itertools
+import time
 import random
 import pandas as pd
 from datetime import datetime, timedelta
@@ -86,7 +86,7 @@ def start_routine():
             task_queue.put(params)
         task_queue.task_done()
         proxy_queue.put(proxy)
-
+        time.sleep(5)
 
 def run_multiple(jobs_list):
     task_queue.queue.clear()
@@ -137,8 +137,9 @@ def run_daily_job():
 
 
 def run_custom_job():
-    # import time
+    import time
     # print("Sleeping...")
+    # time.sleep(60 * 5)
     # time.sleep(60 * 60 * 1)
     days_before = 35
     # 16
@@ -150,11 +151,25 @@ def run_custom_job():
         n_workers = 1
     else:
         clear_and_add_my_ip()
-        n_workers = 12
+        n_workers = 18
     load_proxies(no_proxy=no_proxy)
     start_threads(n_workers)
 
-    all_dates = pd.date_range('2022-12-01', '2022-12-15')  # TODO: next to fill
+    all_dates = pd.date_range('2019-01-01', '2019-12-31')  # DONE
+    # all_dates = pd.date_range('2022-12-11', '2022-12-31') # DONE
+    # NOW TAKE BACK IN TIME FROM JAN 2020 to
+    # all_dates = pd.date_range('2020-01-01', '2020-12-31')
+
+
+    # all_dates = pd.date_range('2022-12-01', '2023-01-01')
+
+
+
+
+
+    # all_dates = pd.date_range('2022-12-01', '2022-12-15')  # TODO: next to fill
+    # all_dates = pd.date_range('2022-11-01', '2022-12-10')
+
     # all_dates = pd.date_range('2021-10-01', '2021-11-30')  # TODO: next to fill
     # all_dates = pd.date_range('2021-07-01', '2021-11-30')
     # all_dates = pd.date_range('2021-01-01', '2021-06-30')
@@ -164,8 +179,10 @@ def run_custom_job():
     # all_dates = [pd.to_datetime('2021-07-05'), pd.to_datetime('2021-10-31')]
     all_dates = all_dates.tolist()[::-1]  # Reverse them
     # all_dates = pd.date_range('2022-06-23', datetime.today() - timedelta(days=days_before))
-    all_dates_str = [d for d in all_dates]
+
+    # ignore this
     jobs_list = get_missing_combinations(all_dates)
+
     # jobs_list = generate_job_comb(all_dates)
     run_multiple(jobs_list)
     close_scrapers()
@@ -173,3 +190,7 @@ def run_custom_job():
 
 if __name__ == '__main__':
     run_custom_job()
+
+
+from folium.plugins import heat_map
+from folium.plugins import HeatMapWithTime

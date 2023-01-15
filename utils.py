@@ -56,7 +56,6 @@ year_ranges = [
 ]
 
 
-
 def sleep(ts):
     # ts = 5
     for _ in tqdm(list(range(ts)), desc="Waiting...", position=0, leave=True):
@@ -108,13 +107,16 @@ def clear_and_add_my_ip():
     # requests.get(f"https://api.proxyscrape.com/v2/account/datacenter_shared/whitelist?auth={key}&type=remove&ip[]=1.1.1.1")
     whitelisted_ips = auth_ip.json()['whitelisted']
     if my_ip not in whitelisted_ips:
-        if len(whitelisted_ips):
-            f"https://api.proxyscrape.com/v2/account/datacenter_shared/whitelist?auth={PROXY_API_KEY}&type=remove&ip[]={whitelisted_ips[0]}"
-        res = requests.get(
+        if len(whitelisted_ips) == 3:
+            res_remove_ip = requests.get(
+                f"https://api.proxyscrape.com/v2/account/datacenter_shared/whitelist?auth={PROXY_API_KEY}&type=remove&ip[]={whitelisted_ips[0]}")
+            if res_remove_ip.status_code == 200:
+                print("removed an ip from proxy")
+        res_add_ip = requests.get(
             f"https://api.proxyscrape.com/v2/account/datacenter_shared/whitelist?auth={PROXY_API_KEY}&type=add&ip[]=my_ip:{my_ip}")
-        if res.status_code == 200:
+        if res_add_ip.status_code == 200:
             print("Added IP to whitelist, now sleeping for 10MIN to allow smooth transit of proxies.")
-            sleep(60*10)
+            sleep(60 * 10)
         else:
             print("There was a problem...")
     else:
@@ -144,15 +146,15 @@ def get_missing_combinations(all_dates):
     return missing_jobs
 
 
-def copy_csv_files_to_db():
+def copy_csv_files_to_db(like=None):
     import os
     path = "job_res"
     import glob
-    all_files = []
-    for filename in glob.iglob(path + '**/**', recursive=True):
-        if filename.endswith('.csv') and not filename.startswith("."):
-            all_files.append(filename)
-
+    all_files = list(glob.iglob(path + '**/**', recursive=True))
+    all_files = [f for f in all_files if f.endswith('.csv') and not f.startswith(".")]
+    if like:
+        print(f'Filtering by "{like}"')
+        all_files = [f for f in all_files if like in f]
     with ThreadPoolExecutor(os.cpu_count()) as executor:
         futures = [executor.submit(lambda x: pd.read_csv(x), p) for p in all_files]
         dfs = [f.result() for f in futures]
@@ -161,15 +163,6 @@ def copy_csv_files_to_db():
     df['insertionDate'] = df['insertionDate'].fillna(datetime.today())
     db = DB()
     db.insert_ignore(df)
-    # files = os.listdir(path)
-
-    # df = pd.DataFrame()
-    # for file in files:
-    #     df_s = pd.read_csv(os.path.join(path, file))
-    #     df = pd.concat([df, df_s], axis=0)
-    # from datetime import datetime
-    # df['insertionDate'] = datetime.today()
-    # db.insert_ignore(df)
 
 
 def test_missing_combinations():
@@ -181,11 +174,21 @@ def test_num_downloaded_files():
     get_saved_files(True)
 
 
+def run_every_time_check_ip():
+    while True:
+        try:
+            clear_and_add_my_ip()
+        except Exception as e:
+            pass
+        time.sleep(15 * 60)
+
+
 if __name__ == '__main__':
     pass
+    # run_every_time_check_ip()
     # clear_and_add_my_ip()
-    test_num_downloaded_files()
-    copy_csv_files_to_db()
+    # test_num_downloaded_files()
+    copy_csv_files_to_db('2019')
     # test_missing_combinations()
 
 # cear_and_add_my_ip()
