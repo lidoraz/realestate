@@ -49,7 +49,8 @@ right_portion_html = html.Div(id='right-portion',
                                            children=[dbc.Switch(id='show-legend', label='Legend ', value=True),
                                                      dbc.Switch(id="live-update-button", label="Live Update",
                                                                 value=live_update),
-                                                     html.Button("Refresh", id="refresh")],
+                                                     html.Button("Refresh", id="refresh"),
+                                                     live_update_html],
                                            style={'display': 'flex', 'alignItems': 'center', 'flexWrap': 'wrap',
                                                   'boxSizing': 'borderBox', 'columnGap': '7%'})],
                               )
@@ -63,8 +64,9 @@ app.layout = html.Div([
         dcc.DatePickerRange(
             id='my-date-picker-range',
             start_date_placeholder_text=date(2022, 1, 1),
+            end_date_placeholder_text=datetime.today().date() - pd.to_timedelta('30D'),
+            initial_visible_month=date(2022, 1, 1),
             display_format='D-M-Y', # -Q
-            end_date_placeholder_text="End Period",
             # calendar_orientation='vertical',
         ),
         # dcc.Input(
@@ -142,6 +144,7 @@ app.layout = html.Div([
 #               Input('input-lookahead', 'value'),
 #               Input('show-legend', 'value'), )
 @app.callback(Output('map', 'srcDoc'),
+              Output('live-update-text', 'children'),
               Input('my-range-slider', 'value'),
               Input('my-date-picker-range', 'start_date'),
               Input('my-date-picker-range', 'end_date'),
@@ -149,13 +152,16 @@ app.layout = html.Div([
 def update_graph_live(slider, start_date: date, end_date, n_clicks):
 
     m = folium.Map(location=[*trans_itm_to_wgs84.transform(185118, 666233)], zoom_start=8)
+    len_df = 0
     if start_date is not None and end_date is not None:
         df_s = pd.read_sql(f"SELECT * FROM trans where tarIska between {pd.to_datetime(start_date).strftime('%Y%m%d')}"
                            f" and {pd.to_datetime(end_date).strftime('%Y%m%d')}"
                            f" and misHadarim between {slider[0]} and {slider[1]}", con)
-        df_s = df_s.sample(100) if len(df_s) > 100 else df_s
+        len_df = len(df_s)
+        df_s = df_s.sample(100) if len_df > 100 else df_s
     else:
         df_s = df.sample(100)
+        len_df = len(df_s)
     for idx, row in df_s.iterrows():
         if row['corX'] == 0 and row['corY'] == 0:
             continue
@@ -165,14 +171,15 @@ def update_graph_live(slider, start_date: date, end_date, n_clicks):
         tooltip = f"{row['ezor']}<br>{dt}<br>{row['yeshuv']}, {row['rechov']}, {row['bayit']}<br>{row['shnatBniya']} {row['misHadarim']} חדרים<br>{row['mcirMozhar']:0,.0f}, {price_mr_net:0,.0f}"
         #     print(row['misHadarim'])
         folium.Marker([*trans_itm_to_wgs84.transform(row['corX'], row['corY'])],
-                      popup="<i>Mt. Hood Meadows</i>",
+                      popup=tooltip,
                       tooltip=tooltip,
                       # https://fontawesome.com/icons?d=gallery
                       icon=folium.Icon(color=color_rooms[min(int(row['misHadarim']), 6)],
                                        icon="fa-light fa-house", prefix='fa')
                       ).add_to(m)
     m.save("mymapnew.html")
-    return open('mymapnew.html', 'r', encoding="utf8").read()
+    text = [html.Span('{}'.format(len_df))]  # {0:.2f}
+    return open('mymapnew.html', 'r', encoding="utf8").read(), text
     # return m
     # t0 = datetime.now()
     # print(n, coin, resample, input_lookahead)
