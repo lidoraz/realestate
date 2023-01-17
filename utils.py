@@ -185,10 +185,10 @@ def run_every_time_check_ip():
 
 if __name__ == '__main__':
     pass
-    # run_every_time_check_ip()
+    # run_every_time_check_ip() -- added to scraper logic.
     # clear_and_add_my_ip()
     # test_num_downloaded_files()
-    copy_csv_files_to_db('2019')
+    copy_csv_files_to_db()  # '2018'
     # test_missing_combinations()
 
 # cear_and_add_my_ip()
