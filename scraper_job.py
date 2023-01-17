@@ -7,7 +7,8 @@ import pandas as pd
 from datetime import datetime, timedelta
 from proxy.scrapeproxies import find_location
 from scraper_logic import Scraper
-from utils import get_missing_combinations, generate_job_comb, clear_and_add_my_ip
+from utils import get_missing_combinations, generate_job_comb, clear_and_add_my_ip, run_every_time_check_ip
+import threading
 
 TIMEOUT_SEC = 120
 
@@ -113,7 +114,6 @@ def load_proxies(no_proxy=False):
 
 
 def start_threads(n_workers):
-    import threading
     threads = [threading.Thread(target=start_routine, daemon=True) for _ in range(n_workers)]
     for t in threads:
         t.start()
@@ -136,13 +136,7 @@ def run_daily_job():
     run_multiple(jobs_list)
 
 
-def run_custom_job():
-    import time
-    # print("Sleeping...")
-    # time.sleep(60 * 5)
-    # time.sleep(60 * 60 * 1)
-    days_before = 35
-    # 16
+def run_custom_job(date_range, filter_exists):
     # TODO: When blocked the block will be for 1 week, or atleast 5 days (wednsday to sunday)
     #  They block entire IP outside of Israel, not specific ones
     # nice when no proxy works, it goes to sleep for 10 min automatically because of code.
@@ -151,46 +145,23 @@ def run_custom_job():
         n_workers = 1
     else:
         clear_and_add_my_ip()
-        n_workers = 18
+        n_workers = 24
+        threading.Thread(target=run_every_time_check_ip, daemon=True).start()
     load_proxies(no_proxy=no_proxy)
     start_threads(n_workers)
-
-    all_dates = pd.date_range('2019-01-01', '2019-12-31')  # DONE
-    # all_dates = pd.date_range('2022-12-11', '2022-12-31') # DONE
-    # NOW TAKE BACK IN TIME FROM JAN 2020 to
-    # all_dates = pd.date_range('2020-01-01', '2020-12-31')
-
-
-    # all_dates = pd.date_range('2022-12-01', '2023-01-01')
-
-
-
-
-
-    # all_dates = pd.date_range('2022-12-01', '2022-12-15')  # TODO: next to fill
-    # all_dates = pd.date_range('2022-11-01', '2022-12-10')
-
-    # all_dates = pd.date_range('2021-10-01', '2021-11-30')  # TODO: next to fill
-    # all_dates = pd.date_range('2021-07-01', '2021-11-30')
-    # all_dates = pd.date_range('2021-01-01', '2021-06-30')
-    #####
-    # all_dates = pd.date_range('2021-01-01', '2021-11-30')  # missing 3 jobs, that cant be taken
-    # ((Timestamp('2021-10-31 00:00:00', freq='D'), ['1', '3.5'], ['1800', '1960']), (Timestamp('2021-07-05 00:00:00', freq='D'), ['1', '3.5'], ['1800', '1960']), (Timestamp('2021-07-05 00:00:00', freq='D'), ['4', '4.5'], ['2021', '2021']))
-    # all_dates = [pd.to_datetime('2021-07-05'), pd.to_datetime('2021-10-31')]
-    all_dates = all_dates.tolist()[::-1]  # Reverse them
-    # all_dates = pd.date_range('2022-06-23', datetime.today() - timedelta(days=days_before))
-
-    # ignore this
-    jobs_list = get_missing_combinations(all_dates)
-
-    # jobs_list = generate_job_comb(all_dates)
+    date_range = date_range.tolist()[::-1]  # Reverse them
+    if filter_exists:
+        jobs_list = get_missing_combinations(date_range)
+    else:
+        jobs_list = generate_job_comb(date_range)
     run_multiple(jobs_list)
     close_scrapers()
 
 
 if __name__ == '__main__':
-    run_custom_job()
-
-
-from folium.plugins import heat_map
-from folium.plugins import HeatMapWithTime
+    import time
+    # print("Sleeping...")
+    # time.sleep(60 * 5)
+    # time.sleep(60 * 60 * 1)
+    run_custom_job(pd.date_range('2022-12-01', '2023-01-01'), filter_exists=True)
+    run_custom_job(pd.date_range('2018-01-01', '2018-12-31'), filter_exists=False)
