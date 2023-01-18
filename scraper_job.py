@@ -89,6 +89,7 @@ def start_routine():
         proxy_queue.put(proxy)
         time.sleep(5)
 
+
 def run_multiple(jobs_list):
     task_queue.queue.clear()
     print(f" THERE ARE {len(jobs_list)} combinations!")
@@ -158,10 +159,20 @@ def run_custom_job(date_range, filter_exists):
     close_scrapers()
 
 
+def run_custom_job_history():
+    date_range = pd.date_range('2017-01-01', '2017-12-31')
+    run_custom_job(date_range, filter_exists=False)
+
+
+def run_custom_job_recent():
+    run_custom_job(pd.date_range('2022-12-01', '2023-01-19'), filter_exists=True)
+
+
 if __name__ == '__main__':
     import time
+
     # print("Sleeping...")
     # time.sleep(60 * 5)
     # time.sleep(60 * 60 * 1)
-    run_custom_job(pd.date_range('2022-12-01', '2023-01-01'), filter_exists=True)
-    run_custom_job(pd.date_range('2018-01-01', '2018-12-31'), filter_exists=False)
+    # run_custom_job_history()
+    run_custom_job_recent()
