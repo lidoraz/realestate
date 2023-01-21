@@ -1,13 +1,10 @@
-import os, io
-
-from PIL.Image import Image
-from google.cloud import vision
-import cv2
+import os
 
 
 class OCR:
 
     def __init__(self, path_to_token=r"C:\gcloud_service_file.json"):
+        from google.cloud import vision
         os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = path_to_token
         self.client = vision.ImageAnnotatorClient()
 
@@ -128,6 +125,7 @@ class OCR1:
     #     from PIL import Image
     #     im = Image.fromarray(out * 255)
     #     return pytesseract.image_to_string(im, config=self.custom_config)
+
 
 def test_ocr():
     ocr = OCR1()

@@ -6,12 +6,13 @@ from datetime import datetime
 import sys
 import folium
 from pyproj import Transformer
+import tempfile
 
 trans_itm_to_wgs84 = Transformer.from_crs(2039, 4326)
 import pandas as pd
 import sqlite3
 
-
+tempfile.gettempdir()
 # GEO PANDAS HAS BETTER INTEGRATION WITH DASH
 # https://plotly.com/python/scattermapbox/?_ga=2.136324342.718238851.1672097943-81810637.1672097941
 
@@ -24,7 +25,7 @@ def preprocess_df(df):
     return df
 
 
-con = sqlite3.connect("nadlan.db", check_same_thread=False)
+con = sqlite3.connect("resources/nadlan.db", check_same_thread=False)
 df = pd.read_sql("select * from trans", con=con)
 df = preprocess_df(df)
 print(len(df))
@@ -162,7 +163,6 @@ app.layout = html.Div([
 
 def get_deals(slider, start_date, end_date):
     m = folium.Map(location=[*trans_itm_to_wgs84.transform(185118, 666233)], zoom_start=8)
-    len_df = 0
     if start_date is not None and end_date is not None:
         df_s = pd.read_sql(f"SELECT * FROM trans where tarIska between {pd.to_datetime(start_date).strftime('%Y%m%d')}"
                            f" and {pd.to_datetime(end_date).strftime('%Y%m%d')}"
@@ -188,9 +188,9 @@ def get_deals(slider, start_date, end_date):
                       icon=folium.Icon(color=color_rooms[min(int(row['misHadarim']), 6)],
                                        icon="fa-light fa-house", prefix='fa')
                       ).add_to(m)
-    m.save("mymapnew.html")
     text = [html.Span('{}'.format(len_df))]  # {0:.2f}
-    return open('mymapnew.html', 'r', encoding="utf8").read(), text
+    m.save(f'{tempfile.gettempdir()}/mymapnew.html')
+    return open(f'{tempfile.gettempdir()}/mymapnew.html', 'r', encoding="utf8").read(), text
 
 
 def get_heatmap(start_date, end_date):
@@ -200,8 +200,8 @@ def get_heatmap(start_date, end_date):
     heat_data = [[*trans_itm_to_wgs84.transform(row['corX'], row['corY'])] for index, row in df_s.iterrows()]
     # Plot it on the map
     HeatMap(heat_data).add_to(m)
-    m.save("mymapnew.html")
-    return open('mymapnew.html', 'r', encoding="utf8").read(), ""
+    m.save(f'{tempfile.gettempdir()}/mymapnew.html')
+    return open(f'{tempfile.gettempdir()}/mymapnew.html', 'r', encoding="utf8").read(), ""
 
 
 def get_heatmap_time():
@@ -216,8 +216,8 @@ def get_heatmap_time():
     m = folium.Map(location=[*trans_itm_to_wgs84.transform(185118, 666233)], zoom_start=8)
     hm = HeatMapWithTime(head_data, index=timestamps, auto_play=True, scale_radius=False, position="topright")
     hm.add_to(m)
-    m.save("mymapnew.html")
-    return open('mymapnew.html', 'r', encoding="utf8").read(), ""
+    m.save(f'{tempfile.gettempdir()}/mymapnew.html')
+    return open(f'{tempfile.gettempdir()}/mymapnew.html', 'r', encoding="utf8").read(), ""
 
 
 @app.callback(Output('map', 'srcDoc'),

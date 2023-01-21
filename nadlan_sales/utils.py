@@ -72,7 +72,7 @@ def generate_job_comb(dates):
 
 
 def get_saved_files(verbose=False):
-    path = "job_res"
+    path = "../job_res"
     dirs = os.listdir(path)
     all_csv = []
     for d in sorted(dirs):
@@ -148,7 +148,7 @@ def get_missing_combinations(all_dates):
 
 def copy_csv_files_to_db(like=None):
     import os
-    path = "job_res"
+    path = "../job_res"
     import glob
     all_files = list(glob.iglob(path + '**/**', recursive=True))
     all_files = [f for f in all_files if f.endswith('.csv') and not f.startswith(".")]

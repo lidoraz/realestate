@@ -103,7 +103,7 @@ def run_multiple(jobs_list):
 
 
 def load_proxies(no_proxy=False):
-    with open('proxyscrape_premium_http_proxies.txt', 'r') as f:
+    with open('resources/proxyscrape_premium_http_proxies.txt', 'r') as f:
         proxies = f.read().splitlines()
         random.shuffle(proxies)
         for proxy in proxies:
