@@ -15,73 +15,178 @@ import numpy as np
 from datetime import datetime
 import pandas as pd
 
-from forsale.utils import calc_dist, get_similar_closed_deals, plot_deal_vs_sale_sold
+from forsale.utils import calc_dist, get_similar_closed_deals  # , plot_deal_vs_sale_sold
 
 df = pd.read_pickle('/Users/lidorazulay/Documents/DS/realestate/resources/yad2_df.pk')
-
+df['date_added'] = pd.to_datetime(df['date_added'])
+df['date_added_d'] = (datetime.today() - df['date_added']).dt.days
 # df_f = df.query('last_price < 3000000 and -0.9 < price_pct < -0.01 and price_diff < 1e7')  # [:30]
-df_f = df.query('last_price < 3000000 and price_diff < 1e7')  # [:30]
-df_f = df.sort_values('pct_diff_median').query('group_size > 30 '
-                                               'and 2 < rooms < 5'
-                                               ' and last_price > 500000'
-                                               ' and pct_diff_median < -0.1')[:300]
-print(f"loaded {len(df_f)} rows")
-# icon="fa-light fa-house", prefix='fa'
-deal_points = [dict(deal_id=idx, lat=d['lat'], lon=d['long'], color='black', icon="fa-light fa-house", metadata=d) for
-               idx, d in df_f.iterrows()]
-import time
+# df_f = df.query('last_price < 3000000 and price_diff < 1e7')[:30]
 
-geojsonMarkerOptions = {
-    # "radius": 8,
-    "fillColor": "#ff7800",
-    "color": "#000",
-    # "weight": 1,
-    # "opacity": 1,
-    "fillOpacity": 0.8
-}
-
-
-def prifunc(feature, latlng):
-    return dl.CircleMarker(latlng, geojsonMarkerOptions)
-    # lambda feature, latlng: dl.CircleMarker(latlng,geojsonMarkerOptions))
+# geojsonMarkerOptions = {
+#     # "radius": 8,
+#     "fillColor": "#ff7800",
+#     "color": "#000",
+#     # "weight": 1,
+#     # "opacity": 1,
+#     "fillOpacity": 0.8
+# }
+#
+#
+# def prifunc(feature, latlng):
+#     return dl.CircleMarker(latlng, geojsonMarkerOptions)
+# lambda feature, latlng: dl.CircleMarker(latlng,geojsonMarkerOptions))
 
 
 from dash_extensions.javascript import assign
 
-point_to_layer = assign("function(feature, latlng, context) {console.log(feature); return L.marker(latlng, {fillColor: '#ff7800'});}")
+icon_05 = "https://cdn-icons-png.flaticon.com/128/9387/9387262.png"
+icon_10 = "https://cdn-icons-png.flaticon.com/128/6912/6912962.png"
+icon_20 = "https://cdn-icons-png.flaticon.com/128/6913/6913127.png"
+icon_30 = "https://cdn-icons-png.flaticon.com/128/6913/6913198.png"
+icon_40 = "https://cdn-icons-png.flaticon.com/128/9556/9556570.png"
+icon_50 = "https://cdn-icons-png.flaticon.com/128/5065/5065451.png"
+icon_regular = "https://cdn-icons-png.flaticon.com/128/6153/6153497.png"
+icon_maps = "https://cdn-icons-png.flaticon.com/128/684/684809.png"
+icon_real_estate = "https://cdn-icons-png.flaticon.com/128/602/602275.png"
+
+
+def get_icon(deal):
+    p = deal['metadata']['pct_diff_median']
+    if -0.1 < p <= 0.05:
+        return icon_05
+    elif -0.2 < p <= -0.1:
+        return icon_10
+    elif -0.3 < p <= -0.2:
+        return icon_20
+    elif -0.4 < p <= -0.3:
+        return icon_30
+    elif -0.5 < p <= -0.4:
+        return icon_40
+    elif p <= -0.5:
+        return icon_50
+    else:
+        return icon_regular
+
+
+icon1 = "https://cdn-icons-png.flaticon.com/128/447/447031.png"  # "/resources/location-pin.png" # "/Users/lidorazulay/Downloads/location-pin.png"
+icon2 = "https://cdn-icons-png.flaticon.com/128/7976/7976202.png"  # "/resources/location.png" # '/Users/lidorazulay/Downloads/location.png'
+draw_icon = assign("""function(feature, latlng){
+const flag = L.icon({iconUrl: feature.properties.icon, iconSize: [28, 28]});
+console.log(feature.properties.icon);
+return L.marker(latlng, {icon: flag});
+}""")
+# point_to_layer = assign(
+#     "function(feature, latlng, context) {console.log(feature); return L.marker(latlng, {fillColor: '#ff7800'});}")
 
 # time.sleep(1)
 app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
-deal_points = dlx.dicts_to_geojson(
-    [{**deal, **dict(
-        tooltip=f"{deal['deal_id']} </br> {deal['metadata']['last_price']:,.0f} </br> {deal['metadata']['pct_diff_median']:0.2%}")}
-     for deal in deal_points])
-deal_points['properties'] = {"marker-color": "RED"}
+
+
+def get_asset_points(price_from=500_000, price_to=3_000_000, median_price_pct=-0.1, date_added_days=100,
+                     rooms_range=(3, 4)):
+    median_price_pct = 1 if median_price_pct is None else median_price_pct
+    rooms_from = rooms_range[0]
+    rooms_to = rooms_range[1]
+    rooms_to = 100 if rooms_to == 6 else rooms_to
+    df_f = df.query('group_size > 30 '
+                    f'and {rooms_from} <= rooms <= {rooms_to}.5'
+                    f' and last_price > {price_from}'
+                    f' and last_price < {price_to or 1e30}'
+                    f' and pct_diff_median <= {median_price_pct or 1}'
+                    f"and date_added_d < {date_added_days}")  # [:1000]
+    print(f"Triggerd, Fetched: {len(df_f)} rows")
+    deal_points = [dict(deal_id=idx, lat=d['lat'], lon=d['long'], color='black', icon="fa-light fa-house", metadata=d)
+                   for
+                   idx, d in df_f.iterrows()]
+    deal_points = dlx.dicts_to_geojson(
+        [{**deal, **dict(
+            tooltip=f"{deal['deal_id']}</br> חדרים {deal['metadata']['rooms']} </br> {deal['metadata']['last_price']:,.0f} </br> {deal['metadata']['pct_diff_median']:0.2%}",
+            icon=get_icon(deal))}
+         for deal in deal_points])
+    return deal_points
+
+
+from_price_txt = 'עד מחיר(מ)'
+to_price_txt = 'עד מחיר(מ)'
+date_added_txt = 'הועלה עד'
+n_rooms_txt = 'מספר חדרים'
+median_price_txt = 'מחיר חציוני'
+rooms_marks = {r: str(r) for r in range(7)}
+rooms_marks[6] = '6+'
+
 app.layout = html.Div(children=[
     html.Div(className="flex-container", children=[
         html.Div(className="left-div", children=[
+            html.Span("d"),
             dl.Map(children=[dl.TileLayer(),
 
                              # dl.LayerGroup(id="layer"),
                              # dl.LayerGroup(id="layer1"),
 
-                             dl.GeoJSON(data=deal_points, id="geojson", zoomToBounds=True, cluster=False,
+                             dl.GeoJSON(data=get_asset_points(), id="geojson", zoomToBounds=True, cluster=True,
                                         # superClusterOptions=dict(radius=50, maxZoom=12),
                                         # pointToLayer=prifunc,
                                         # hideout=dict(pointToLayer=prifunc),
-                                        options=dict(pointToLayer=point_to_layer), # , style={"color": "yellow"}
+                                        options=dict(pointToLayer=draw_icon),  # , style={"color": "yellow"}
                                         # options={"style": {"color": "yellow"}}
                                         ),
-
-                             # dl.GeoJSON(
-                             #     url='https://pkgstore.datahub.io/core/geo-countries/countries/archive/23f420f929e0e09c39d916b8aaa166fb/countries.geojson',
-                             #     id="countries",
-                             #     options=dict(style=dict(opacity=0, fillOpacity=0)))  # ,
-                             # hoverStyle=dict(weight=2, color='red', dashArray='', opacity=1))
                              ],
-
-                   style={'width': '100%', 'height': '800px'},
-                   zoom=3, id='map'),
+                   zoom=3, id='map', zoomControl=False),
+            html.Div(children=[
+                html.Span("סהכ: "),
+                html.Span("0", id="fetched-assets"),
+                html.Span(from_price_txt),
+                dcc.Input(
+                    id="price-from",
+                    type="number",
+                    placeholder=from_price_txt,
+                    value=0.5,
+                    debounce=True,
+                    className='input-ltr'
+                ),
+                html.Span(to_price_txt),
+                dcc.Input(
+                    id="price-to",
+                    type="number",
+                    placeholder=to_price_txt,
+                    value=3,
+                    debounce=True,
+                    className='input-ltr'
+                ),
+                html.Span(median_price_txt),
+                dcc.Input(
+                    id="median-price-pct",
+                    type="number",
+                    placeholder=median_price_txt,
+                    value=-0.2,
+                    debounce=True,
+                    min=-1,
+                    max=1,
+                    className="input-ltr"
+                ),
+                html.Span(date_added_txt),
+                dcc.Input(
+                    id="date-added",
+                    type="number",
+                    placeholder=date_added_txt,
+                    value=100,
+                    debounce=True,
+                    className="input-ltr"
+                ),
+                dbc.Button(children="AAAAAA"),
+                dbc.Button(children="BBBBBB"),
+                dbc.Button(children="CCCCCC"),
+                html.Option(),
+                html.Span(n_rooms_txt),
+                html.Div(dcc.RangeSlider(1, 6, 1, value=[3, 4], marks=rooms_marks, id='rooms-slider'),
+                         style=dict(width="30em"))
+                # dcc.Dropdown(
+                #     ['New York City', 'Montreal', 'San Francisco'],
+                #     ['Montreal', 'San Francisco'],
+                #     multi=True
+                # )
+            ], className="top-toolbar")  # style={"position": "absolute", "z-index": 1000, "top": 0, "margin-right": 1},
         ]),
 
         dbc.Offcanvas(
@@ -99,20 +204,8 @@ app.layout = html.Div(children=[
             is_open=False,
             style=dict(width="500px", direction="rtl")
         ),
-        # html.Div(id="right-div-cont", className="right-div", children=[
-        #     html.Div(children=[html.Div(id='country'), html.Div(id='marker'),
-        #                        dcc.Graph(id='histogram', figure={}),
-        #
-        #                        html.Div(id='Country info pane')])
-        # ])
-
     ]),
 ])
-
-
-# @app.callback(Output('geojson', 'data'), Input("geojson", "click_feature"))
-# def load_points(input):
-#     return deal_points
 
 
 def plot_deal_vs_sale_sold(other_close_deals, df_tax, deal, round_rooms=True):
@@ -139,12 +232,48 @@ def plot_deal_vs_sale_sold(other_close_deals, df_tax, deal, round_rooms=True):
     fig.add_vline(x=deal['last_price'], line_width=2, line_color='red', name=f"{deal['last_price']:,.0f}")
     # plt.axvline(deal['last_price'], color='red', label=f"{deal['last_price']:,.0f}", linewidth=2)
     fig.update_layout(  # title_text=str_txt,
-        barmode='stack',
+        # barmode='stack',
+        width=450,
+        height=250,
         margin=dict(l=0, r=0, b=0, t=0),
         legend=dict(x=0.0, y=1))
     fig.update_xaxes(range=[deal['last_price'] // 2, deal['last_price'] * 3])
     return fig
     # plt.legend()
+
+
+def res_get_add_info(item):
+    import requests
+    add_info = None
+    try:
+        res = requests.get('https://gw.yad2.co.il/feed-search-legacy/item?token={}'.format(item))
+        d = res.json()['data']
+        image_urls = d['images_urls']
+        items_v2 = {x['key']: x['value'] for x in d['additional_info_items_v2']}
+        # add_info = dict(parking=d['parking'],
+        #                 balconies=d['balconies'],
+        #                 renovated=items_v2['renovated'],
+        #                 elevator=d['analytics_items']['elevator'],
+        #                 storeroom=d['analytics_items']['storeroom'],
+        #                 number_of_floors=d['analytics_items']['number_of_floors'],
+        #                 shelter=d['analytics_items']['shelter_room'],
+        #                 immediate=d['analytics_items']['immediate'],
+        #                 info_text=d['info_text']
+        #                 )
+        add_info = dict(חנייה=d['parking'],
+                        מרפסות=d['balconies'],
+                        משופץ=items_v2['renovated'],
+                        מעלית=d['analytics_items']['elevator'],
+                        מחסן=d['analytics_items']['storeroom'],
+                        מספר_קומות=d['analytics_items']['number_of_floors'],
+                        מקלט=d['analytics_items']['shelter_room'],
+                        פינוי_מיידי=d['analytics_items']['immediate'],
+                        טקסט_חופשי=d['info_text'],
+                        image_urls=image_urls
+                        )
+    except Exception as e:
+        print("ERROR IN res_get_add_info", e)
+    return add_info
 
 
 def get_similar_deals(deal, days_back=99, dist_km=1):
@@ -160,21 +289,42 @@ def get_similar_deals(deal, days_back=99, dist_km=1):
 
     days_online = (datetime.today() - pd.to_datetime(deal['date_added'])).days
     # str_txt = f"{'חדרים'} {deal['rooms']},{deal['type']}, {deal['street']}, {deal['city']}, {deal['price_pct']:0.2%}, {days_online} days"
-    str_txt = f"<h1>{deal['last_price']:,.0f}</h1>, {deal['city']}, {days_online}"
-    txt_html = html.Div([html.H3(f"{deal['last_price']:,.0f} ₪"),
-                         html.P([f" {deal['rooms']} חדרים",
-                                 html.Br(),
-                                 f"{deal['type']}, {deal['city']}, {deal['street']}",
-                                 html.Br(),
-                                 f"{deal['square_meters']:,.0f} מטר",
-                                 html.Br(),
-                                 html.Span(
-                                     [html.A(href=f"https://www.yad2.co.il/item/{deal.name}", children="LINK TO DIRA!!",
-                                             target="_blank"),
-                                      html.A(href=maps_url, children="  LINK TO DIRA IN MAPS", target="_blank")])
-                                 ]),
-                         html.Span(f"{deal['info_text']}", style={"font-size": "0.7vw"}),
-                         ])
+    # str_txt = f"<h1>{deal['last_price']:,.0f}</h1>, {deal['city']}, {days_online}"
+    date_added = pd.to_datetime(deal['date_added'])
+
+    add_info = res_get_add_info(deal.name)
+    image_urls = add_info.pop('image_urls') or []
+    info_text = add_info.pop('טקסט_חופשי')
+    info_text = info_text if info_text is not None else deal['info_text']
+    add_info_text = [html.Tr(html.Td(f"{k}: {v}")) for k, v in add_info.items() if
+                     k not in ('image_urls', 'טקסט_חופשי')] if add_info is not None else []
+    pct = deal['price_pct']
+    str_price_pct = html.Span(f"{pct:.2%}" if pct != 0 else "",
+                              style={"color": "green" if pct < 0 else "red", "direction": "ltr",
+                                     "unicode-bidi": "bidi-override"})
+    txt_html = html.Div(
+        [html.H3(children=[f"{deal['last_price']:,.0f} ₪ ", str_price_pct]),
+         html.H6(f"מחיר הנכס מהחציון באיזור: {deal['pct_diff_median']:0.2%}"),
+         html.H6(f"הועלה בתאריך {date_added.date()}, (לפני {(datetime.today() - date_added).days / 7:0.1f} שבועות)"),
+         html.P([f" {deal['rooms']} חדרים",
+                 html.Br(),
+                 f"{deal['type']}, {deal['city']},{deal['street']}",
+                 html.Br(),
+                 f"{deal['square_meters']:,.0f} מטר",
+
+                 html.A(href=maps_url, children=html.Img(src=icon_maps, style=dict(width=32, height=32)),
+                        target="_blank"),
+                 html.A(href=f"https://www.yad2.co.il/item/{deal.name}",
+                        children=html.Img(src=icon_real_estate, style=dict(width=32, height=32)),
+                        target="_blank"),
+                 ]),
+         html.Div(children=[html.Img(src=src, style=dict(width="40%", height="40%")) for src in image_urls[:3]],
+                  className="asset-images"),
+         # html.Br(),
+         html.Table(children=add_info_text, style={"font-size": "0.8vw"}),
+         # html.P("\n".join([f"{k}: {v}" for k, v in res_get_add_info(deal.name).items()])),
+         html.Span(info_text, style={"font-size": "0.7vw"}),
+         ])
     return txt_html, fig
     # display(df_tax.sort_values('mcirMozhar'))
     # display(other_close_deals[other_close_deals['rooms'].astype(float).astype(int) == int(float(deal['rooms']))].dropna(
@@ -189,6 +339,19 @@ def get_similar_deals(deal, days_back=99, dist_km=1):
 #         return {'display': 'None'}
 #     else:
 #         return None
+
+
+@app.callback(
+    [Output("geojson", "data"), Output("fetched-assets", "children")],
+    [Input("price-from", "value"), Input("price-to", "value"), Input("median-price-pct", "value"),
+     Input("date-added", "value"), Input("rooms-slider", "value")]
+)
+def show_assets(price_from, price_to, median_price_pct, date_added, rooms_range):
+    print(locals())
+    price_from = int(price_from) * 1e6
+    price_to = int(price_to) * 1e6
+    points = get_asset_points(price_from, price_to, median_price_pct, date_added, rooms_range)
+    return points, len(points['features'])
 
 
 # https://python.plainenglish.io/how-to-create-a-model-window-in-dash-4ab1c8e234d3
