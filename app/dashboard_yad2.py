@@ -137,20 +137,14 @@ app.layout = html.Div(children=[
         html.Div(className="left-div", children=[
             html.Span("d"),
             dl.Map(children=[dl.TileLayer(),
-
-                             # dl.LayerGroup(id="layer"),
-                             # dl.LayerGroup(id="layer1"),
-
                              dl.GeoJSON(data=None, id="geojson", zoomToBounds=False, cluster=True,
-                                        # superClusterOptions=dict(radius=50, maxZoom=12),
-                                        # pointToLayer=prifunc,
-                                        # hideout=dict(pointToLayer=prifunc),
-                                        options=dict(pointToLayer=draw_icon),  # , style={"color": "yellow"}
-                                        # options={"style": {"color": "yellow"}}
+                                        superClusterOptions=dict(radius=50, maxZoom=12),
+                                        options=dict(pointToLayer=draw_icon),
                                         ),
                              ],
                    zoom=3, id='map', zoomControl=False,
-                   bounds=[[30.96890699680559, 32.753622382879264], [32.93332597831644, 37.367880195379264]]),
+                   bounds=[[31.7, 32.7], [32.5, 37.3]]
+                   ),
             html.Div(children=[
                 dbc.Button(children=[html.Span('סה"כ:'), html.Span("0", id="fetched-assets")]),
                 html.Span(from_price_txt),
@@ -159,6 +153,7 @@ app.layout = html.Div(children=[
                     type="number",
                     placeholder=from_price_txt,
                     value=0.5,
+                    step=0.1,
                     debounce=True,
                     className='input-ltr'
                 ),
@@ -168,6 +163,7 @@ app.layout = html.Div(children=[
                     type="number",
                     placeholder=to_price_txt,
                     value=3,
+                    step=0.1,
                     debounce=True,
                     className='input-ltr'
                 ),
@@ -178,6 +174,7 @@ app.layout = html.Div(children=[
                     placeholder=median_price_txt,
                     value=-0.2,
                     debounce=True,
+                    step=0.1,
                     min=-1,
                     max=1,
                     className="input-ltr"
@@ -189,6 +186,7 @@ app.layout = html.Div(children=[
                     placeholder=price_pct_txt,
                     value=None,
                     debounce=True,
+                    step=0.1,
                     min=-1,
                     max=1,
                     className="input-ltr"
@@ -215,17 +213,12 @@ app.layout = html.Div(children=[
                 html.Span('שיטה'),
                 dbc.Switch(value=True, id='switch-median'),
                 # dbc.Button(children="AAAAAA"),
-                dbc.Button("גלה באיזור", id="button-around"),
+                dbc.Button("באיזור", id="button-around"),
+                dbc.Button(children="נקה", id="button-clear"),
                 html.Span(n_rooms_txt),
                 html.Div(dcc.RangeSlider(1, 6, 1, value=[3, 4], marks=rooms_marks, id='rooms-slider'),
                          style=dict(width="30em")),
-                dbc.Button(children="נקה", id="button-clear"),
-                # dcc.Dropdown(
-                #     ['New York City', 'Montreal', 'San Francisco'],
-                #     ['Montreal', 'San Francisco'],
-                #     multi=True
-                # )
-            ], className="top-toolbar")  # style={"position": "absolute", "z-index": 1000, "top": 0, "margin-right": 1},
+            ], className="top-toolbar")
         ]),
 
         dbc.Offcanvas(
@@ -374,19 +367,7 @@ def get_similar_deals(deal, days_back=99, dist_km=1):
          html.Span(info_text, style={"font-size": "0.7vw"}),
          ])
     return txt_html, fig
-    # display(df_tax.sort_values('mcirMozhar'))
-    # display(other_close_deals[other_close_deals['rooms'].astype(float).astype(int) == int(float(deal['rooms']))].dropna(
-    #     subset='price_pct').sort_values('last_price'))
 
-
-# # show graph only when ready to display, to avoid blank white figure
-# @app.callback(Output('histogram', 'style'),
-#               Input('histogram', 'figure'))
-# def show_graph_when_loaded(figure):
-#     if figure is None or figure == {}:
-#         return {'display': 'None'}
-#     else:
-#         return None
 
 @app.callback(
     [Output("price-from", "value"),
@@ -421,11 +402,11 @@ def show_assets(price_from, price_to, median_price_pct, discount_price_pct, date
     if n_clicks:
         points = get_asset_points(map_bounds=map_bounds, limit=True)
     else:
-        price_from = price_from * 1e6 if price_from is not None else 0
-        price_to = price_to * 1e6 if price_to is not None else 1e30
+        price_from = price_from * 1e6 if price_from is not None else None
+        price_to = price_to * 1e6 if price_to is not None else None
         with_agency = True if len(with_agency) else False
         points = get_asset_points(price_from, price_to, median_price_pct, discount_price_pct, date_added, rooms_range,
-                                  with_agency,
+                                  with_agency, map_bounds=map_bounds,
                                   state_asset=state_asset, is_median=is_median)
     return points, len(points['features']), None
 
@@ -449,42 +430,6 @@ def toggle_modal(feature, n2, is_open):
             # print(link, days_online)
             return not is_open, None, str_html, fig
     return is_open, None, None, {}
-
-
-# @app.callback(Output("marker", "children"), Output("histogram", "figure"), Output('histogram', 'style'), Input("geojson", "click_feature"))
-# def map_marker_click(feature):
-#     if feature is not None:
-#         props = feature['properties']
-#         print("marker clicked!")
-#         if 'deal_id' in props:
-#             deal_id = feature['properties']['deal_id']
-#             deal = df.loc[deal_id]
-#             str_html, fig = get_similar_deals(deal)
-#             # print(link, days_online)
-#             return str_html, fig, None
-#     return None, {}, {'display': 'None'}
-
-
-# @app.callback(Output("layer", "children"), Input("countries", "click_feature"))
-# def map_click(feature):
-#     if feature is not None:
-#         print('invoked')
-#         return [dl.Marker(position=[np.random.randint(-90, 90), np.random.randint(-185, 185)])]
-#
-#
-# @app.callback(Output('Country info pane', 'children'),
-#               Input('countries', 'hover_feature'))
-# def country_hover(feature):
-#     if feature is not None:
-#         country_id = feature['properties']['ISO_A3']
-#         return country_id
-#
-#
-# @app.callback(Output('layer1', 'children'),
-#               Input('countries', 'hover_feature'))
-# def country_hover(feature):
-#     if feature is not None:
-#         return dl.Polygon(positions=[[30, 40], [50, 60]], color='#ff002d', opacity=0.2)
 
 
 if __name__ == '__main__':
