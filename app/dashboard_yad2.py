@@ -84,17 +84,23 @@ app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
 
 
 def get_asset_points(price_from=500_000, price_to=3_000_000, median_price_pct=-0.1, date_added_days=100,
-                     rooms_range=(3, 4)):
+                     rooms_range=(3, 4), with_agency=True, state_asset=()):
+    if len(state_asset) > 0:
+        states = ','.join([f"'{x}'" for x in state_asset])
+        sql_state_asset = f' and status in ({states})'
+    else:
+        sql_state_asset = ""
     median_price_pct = 1 if median_price_pct is None else median_price_pct
     rooms_from = rooms_range[0]
     rooms_to = rooms_range[1]
     rooms_to = 100 if rooms_to == 6 else rooms_to
+    sql_is_agency = " and is_agency == False" if not with_agency else ""
     df_f = df.query('group_size > 30 '
                     f'and {rooms_from} <= rooms <= {rooms_to}.5'
                     f' and last_price > {price_from}'
-                    f' and last_price < {price_to or 1e30}'
+                    f' and last_price < {price_to}'
                     f' and pct_diff_median <= {median_price_pct or 1}'
-                    f"and date_added_d < {date_added_days}")  # [:1000]
+                    f"and date_added_d < {date_added_days or 1000}" + sql_is_agency + sql_state_asset)  # [:1000]
     print(f"Triggerd, Fetched: {len(df_f)} rows")
     deal_points = [dict(deal_id=idx, lat=d['lat'], lon=d['long'], color='black', icon="fa-light fa-house", metadata=d)
                    for
@@ -109,7 +115,7 @@ def get_asset_points(price_from=500_000, price_to=3_000_000, median_price_pct=-0
 
 from_price_txt = 'עד מחיר(מ)'
 to_price_txt = 'עד מחיר(מ)'
-date_added_txt = 'הועלה עד'
+date_added_txt = 'הועלה עד (ימים)'
 n_rooms_txt = 'מספר חדרים'
 median_price_txt = 'מחיר חציוני'
 rooms_marks = {r: str(r) for r in range(7)}
@@ -124,7 +130,7 @@ app.layout = html.Div(children=[
                              # dl.LayerGroup(id="layer"),
                              # dl.LayerGroup(id="layer1"),
 
-                             dl.GeoJSON(data=get_asset_points(), id="geojson", zoomToBounds=True, cluster=True,
+                             dl.GeoJSON(data=None, id="geojson", zoomToBounds=False, cluster=True,
                                         # superClusterOptions=dict(radius=50, maxZoom=12),
                                         # pointToLayer=prifunc,
                                         # hideout=dict(pointToLayer=prifunc),
@@ -132,10 +138,10 @@ app.layout = html.Div(children=[
                                         # options={"style": {"color": "yellow"}}
                                         ),
                              ],
-                   zoom=3, id='map', zoomControl=False),
+                   zoom=3, id='map', zoomControl=False,
+                   bounds=[[30.96890699680559, 32.753622382879264], [32.93332597831644, 37.367880195379264]]),
             html.Div(children=[
-                html.Span("סהכ: "),
-                html.Span("0", id="fetched-assets"),
+                dbc.Button(children=[html.Span('סה"כ:'), html.Span("0", id="fetched-assets")]),
                 html.Span(from_price_txt),
                 dcc.Input(
                     id="price-from",
@@ -174,10 +180,18 @@ app.layout = html.Div(children=[
                     debounce=True,
                     className="input-ltr"
                 ),
+                dcc.Checklist(options=[{'label': 'כולל תיווך', 'value': 'Y'}], value=['Y'], inline=True,
+                              id='agency-check'),
+                dcc.Dropdown(
+                    ['משופץ', 'במצב שמור', 'חדש (גרו בנכס)', 'חדש מקבלן (לא גרו בנכס)', 'דרוש שיפוץ'],
+                    [],
+                    placeholder="מצב הנכס",
+                    multi=True,
+                    searchable=False,
+                    id='state-asset',
+                    style=dict(width='10em')),
                 dbc.Button(children="AAAAAA"),
                 dbc.Button(children="BBBBBB"),
-                dbc.Button(children="CCCCCC"),
-                html.Option(),
                 html.Span(n_rooms_txt),
                 html.Div(dcc.RangeSlider(1, 6, 1, value=[3, 4], marks=rooms_marks, id='rooms-slider'),
                          style=dict(width="30em"))
@@ -193,7 +207,9 @@ app.layout = html.Div(children=[
             [
                 # dbc.ModalHeader(dbc.ModalTitle("Header")),
                 dbc.ModalBody(children=[html.Div(children=[html.Div(id='country'), html.Div(id='marker'),
-                                                           dcc.Graph(id='histogram', figure={}),
+                                                           dcc.Graph(id='histogram', figure={},
+                                                                     config={'displayModeBar': False,
+                                                                             'scrollZoom': False}),
                                                            html.Div(id='Country info pane')])]),
                 dbc.ModalFooter(
                     dbc.Button("Close", id="close", className="ms-auto", n_clicks=0)
@@ -229,15 +245,18 @@ def plot_deal_vs_sale_sold(other_close_deals, df_tax, deal, round_rooms=True):
             f'realPrice{days_back}D #{len(sold_items)}')  # .hist(bins=min(70, len(sold_items)), legend=True,alpha=0.8)
         tr_2 = go.Histogram(x=sold_items, name=sold_items.name, opacity=0.75, nbinsx=len(sold_items))
         fig.add_trace(tr_2)
-    fig.add_vline(x=deal['last_price'], line_width=2, line_color='red', name=f"{deal['last_price']:,.0f}")
-    # plt.axvline(deal['last_price'], color='red', label=f"{deal['last_price']:,.0f}", linewidth=2)
+    fig.add_vline(x=deal['last_price'], line_width=2, line_color='red', line_dash='dash',
+                  name=f"{deal['last_price']:,.0f}")
     fig.update_layout(  # title_text=str_txt,
         # barmode='stack',
         width=450,
         height=250,
         margin=dict(l=0, r=0, b=0, t=0),
-        legend=dict(x=0.0, y=1))
-    fig.update_xaxes(range=[deal['last_price'] // 2, deal['last_price'] * 3])
+        legend=dict(x=0.0, y=1),
+        dragmode=False)
+    # fig['layout']['yaxis'].update(autorange=True)
+    # fig['layout']['xaxis'].update(autorange=True)
+    fig.update_xaxes(range=[deal['last_price'] // 2, deal['last_price'] * 2.5])
     return fig
     # plt.legend()
 
@@ -281,15 +300,11 @@ def get_similar_deals(deal, days_back=99, dist_km=1):
     # deal = df.loc[deal_id]
     other_close_deals = calc_dist(df, deal, dist_km)  # .join(df)
     df_tax = get_similar_closed_deals(deal, days_back, dist_km, True)
+    print(f'get_similar_deals: other_close_deals={len(other_close_deals)}, df_tax={len(df_tax)}')
     # display(df_tax)
     fig = plot_deal_vs_sale_sold(other_close_deals, df_tax, deal)
-    # from IPython.display import display, HTML
     maps_url = f"http://maps.google.com/maps?z=12&t=m&q=loc:{deal['lat']}+{deal['long']}&hl=iw"  # ?hl=iw, t=k sattalite
-    print(deal['info_text'])
-
     days_online = (datetime.today() - pd.to_datetime(deal['date_added'])).days
-    # str_txt = f"{'חדרים'} {deal['rooms']},{deal['type']}, {deal['street']}, {deal['city']}, {deal['price_pct']:0.2%}, {days_online} days"
-    # str_txt = f"<h1>{deal['last_price']:,.0f}</h1>, {deal['city']}, {days_online}"
     date_added = pd.to_datetime(deal['date_added'])
 
     add_info = res_get_add_info(deal.name)
@@ -299,13 +314,15 @@ def get_similar_deals(deal, days_back=99, dist_km=1):
     add_info_text = [html.Tr(html.Td(f"{k}: {v}")) for k, v in add_info.items() if
                      k not in ('image_urls', 'טקסט_חופשי')] if add_info is not None else []
     pct = deal['price_pct']
-    str_price_pct = html.Span(f"{pct:.2%}" if pct != 0 else "",
-                              style={"color": "green" if pct < 0 else "red", "direction": "ltr",
-                                     "unicode-bidi": "bidi-override"})
+    str_price_pct = html.Span(f" ({pct:.2%})" if pct != 0 else "",
+                              style={"color": "green" if pct < 0 else "red"})
     txt_html = html.Div(
-        [html.H3(children=[f"{deal['last_price']:,.0f} ₪ ", str_price_pct]),
-         html.H6(f"מחיר הנכס מהחציון באיזור: {deal['pct_diff_median']:0.2%}"),
+        [html.Div([html.Span(f"{deal['last_price']:,.0f}₪", style={"font-size": "1.5vw"}),
+                   html.Span(str_price_pct, className="text-ltr")]),
+         html.Span(f"מחיר הנכס מהחציון באיזור: "),
+         html.Span(f"{deal['pct_diff_median']:0.2%}", className="text-ltr"),
          html.H6(f"הועלה בתאריך {date_added.date()}, (לפני {(datetime.today() - date_added).days / 7:0.1f} שבועות)"),
+         html.Span('תיווך' if deal['is_agency'] else 'לא תיווך'),
          html.P([f" {deal['rooms']} חדרים",
                  html.Br(),
                  f"{deal['type']}, {deal['city']},{deal['street']}",
@@ -344,34 +361,39 @@ def get_similar_deals(deal, days_back=99, dist_km=1):
 @app.callback(
     [Output("geojson", "data"), Output("fetched-assets", "children")],
     [Input("price-from", "value"), Input("price-to", "value"), Input("median-price-pct", "value"),
-     Input("date-added", "value"), Input("rooms-slider", "value")]
+     Input("date-added", "value"), Input("rooms-slider", "value"), Input('agency-check', "value"),
+     Input('state-asset', "value")],
+    State('map', 'bounds')
 )
-def show_assets(price_from, price_to, median_price_pct, date_added, rooms_range):
+def show_assets(price_from, price_to, median_price_pct, date_added, rooms_range, with_agency, state_asset, map_bounds):
     print(locals())
-    price_from = int(price_from) * 1e6
-    price_to = int(price_to) * 1e6
-    points = get_asset_points(price_from, price_to, median_price_pct, date_added, rooms_range)
+    price_from = price_from * 1e6 if price_from is not None else 0
+    price_to = price_to * 1e6 if price_to is not None else 1e30
+    with_agency = True if len(with_agency) else False
+    print(with_agency)
+    points = get_asset_points(price_from, price_to, median_price_pct, date_added, rooms_range, with_agency, state_asset)
     return points, len(points['features'])
 
 
 # https://python.plainenglish.io/how-to-create-a-model-window-in-dash-4ab1c8e234d3
 
 @app.callback(
-    [Output("modal", "is_open"), Output("marker", "children"), Output("histogram", "figure")],
+    [Output("modal", "is_open"), Output("geojson", "click_feature"),
+     Output("marker", "children"), Output("histogram", "figure")],
     [Input("geojson", "click_feature"), Input("close", "n_clicks")],
     [State("modal", "is_open")],
 )
 def toggle_modal(feature, n2, is_open):
+    print(f'toggle_modal', n2, is_open)
     if feature or n2:
         props = feature['properties']
-        print("marker clicked!")
         if 'deal_id' in props:
             deal_id = feature['properties']['deal_id']
             deal = df.loc[deal_id]
             str_html, fig = get_similar_deals(deal)
             # print(link, days_online)
-            return not is_open, str_html, fig
-    return is_open, None, {}
+            return not is_open, None, str_html, fig
+    return is_open, None, None, {}
 
 
 # @app.callback(Output("marker", "children"), Output("histogram", "figure"), Output('histogram', 'style'), Input("geojson", "click_feature"))

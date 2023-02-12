@@ -45,11 +45,10 @@
 
 .top-toolbar {
     margin: auto;
-    padding: 5px;
-    /*text-align:center;*/
-    /*vertical-align: center;*/
+    padding: 5px 5px 2px 5px; /*top right bot left*/
+    gap: 7px;
+    border-bottom: 1px solid black;
     background-color: white;
-    border-bottom: 1px;
     position: absolute;
     z-index: 999;
     width: 100%;
@@ -71,7 +70,14 @@ p.rtl {
 .input-ltr {
     direction: ltr;
     unicode-bidi: bidi-override;
+    text-align: right;
     width: 4em;
+}
+
+.text-ltr {
+    direction: ltr;
+    unicode-bidi: bidi-override;
+    text-align: right;
 }
 
 /*https://stackoverflow.com/questions/36469631/how-to-get-leaflet-for-r-use-100-of-shiny-dashboard-height?rq=1*/
