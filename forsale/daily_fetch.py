@@ -6,26 +6,27 @@ import json
 import pandas as pd
 from datetime import datetime
 
+print("connecting to remote")
 conn = connect_remote_sql_alchemy()
 
 df_hist = pd.read_sql("select id, price, processing_date from yad2_forsale_history", conn)
+print(df_hist.groupby('processing_date').size())
 max_date = df_hist['processing_date'].max()
-print(f"DATA ON REMOTE IS UPDATED TO::", df_hist['processing_date'].max())
+print(f"DATA ON REMOTE IS UPDATED TO::", max_date)
 if (datetime.today() - pd.to_datetime(max_date)).days > 1:
     raise AssertionError("Data is not updated, check remote!!")
-# assert must have last day
 
 info_cols = ['id', 'row_2', 'row_1', 'line_1', 'square_meters', 'line_2', 'neighborhood', 'merchant',
              'assetclassificationid_text', 'coordinates', 'feed_source', 'address_more', 'search_text', 'date_added',
-             'updated_at']
-df_today = pd.read_sql(f"Select {','.join(info_cols)} from yad2_today", conn)
+             'date']
+df_today = pd.read_sql(f"Select {','.join(info_cols)} from yad2_forsale_today", conn)
 print("Fetched rows:", len(df_today))
 df_today = df_today[~df_today['id'].duplicated()]
 print("After rem dup:", len(df_today))
 
 
 def preproccess(df_today):
-    info_rename = dict(row_2='city', row_1='street', line_1='rooms', line_2='floor',
+    info_rename = dict(row_2='city', row_1='street', line_1='rooms', line_2='floor', date='updated_at',
                        assetclassificationid_text='status', search_text='info_text')
     df_today['is_agency'] = df_today['feed_source'].apply(
         lambda x: True if x == 'commercial' else False if x == 'private' else None)
@@ -50,7 +51,7 @@ df_today = preproccess(df_today)
 
 cols_order = ['type', 'city', 'city_loc', 'rooms', 'square_meters', 'floor',
               'status', 'is_agency', 'neighborhood', 'street',
-              'address_more', 'info_text', 'date_added', 'lat', 'long', 'coordinates']
+              'address_more', 'info_text', 'date_added', 'updated_at', 'lat', 'long', 'coordinates']
 df_today = df_today[cols_order]
 
 # ----------------------------------------------------
@@ -114,16 +115,18 @@ dist_km = 1
 
 
 def get_metrics(deal):
+    pct = None
+    length = 0
     try:
         other_close_deals = calc_dist(df, deal, dist_km)  # .join(df)
         other_close_deals = other_close_deals[
             other_close_deals['rooms'].astype(float).astype(int) == int(float(deal['rooms']))]
-        # print(deal['last_price'], other_close_deals['last_price'].median())
-        pct = deal['last_price'] / other_close_deals['last_price'].median() - 1
-        length = len(other_close_deals)
+        if len(other_close_deals):
+            # print(deal['last_price'], other_close_deals['last_price'].median())
+            pct = deal['last_price'] / other_close_deals['last_price'].median() - 1
+            length = len(other_close_deals)
     except:
-        pct = None
-        length = 0
+        pass
     return pct, length
 
 

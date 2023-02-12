@@ -84,3 +84,14 @@ p.rtl {
 #map {
     height: calc(100vh - 25px) !important;
 }
+
+.price-diff-table td, .price-diff-table th {
+    border:1px solid black;
+    direction: ltr;
+    unicode-bidi: bidi-override;
+}
+
+/*{*/
+/*    border-width: 1px;*/
+/*    border-color: black;*/
+/*}*/

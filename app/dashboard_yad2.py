@@ -51,8 +51,8 @@ icon_maps = "https://cdn-icons-png.flaticon.com/128/684/684809.png"
 icon_real_estate = "https://cdn-icons-png.flaticon.com/128/602/602275.png"
 
 
-def get_icon(deal):
-    p = deal['metadata']['pct_diff_median']
+def get_icon(deal, metric='pct_diff_median'):
+    p = deal['metadata'][metric]
     if -0.1 < p <= 0.05:
         return icon_05
     elif -0.2 < p <= -0.1:
@@ -83,33 +83,43 @@ return L.marker(latlng, {icon: flag});
 app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
 
 
-def get_asset_points(price_from=500_000, price_to=3_000_000, median_price_pct=-0.1, date_added_days=100,
-                     rooms_range=(3, 4), with_agency=True, state_asset=()):
+# def get_asset_points(price_from=500_000, price_to=3_000_000, median_price_pct=-0.1, date_added_days=100,
+#                      rooms_range=(3, 4), with_agency=True, state_asset=()):
+def get_asset_points(price_from=None, price_to=None, median_price_pct=None, discount_price_pct=None,
+                     date_added_days=None,
+                     rooms_range=(None, None), with_agency=True, state_asset=(), map_bounds=None, is_median=True,
+                     limit=False):
     if len(state_asset) > 0:
         states = ','.join([f"'{x}'" for x in state_asset])
         sql_state_asset = f' and status in ({states})'
     else:
         sql_state_asset = ""
-    median_price_pct = 1 if median_price_pct is None else median_price_pct
-    rooms_from = rooms_range[0]
-    rooms_to = rooms_range[1]
-    rooms_to = 100 if rooms_to == 6 else rooms_to
-    sql_is_agency = " and is_agency == False" if not with_agency else ""
-    df_f = df.query('group_size > 30 '
-                    f'and {rooms_from} <= rooms <= {rooms_to}.5'
-                    f' and last_price > {price_from}'
-                    f' and last_price < {price_to}'
-                    f' and pct_diff_median <= {median_price_pct or 1}'
-                    f"and date_added_d < {date_added_days or 1000}" + sql_is_agency + sql_state_asset)  # [:1000]
+    rooms_from = rooms_range[0] or 1
+    rooms_to = rooms_range[1] or 100
+    sql_price_range = f"and {price_from}< last_price < {price_to}" if price_from is not None and price_to is not None else ""
+    sql_is_agency = "and is_agency == False" if not with_agency else ""
+    sql_median_price_pct = f"and group_size > 30 and pct_diff_median <= {median_price_pct}" if median_price_pct is not None else ""
+    sql_discount_pct = f"and -0.90 <= price_pct <= {discount_price_pct}" if discount_price_pct is not None else ""
+    sql_map_bounds = f"and {map_bounds[0][0]}<lat< {map_bounds[1][0]} and {map_bounds[0][1]}<long< {map_bounds[1][1]}" if map_bounds else ""
+    q = f"""{rooms_from} <= rooms <= {rooms_to}.5
+    {sql_price_range}
+    and date_added_d < {date_added_days or 1000} {sql_median_price_pct} {sql_discount_pct} {sql_is_agency} {sql_state_asset} {sql_map_bounds}""".replace(
+        '\n', '')
+    print(q)
+    df_f = df.query(q)
+    if limit:
+        df_f = df_f[:10_000]
     print(f"Triggerd, Fetched: {len(df_f)} rows")
     deal_points = [dict(deal_id=idx, lat=d['lat'], lon=d['long'], color='black', icon="fa-light fa-house", metadata=d)
                    for
                    idx, d in df_f.iterrows()]
-    deal_points = dlx.dicts_to_geojson(
-        [{**deal, **dict(
-            tooltip=f"{deal['deal_id']}</br> חדרים {deal['metadata']['rooms']} </br> {deal['metadata']['last_price']:,.0f} </br> {deal['metadata']['pct_diff_median']:0.2%}",
-            icon=get_icon(deal))}
-         for deal in deal_points])
+
+    def create_tooltip(deal):
+        return f"{deal['deal_id']}</br> חדרים {deal['metadata']['rooms']} </br> {deal['metadata']['last_price']:,.0f} </br> {deal['metadata']['pct_diff_median']:0.2%}"
+
+    icon_metric = 'pct_diff_median' if is_median else 'price_pct'
+    deal_points = dlx.dicts_to_geojson([{**deal, **dict(tooltip=create_tooltip(deal), icon=get_icon(deal, icon_metric))}
+                                        for deal in deal_points])
     return deal_points
 
 
@@ -118,6 +128,7 @@ to_price_txt = 'עד מחיר(מ)'
 date_added_txt = 'הועלה עד (ימים)'
 n_rooms_txt = 'מספר חדרים'
 median_price_txt = 'מחיר חציוני'
+price_pct_txt = 'שינוי במחיר'
 rooms_marks = {r: str(r) for r in range(7)}
 rooms_marks[6] = '6+'
 
@@ -171,6 +182,17 @@ app.layout = html.Div(children=[
                     max=1,
                     className="input-ltr"
                 ),
+                html.Span(price_pct_txt),
+                dcc.Input(
+                    id="discount-price-pct",
+                    type="number",
+                    placeholder=price_pct_txt,
+                    value=None,
+                    debounce=True,
+                    min=-1,
+                    max=1,
+                    className="input-ltr"
+                ),
                 html.Span(date_added_txt),
                 dcc.Input(
                     id="date-added",
@@ -190,11 +212,14 @@ app.layout = html.Div(children=[
                     searchable=False,
                     id='state-asset',
                     style=dict(width='10em')),
-                dbc.Button(children="AAAAAA"),
-                dbc.Button(children="BBBBBB"),
+                html.Span('שיטה'),
+                dbc.Switch(value=True, id='switch-median'),
+                # dbc.Button(children="AAAAAA"),
+                dbc.Button("גלה באיזור", id="button-around"),
                 html.Span(n_rooms_txt),
                 html.Div(dcc.RangeSlider(1, 6, 1, value=[3, 4], marks=rooms_marks, id='rooms-slider'),
-                         style=dict(width="30em"))
+                         style=dict(width="30em")),
+                dbc.Button(children="נקה", id="button-clear"),
                 # dcc.Dropdown(
                 #     ['New York City', 'Montreal', 'San Francisco'],
                 #     ['Montreal', 'San Francisco'],
@@ -316,14 +341,20 @@ def get_similar_deals(deal, days_back=99, dist_km=1):
     pct = deal['price_pct']
     str_price_pct = html.Span(f" ({pct:.2%})" if pct != 0 else "",
                               style={"color": "green" if pct < 0 else "red"})
+    df_hist = pd.DataFrame([deal['dt_hist'], deal['price_hist']]) if deal['price_pct'] else None
+    df_price_hist = html.Table([html.Tr([html.Td(v) for v in row.values]) for i, row in df_hist.iterrows()],
+                               className="price-diff-table") if df_hist is not None else ""
     txt_html = html.Div(
         [html.Div([html.Span(f"{deal['last_price']:,.0f}₪", style={"font-size": "1.5vw"}),
                    html.Span(str_price_pct, className="text-ltr")]),
          html.Span(f"מחיר הנכס מהחציון באיזור: "),
          html.Span(f"{deal['pct_diff_median']:0.2%}", className="text-ltr"),
          html.H6(f"הועלה בתאריך {date_added.date()}, (לפני {(datetime.today() - date_added).days / 7:0.1f} שבועות)"),
+         html.Span(f"מתי עודכן: {deal['updated_at']}"),
+         html.Div(df_price_hist, className='text-ltr'),
          html.Span('תיווך' if deal['is_agency'] else 'לא תיווך'),
          html.P([f" {deal['rooms']} חדרים",
+                 f" קומה  {round(deal['floor']) if deal['floor'] > 0 else 'קרקע'} ",
                  html.Br(),
                  f"{deal['type']}, {deal['city']},{deal['street']}",
                  html.Br(),
@@ -357,22 +388,46 @@ def get_similar_deals(deal, days_back=99, dist_km=1):
 #     else:
 #         return None
 
+@app.callback(
+    [Output("price-from", "value"),
+     Output("price-to", "value"),
+     Output("median-price-pct", "value"),
+     Output("date-added", "value"),
+     Output("rooms-slider", "value"),
+     Output("state-asset", "value"),
+     ],
+    Input('button-clear', "n_clicks")
+)
+def clear_filter(n_clicks):
+    if n_clicks:
+        return None, None, None, None, (1, 6), []
+    return dash.no_update
+
 
 @app.callback(
-    [Output("geojson", "data"), Output("fetched-assets", "children")],
+    [Output("geojson", "data"), Output("fetched-assets", "children"), Output("button-around", "n_clicks")],
     [Input("price-from", "value"), Input("price-to", "value"), Input("median-price-pct", "value"),
+     Input("discount-price-pct", "value"),
      Input("date-added", "value"), Input("rooms-slider", "value"), Input('agency-check', "value"),
-     Input('state-asset', "value")],
+     Input('state-asset', "value"),
+     Input("button-around", "n_clicks"), Input('switch-median', 'value')],
     State('map', 'bounds')
 )
-def show_assets(price_from, price_to, median_price_pct, date_added, rooms_range, with_agency, state_asset, map_bounds):
+def show_assets(price_from, price_to, median_price_pct, discount_price_pct, date_added,
+                rooms_range, with_agency, state_asset, n_clicks, is_median,
+                map_bounds):
     print(locals())
-    price_from = price_from * 1e6 if price_from is not None else 0
-    price_to = price_to * 1e6 if price_to is not None else 1e30
-    with_agency = True if len(with_agency) else False
     print(with_agency)
-    points = get_asset_points(price_from, price_to, median_price_pct, date_added, rooms_range, with_agency, state_asset)
-    return points, len(points['features'])
+    if n_clicks:
+        points = get_asset_points(map_bounds=map_bounds, limit=True)
+    else:
+        price_from = price_from * 1e6 if price_from is not None else 0
+        price_to = price_to * 1e6 if price_to is not None else 1e30
+        with_agency = True if len(with_agency) else False
+        points = get_asset_points(price_from, price_to, median_price_pct, discount_price_pct, date_added, rooms_range,
+                                  with_agency,
+                                  state_asset=state_asset, is_median=is_median)
+    return points, len(points['features']), None
 
 
 # https://python.plainenglish.io/how-to-create-a-model-window-in-dash-4ab1c8e234d3
