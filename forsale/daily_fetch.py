@@ -9,7 +9,15 @@ from datetime import datetime
 print("connecting to remote")
 conn = connect_remote_sql_alchemy()
 
-df_hist = pd.read_sql("select id, price, processing_date from yad2_forsale_history", conn)
+hist_tbl = "yad2_forsale_history"
+today_tbl = "yad2_forsale_today"
+output_df = "yad2_forsale_df"
+
+# hist_tbl = "yad2_rent_history"
+# today_tbl = "yad2_rent_today"
+# output_df = "yad2_rent_df"
+
+df_hist = pd.read_sql(f"select id, price, processing_date from {hist_tbl}", conn)
 print(df_hist.groupby('processing_date').size())
 max_date = df_hist['processing_date'].max()
 print(f"DATA ON REMOTE IS UPDATED TO::", max_date)
@@ -19,7 +27,7 @@ if (datetime.today() - pd.to_datetime(max_date)).days > 1:
 info_cols = ['id', 'row_2', 'row_1', 'line_1', 'square_meters', 'line_2', 'neighborhood', 'merchant',
              'assetclassificationid_text', 'coordinates', 'feed_source', 'address_more', 'search_text', 'date_added',
              'date']
-df_today = pd.read_sql(f"Select {','.join(info_cols)} from yad2_forsale_today", conn)
+df_today = pd.read_sql(f"Select {','.join(info_cols)} from {today_tbl}", conn)
 print("Fetched rows:", len(df_today))
 df_today = df_today[~df_today['id'].duplicated()]
 print("After rem dup:", len(df_today))
@@ -36,7 +44,7 @@ def preproccess(df_today):
         lambda x: x.split('תאור לקוח')[1] if len(x.split('תאור לקוח')) > 1 else None)
 
     df_today['floor'] = df_today['floor'].apply(
-        lambda x: 0 if x == 'קומת קרקע' else x.split(' ')[1].replace('-', '')).astype(int)
+        lambda x: 0 if x == 'קומת קרקע' else x.split(' ')[1].replace('-', '') if len(x.split(' ')) > 1 else None).astype(float).astype('Int32')
     df_today['rooms'] = df_today['rooms'].apply(
         lambda x: None if x == 'לא צויינו חדרים' else '1' if x == 'חדר אחד' else x.split(' ')[0]).astype(float)
     df_today['type'] = df_today['city'].apply(lambda x: x.split(',')[0])
@@ -51,7 +59,7 @@ df_today = preproccess(df_today)
 
 cols_order = ['type', 'city', 'city_loc', 'rooms', 'square_meters', 'floor',
               'status', 'is_agency', 'neighborhood', 'street',
-              'address_more', 'info_text', 'date_added', 'updated_at', 'lat', 'long', 'coordinates']
+              'address_more', 'info_text', 'date_added', 'updated_at', 'lat', 'long']
 df_today = df_today[cols_order]
 
 # ----------------------------------------------------
@@ -117,16 +125,17 @@ dist_km = 1
 def get_metrics(deal):
     pct = None
     length = 0
-    try:
-        other_close_deals = calc_dist(df, deal, dist_km)  # .join(df)
-        other_close_deals = other_close_deals[
-            other_close_deals['rooms'].astype(float).astype(int) == int(float(deal['rooms']))]
-        if len(other_close_deals):
-            # print(deal['last_price'], other_close_deals['last_price'].median())
-            pct = deal['last_price'] / other_close_deals['last_price'].median() - 1
-            length = len(other_close_deals)
-    except:
-        pass
+    if not np.isnan(deal['last_price']):
+        try:
+            other_close_deals = calc_dist(df, deal, dist_km)  # .join(df)
+            other_close_deals = other_close_deals[
+                other_close_deals['rooms'].astype(float).astype(int) == int(float(deal['rooms']))]
+            if len(other_close_deals):
+                # print(deal['last_price'], other_close_deals['last_price'].median())
+                pct = deal['last_price'] / other_close_deals['last_price'].median() - 1
+                length = len(other_close_deals)
+        except:
+            pass
     return pct, length
 
 
@@ -134,4 +143,4 @@ dfp = DataFrameParallel(df, n_cores=8, pbar=True)
 out = dfp.apply(get_metrics, axis=1)
 
 df = df.join(pd.DataFrame(out.tolist(), columns=['pct_diff_median', 'group_size'], index=out.index))
-df.to_pickle('/Users/lidorazulay/Documents/DS/realestate/resources/yad2_df.pk')
+df.to_pickle(f'/Users/lidorazulay/Documents/DS/realestate/resources/{output_df}.pk')

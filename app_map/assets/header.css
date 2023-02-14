@@ -77,7 +77,13 @@ p.rtl {
 .text-ltr {
     direction: ltr;
     unicode-bidi: bidi-override;
-    text-align: right;
+    /*text-align: right;*/
+}
+
+.text-rtl {
+    direction: rtl;
+    /*unicode-bidi: bidi-override;*/
+    /*text-align: right;*/
 }
 
 /*https://stackoverflow.com/questions/36469631/how-to-get-leaflet-for-r-use-100-of-shiny-dashboard-height?rq=1*/
@@ -89,8 +95,14 @@ p.rtl {
     border:1px solid black;
     direction: ltr;
     unicode-bidi: bidi-override;
+    /*position: absolute;*/
+    /*display: block;*/
 }
 
+.tooltip-icon{
+    width: 28px;
+    height: 28px;
+}
 /*{*/
 /*    border-width: 1px;*/
 /*    border-color: black;*/
