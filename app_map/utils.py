@@ -101,11 +101,11 @@ def create_tooltip(deal):
     html_tp = f"""
     <table class="">
     <tr><td class="text-ltr">{m['last_price_s']}</td>      <td class="text-rtl">מחיר</td>   </tr>
+    <tr><td class="text-ltr"></td> <td class="text-rtl" colspan="2"><b>{m['status']}</b></td>  </tr>
     <tr><td class="text-ltr">{m['rooms_s']}</td>          <td class="text-rtl">חדרים</td>  </tr>
     <tr><td class="text-ltr">{m['floor']:.0f}</td>          <td class="text-rtl">קומה</td>  </tr>
     <tr><td class="text-ltr">{m['square_meters']:,.0f}</td>          <td class="text-rtl">מ״ר</td>  </tr>
     <tr><td class="text-ltr">₪{m['last_price'] / m['square_meters']:,.0f}</td>          <td class="text-rtl">למ״ר</td>  </tr>
-    <tr><td class="text-ltr"></td> <td class="text-rtl" colspan="2"><b>{m['status']}</b></td>  </tr>
     <tr><td class="text-ltr" {style_color_pct_med}>{m['pct_diff_median_s']}</td><td class="text-rtl">חציון</td>  </tr>
     <tr><td class="text-ltr" {style_color_pct}>{m['price_pct_s']}</td>       <td class="text-rtl">הנחה</td>   </tr>
     </table>"""

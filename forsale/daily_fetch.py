@@ -1,5 +1,6 @@
 import sys
 
+# TODO: ADD TO DAILY STATS a flag for ACTIVE and NOT active such that we can see previous deals and investigate.
 sys.path.insert(0, '/Users/lidorazulay/Documents/DS/Crypto')
 from Twitter.connector import connect_remote_sql_alchemy
 import json
@@ -44,7 +45,8 @@ def preproccess(df_today):
         lambda x: x.split('תאור לקוח')[1] if len(x.split('תאור לקוח')) > 1 else None)
 
     df_today['floor'] = df_today['floor'].apply(
-        lambda x: 0 if x == 'קומת קרקע' else x.split(' ')[1].replace('-', '') if len(x.split(' ')) > 1 else None).astype(float).astype('Int32')
+        lambda x: 0 if x == 'קומת קרקע' else x.split(' ')[1].replace('-', '') if len(
+            x.split(' ')) > 1 else None).astype(float).astype('Int32')
     df_today['rooms'] = df_today['rooms'].apply(
         lambda x: None if x == 'לא צויינו חדרים' else '1' if x == 'חדר אחד' else x.split(' ')[0]).astype(float)
     df_today['type'] = df_today['city'].apply(lambda x: x.split(',')[0])

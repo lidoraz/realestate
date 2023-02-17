@@ -52,6 +52,16 @@ rent_today_cols = ['line_1', 'line_2', 'line_3', 'row_1', 'row_2', 'row_3', 'row
 q_history_last_price = """SELECT id, price as last_price from (select id, price, processing_date, ROW_NUMBER() over (partition by id order by processing_date desc)
  as rn from {}) a where rn=1"""
 
+q_today_remove_duplicates = """
+DELETE FROM {table}
+WHERE ctid IN(
+    SELECT ctid
+    FROM (SELECT ctid,
+    ROW_NUMBER() OVER (PARTITION BY id) AS rn
+    FROM {table}) t
+    WHERE rn > 1)
+"""
+
 
 def _process_price(x):
     if x == 'לא צוין מחיר':
@@ -61,11 +71,12 @@ def _process_price(x):
 
 
 class ScraperYad2:
-    def __init__(self, url, use_cols, today_table, history_table):
+    def __init__(self, url, use_cols, today_table, history_table, log_table):
         self.url = url
         self.use_cols = use_cols
         self.history_table = history_table
         self.today_table = today_table
+        self.log_table = log_table
 
     def _get_retry_json(self, p):
         res = None
@@ -91,10 +102,50 @@ class ScraperYad2:
                 df[col] = df[col].astype(str)
         df.to_sql(name=f'{self.today_table}_temp', con=con, if_exists='append', index=False)
 
+    def track_active(self, con):
+        print("Updating log table")
+        if not sqlalchemy.inspect(con).has_table(self.log_table):
+            print("created table")
+            df = pd.read_sql(f"Select * from {self.today_table} limit 1", con)
+            df['active'] = True
+            df.to_sql(self.log_table, con, index=False)
+            con.execute(f"ALTER TABLE {self.log_table} ADD PRIMARY KEY (id);")
+
+        today_ids = pd.read_sql(f"Select distinct id from {self.today_table}", con)['id'].to_list()
+        today_ids_s = set(today_ids)
+        # case has rows, set active, not active
+        logged_ids = pd.read_sql(f"Select id from {self.log_table}", con)['id'].to_list()
+        logged_ids_s = set(logged_ids)
+
+        ids_in_both = today_ids_s.intersection(logged_ids_s)
+        ids_only_in_today = today_ids_s - logged_ids_s
+
+        print('ids_in_both', len(ids_in_both))
+        if len(ids_in_both):
+            ids_active_str = [f"'{i}'" for i in ids_in_both]
+            res = con.execute(f"DELETE FROM {self.log_table} where id in ({','.join(ids_active_str)})")
+            print('DELETED - ', res)
+
+        ids_combined = ids_only_in_today.union(ids_in_both)
+        ids_str = [f"'{i}'" for i in ids_combined]
+        con.execute(
+            f"INSERT INTO {self.log_table} (SELECT *, true FROM {self.today_table} WHERE id in ({','.join(ids_str)}))")
+        # Set old ones to not-active
+        inactive_ids = logged_ids_s - today_ids_s
+        if len(inactive_ids):
+            ids_not_active_str = [f"'{id}'" for id in inactive_ids]
+            con.execute(f"UPDATE {self.log_table} SET active=false WHERE id in ({','.join(ids_not_active_str)})")
+        print("Finished Updating log table!")
+
     def update_today(self, con):
         con.execute(f"DROP table if exists {self.today_table}")
+        # - -----
+        # con.execute(f"CREATE TABLE  {self.today_table} AS SELECT * FROM {self.today_table}_temp WHERE 0")
+        # con.execute(f"INSERT INTO {self.today_table} SELECT * FROM {self.today_table}_temp")
+        # - -----#- -----
         con.execute(f"CREATE TABLE {self.today_table} AS TABLE {self.today_table}_temp")
-        con.execute(f"DROP table if exists {self.today_table}_temp")
+        con.execute(f"DROP table {self.today_table}_temp")
+        con.execute(q_today_remove_duplicates.format(table=self.today_table))
 
     def _preprocess(self, df, today_str):
         df = df[df['type'] == 'ad'].copy()
@@ -128,6 +179,7 @@ class ScraperYad2:
             self.insert_today_temp(df, con)
         if df is not None:
             self.update_today(con)
+            self.track_active(con)
 
     def _check_exists(self, today_str, con):
         cnt_today = pd.read_sql(f"SELECT count(*) from {self.history_table} where processing_date = '{today_str}'",
@@ -153,14 +205,16 @@ def _get_local_engine():
 def get_scraper_yad2_forsale():
     scraper = ScraperYad2(url_forsale_apartments_houses, forsale_today_cols,
                           "yad2_forsale_today",
-                          "yad2_forsale_history")
+                          "yad2_forsale_history",
+                          'yad2_forsale_log')
     return scraper
 
 
 def get_scraper_yad2_rent():
     scraper = ScraperYad2(url_rent_apartments_houses, rent_today_cols,
                           "yad2_rent_today",
-                          "yad2_rent_history")
+                          "yad2_rent_history",
+                          'yad2_rent_log')
     return scraper
 
 

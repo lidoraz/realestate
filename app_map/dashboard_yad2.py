@@ -17,7 +17,7 @@ import pandas as pd
 from app_map.utils import create_tooltip, get_icon, js_draw_icon, build_sidebar
 from forsale.utils import calc_dist, get_similar_closed_deals  # , plot_deal_vs_sale_sold
 
-df_all = pd.read_pickle('/Users/lidorazulay/Documents/DS/realestate/resources/yad2_df.pk')
+df_all = pd.read_pickle('/Users/lidorazulay/Documents/DS/realestate/resources/yad2_forsale_df.pk')
 # TODO: df_all.query("last_price > 500000 and square_meters < 200 and status == 'משופץ'").sort_values('avg_price_m'), can create a nice view for sorting by avg_price per meter.
 df_all['avg_price_m'] = df_all['last_price'] / df_all['square_meters']
 df_all['date_added'] = pd.to_datetime(df_all['date_added'])
@@ -25,6 +25,7 @@ df_all['date_added_d'] = (datetime.today() - df_all['date_added']).dt.days
 df_all['updated_at'] = pd.to_datetime(df_all['updated_at'])
 df_all['updated_at_d'] = (datetime.today() - df_all['updated_at']).dt.days
 # df_f = df.query('last_price < 3000000 and -0.9 < price_pct < -0.01 and price_diff < 1e7')  # [:30]
+df_all.query('-0.89 <price_pct < -0.05').to_csv('df.csv')
 app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
 
 
