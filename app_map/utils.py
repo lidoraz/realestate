@@ -2,8 +2,10 @@ import numpy as np
 from dash import html
 import pandas as pd
 from datetime import datetime
-
+import dash_leaflet.express as dlx
 from dash_extensions.javascript import assign
+
+from forsale.scraper_yad2 import _get_parse_item_add_info
 
 icon_05 = "https://cdn-icons-png.flaticon.com/128/9387/9387262.png"
 icon_10 = "https://cdn-icons-png.flaticon.com/128/6912/6912962.png"
@@ -36,11 +38,49 @@ def get_icon(deal, metric='pct_diff_median'):
 
 icon1 = "https://cdn-icons-png.flaticon.com/128/447/447031.png"  # "/resources/location-pin.png" # "/Users/lidorazulay/Downloads/location-pin.png"
 icon2 = "https://cdn-icons-png.flaticon.com/128/7976/7976202.png"  # "/resources/location.png" # '/Users/lidorazulay/Downloads/location.png'
-js_draw_icon = assign("""function(feature, latlng){
-const flag = L.icon({iconUrl: feature.properties.icon, iconSize: [28, 28]});
-console.log(feature.properties.icon);
-return L.marker(latlng, {icon: flag});
+
+# https://stackoverflow.com/questions/34775308/leaflet-how-to-add-a-text-label-to-a-custom-marker-icon
+# Can use text instead of just icon with using DivIcon in JS.
+js_draw_icon = assign("""
+function(feature, latlng){
+    const flag = L.icon({iconUrl: feature.properties.icon,
+                         iconSize: [28, 28],
+                         });
+    console.log(feature.properties.icon);
+    return L.marker(latlng, {icon: flag});
 }""")
+
+
+def get_geojsons(df, icon_metric):
+    deal_points = [dict(deal_id=idx, lat=d['lat'], lon=d['long'], color='black', icon="fa-light fa-house", metadata=d)
+                   for
+                   idx, d in df.iterrows()]
+    deal_points = dlx.dicts_to_geojson([{**deal, **dict(tooltip=create_tooltip(deal),
+                                                        icon=get_icon(deal, icon_metric),  # f"{deal['metadata'][metric]:.0%}"
+                                                        icon_text=deal['metadata']['last_price_s'])}
+                                        for deal in deal_points])
+    return deal_points
+# function(feature, latlng){
+#     const ico = L.DivIcon({
+#         className: 'my-div-icon',
+#         html: '<img class="icon-div-image" src=${feature.properties.icon}/>'+
+#               '<span class="icon-div-span">feature.properties.icon_text</span>'
+#     })
+#     return L.Marker(latlng, {icon: ico})
+# }
+js_draw_icon_div = assign("""
+function(feature, latlng){
+    console.log("1");
+    // console.log(feature.properties.icon);
+    const x = L.divIcon({
+        className: 'marker-div-icon',
+        html: `<img class="marker-div-image" src="${feature.properties.icon}"/>
+        <span class="marker-div-span">${feature.properties.icon_text}</span>`
+    })
+    console.log("2");
+    return L.marker(latlng, {icon: x});
+}
+""")
 
 
 def gen_color(x):
@@ -87,14 +127,32 @@ def res_get_add_info(item):
     return add_info
 
 
+def format_number(num):
+    def safe_num(num):
+        if isinstance(num, str):
+            num = float(num)
+        return float('{:.3g}'.format(abs(num)))
+
+    num = safe_num(num)
+    magnitude = 0
+    while abs(num) >= 1000:
+        magnitude += 1
+        num /= 1000.0
+    return '{}{}'.format('{:f}'.format(num).rstrip('0').rstrip('.'), ['', 'K', 'M', 'B', 'T'][magnitude])
+
+
+def preprocess_to_str_deals(df):
+    df['rooms_s'] = df['rooms'].apply(lambda m: f"{m if m % 10 == 0 else round(m)}")
+    df['last_price_s'] = df['last_price'].apply(lambda m: f"₪{format_number(m)}")
+    df['pct_diff_median_s'] = df['pct_diff_median'].apply(lambda m: f"{m:0.1%}")
+    df['price_pct_s'] = df['price_pct'].apply(lambda m: f"{m:0.1%}")
+    return df
+
+
 def create_tooltip(deal):
     m = deal['metadata']
     #  <img src="{icon_05}" class="tooltip-icon"/>
     # f"{deal['deal_id']}</br>
-    m['rooms_s'] = f"{m['rooms'] if m['rooms'] % 10 == 0 else round(m['rooms'])}"
-    m['last_price_s'] = f"₪{m['last_price'] / 1e6:,.2f}m"
-    m['pct_diff_median_s'] = f"{m['pct_diff_median']:0.1%}"
-    m['price_pct_s'] = f"{m['price_pct']:0.1%}"
     style_color_pct_med = f"""style="color:{gen_color(m['pct_diff_median'])}" """
     style_color_pct = f"""style="color:{gen_color(m['price_pct'])}" """
     # print(style_color_pct)
@@ -116,11 +174,12 @@ def build_sidebar(deal):
     maps_url = f"http://maps.google.com/maps?z=12&t=m&q=loc:{deal['lat']}+{deal['long']}&hl=iw"  # ?hl=iw, t=k sattalite
     days_online = (datetime.today() - pd.to_datetime(deal['date_added'])).days
     date_added = pd.to_datetime(deal['date_added'])
-
-    add_info = res_get_add_info(deal.name)
+    add_info = _get_parse_item_add_info(deal.name)
+    # add_info = res_get_add_info(deal.name)
     if add_info:
         image_urls = add_info.pop('image_urls')
-        info_text = add_info.pop('טקסט_חופשי')
+        image_urls = image_urls[:3] if image_urls is not None else []
+        info_text = add_info.pop('info_text')
         add_info_text = [html.Tr(html.Td(f"{k}: {v}")) for k, v in add_info.items()]
     else:
         image_urls = []
@@ -161,11 +220,13 @@ def build_sidebar(deal):
                         target="_blank"),
                  ]),
          # width="40%", height="40%")
-         html.Div(children=[html.A(html.Img(src=src, style={"max-height": "100px", "padding": "1px"}), href=src, target="_blank") for src in image_urls[:3]],
-                  className="asset-images"),
+         html.Div(children=[
+             html.A(html.Img(src=src, style={"max-height": "100px", "padding": "1px"}), href=src, target="_blank") for
+             src in image_urls],
+             className="asset-images"),
+         html.Span(info_text, className='sidebar-info-text'),
          # html.Br(),
          html.Table(children=add_info_text, style={"font-size": "0.8vw"}),
          # html.P("\n".join([f"{k}: {v}" for k, v in res_get_add_info(deal.name).items()])),
-         html.Span(info_text, style={"font-size": "0.7vw"}),
          ])
     return txt_html

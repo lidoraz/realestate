@@ -6,6 +6,60 @@ import pandas as pd
 from datetime import datetime
 
 
+def get_connetor():
+    import sys
+    sys.path.insert(0, '/Users/lidorazulay/Documents/DS/Crypto')
+    from Twitter.connector import connect_remote_sql_alchemy
+    conn = connect_remote_sql_alchemy()
+    return conn
+
+
+TABLES = dict(forsale=dict(hist_tbl="yad2_forsale_history",
+                           today_tbl="yad2_forsale_today",
+                           item_tbl="yad2_forsale_items_add",
+                           output_df="yad2_forsale_df"),
+              rent=dict(hist_tbl="yad2_rent_history",
+                        today_tbl="yad2_rent_today",
+                        item_tbl="yad2_rent_items_add",
+                        output_df="yad2_rent_df"))
+
+
+def get_tbl(type, tbl_type):
+    type_dict = TABLES.get(type)
+    tbl = type_dict.get(tbl_type)
+    return tbl
+
+
+additional_columns_lst = ['parking', 'balconies', 'number_of_floors', 'renovated', 'asset_exclusive_declaration',
+                          'air_conditioner', 'bars', 'elevator', 'boiler', 'accessibility', 'shelter', 'warhouse',
+                          'tadiran_c', 'furniture', 'flexible_enter_date', 'kosher_kitchen', 'housing_unit',
+                          'info_text', 'image_urls']
+info_cols = ['a.id', 'row_2', 'row_1', 'line_1', 'square_meters', 'line_2', 'neighborhood', 'merchant',
+             'assetclassificationid_text', 'coordinates', 'feed_source', 'address_more', 'date_added',  # 'search_text',
+             'date']
+
+
+def get_price_hist(type, conn):
+    hist_tbl = get_tbl(type, "hist_tbl")
+    df_hist = pd.read_sql(f"select id, price, processing_date from {hist_tbl}", conn)
+    print(df_hist.groupby('processing_date').size())
+    max_date = df_hist['processing_date'].max()
+    print(f"DATA ON REMOTE IS UPDATED TO::", max_date)
+    if (datetime.today() - pd.to_datetime(max_date)).days > 1:
+        raise AssertionError("Data is not updated, check remote!!")
+    return df_hist
+
+
+def get_today(type, conn):
+    today_tbl = get_tbl(type, "today_tbl")
+    item_tbl = get_tbl(type, "item_tbl")
+    q_today = f"""
+    SELECT  {','.join(info_cols)}, {','.join(additional_columns_lst)} FROM  {today_tbl} a left join {item_tbl} b on a.id = b.id
+    """
+    df_today = pd.read_sql(q_today, conn)
+    return df_today
+
+
 def get_similar_closed_deals(deal, days_back, dist_km, with_room):
     if np.isnan(deal['lat']) or np.isnan(deal['long']):
         raise ValueError('lat or long are not valid')
@@ -30,8 +84,8 @@ def plot_deal_vs_sale_sold(other_close_deals, df_tax, deal, round_rooms=True):
     # When the hist becomes square thats because there a huge anomaly in terms of extreme value
     if round_rooms:
         sale_items = \
-        other_close_deals[other_close_deals['rooms'].astype(float).astype(int) == int(float(deal['rooms']))][
-            'last_price']
+            other_close_deals[other_close_deals['rooms'].astype(float).astype(int) == int(float(deal['rooms']))][
+                'last_price']
     else:
         sale_items = other_close_deals[other_close_deals['rooms'] == deal['rooms']]['last_price']
     sale_items.rename(f'last_price #{len(sale_items)}').hist(bins=min(70, len(sale_items)), legend=True, alpha=0.8)
@@ -45,7 +99,6 @@ def plot_deal_vs_sale_sold(other_close_deals, df_tax, deal, round_rooms=True):
     plt.xlim([deal['last_price'] // 2, deal['last_price'] * 3])
     plt.title(str_txt)
     plt.legend()
-
 
     # plt.show()
 
