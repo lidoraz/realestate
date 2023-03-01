@@ -1,14 +1,8 @@
-import requests
-import selenium
-import time
-from selenium import webdriver  # , WebDriverWait
-from selenium.webdriver.support.ui import Select
 import pandas as pd
 
 from DB import DB
-from gcloud_test import OCR
 
-from scraper_logic import Scraper
+from NadlanScraper.Scraper.logic import Scraper
 from datetime import datetime, timedelta
 def test_case_1():
     from_gush = 7164
@@ -44,7 +38,7 @@ def test_case_daily_fetch(date, scraper: Scraper = None):
     print(f"test_case_daily_fetch - {date}")
     from_gush = 1
     to_gush = 999999
-    from datetime import datetime, timedelta
+    from datetime import datetime
     # days_delta = 14  # should be 1
     # d = (datetime.today() - timedelta(days=days_delta)).strftime("%d/%m/%Y")
     if scraper is None:
@@ -64,7 +58,7 @@ def get_over_monthly():
     # print("SLEEPING BEFORE")
     # time.sleep(15 * 60)  # TODO: REmove this later
     scraper = Scraper()
-    from utils import sleep
+    from NadlanScraper.Scraper.utils import sleep
     t_tries = 4
     # days_delta = 14  # should be 1
 
