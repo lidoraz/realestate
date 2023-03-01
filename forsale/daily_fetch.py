@@ -9,20 +9,9 @@ from forsale.utils import additional_columns_lst
 print("connecting to remote")
 
 
-# df_hist = get_price_hist()
-
-# df_today = pd.read_sql(f"Select {','.join(info_cols)} from {today_tbl} a", conn)
-
-
-# df_today = get_today()
-# print("Fetched rows:", len(df_today))
-# df_today = df_today[~df_today['id'].duplicated()]
-# print("After rem dup:", len(df_today))
-
-
 def preproccess(df_today):
     info_rename = dict(row_2='city', row_1='street', line_1='rooms', line_2='floor', date='updated_at',
-                       assetclassificationid_text='status', search_text='info_text')
+                       assetclassificationid_text='status')
     df_today['is_agency'] = df_today['feed_source'].apply(
         lambda x: True if x == 'commercial' else False if x == 'private' else None)
     df_today = df_today.set_index('id').rename(columns=info_rename)
@@ -71,7 +60,7 @@ def process_tables(df_today, df_hist):
     df_today = preproccess(df_today)
     cols_order = ['type', 'city', 'city_loc', 'rooms', 'square_meters', 'floor',
                   'status', 'is_agency', 'neighborhood', 'street',
-                  'address_more', 'info_text', 'date_added', 'updated_at', 'lat', 'long'] + additional_columns_lst
+                  'address_more', 'date_added', 'updated_at', 'lat', 'long'] + additional_columns_lst
     df_today = df_today[cols_order]
     today_indexes = df_today.index.to_list()
     df_metrics = preprocess_history(df_hist, today_indexes)
@@ -80,6 +69,7 @@ def process_tables(df_today, df_hist):
 
 
 import numpy as np
+
 
 def haversine(lat1, lon1, lat2, lon2, to_radians=True, earth_radius=6371):
     """
@@ -130,4 +120,79 @@ def add_distance(df, dist_km=1):
     out = dfp.apply(get_metrics, axis=1)
     df = df.join(pd.DataFrame(out.tolist(), columns=['pct_diff_median', 'group_size'], index=out.index))
     return df
-    # df.to_pickle(f'/Users/lidorazulay/Documents/DS/realestate/resources/{output_df}.pk')
+
+from catboost import CatBoostRegressor
+from sklearn.model_selection import KFold
+
+
+class MajorityVote:
+    def __init__(self, n_folds):
+        self.clfs = [CatBoostRegressor(iterations=5000,
+                                       loss_function="RMSE",
+                                       early_stopping_rounds=200) for _ in range(n_folds)]
+        self.n_folds = n_folds
+
+    def fit(self, X, y, cat_features):
+        kf = KFold(self.n_folds)
+        for idx, (train_idx, test_idx) in enumerate(kf.split(X, y)):
+            print(idx)
+            clf = self.clfs[idx]
+            clf.fit(X.iloc[train_idx],
+                    y.iloc[train_idx],
+                    cat_features=cat_features,
+                    use_best_model=True,
+                    eval_set=(X.iloc[test_idx], y.iloc[test_idx]), verbose=100)
+
+    def predict(self, x):
+        res = [clf.predict(x) for clf in self.clfs]
+        return res
+
+    def predict_mean(self, x):
+        res = [clf.predict(x) for clf in self.clfs]
+        res = pd.DataFrame(res).T
+        res.index = x.index
+        return res.mean(axis=1)
+
+    def predict_price(self, x):
+        clf_preds = pd.DataFrame(self.predict(x)).T
+        clf_res = pd.DataFrame(dict(ai_mean=clf_preds.mean(axis=1).round(),
+                                    ai_std=clf_preds.std(axis=1).round()))
+        clf_res.index = x.index
+        print(len(clf_res))
+        # clf_res = y.to_frame().join(clf_res)  # .query('ai_std < 1_000_000').sort_values('ai_std')
+        clf_res['ai_std_pct'] = (clf_res['ai_mean'] + clf_res['ai_std']) / clf_res['ai_mean'] - 1
+        print(len(clf_res))
+        return clf_res
+
+
+def add_ai_price(df, type):
+    df['housing_unit'] = df['housing_unit'].astype(bool)  # .value_counts()
+    df['info_text'] = df['info_text'].fillna('')
+    df['is_keycrap'] = df['info_text'].str.contains('דמי מפתח')
+    df['is_tama'] = df['info_text'].str.contains('תמא|תמ״א')
+    must_have_cols = ['last_price', 'lat', 'long']
+    info_cols = ['price_pct', 'type', 'city', 'city_loc', 'rooms', 'status', 'square_meters',
+                 'floor', 'parking', 'balconies', 'number_of_floors', 'renovated',
+                 'is_agency', 'housing_unit',
+                 'is_keycrap', 'is_tama']
+    df_d = df[must_have_cols].dropna(axis=0)
+
+    df_d = df_d.join(df[info_cols])
+    if type == 'rent':
+        df_d = df_d[df_d['last_price'] > 1_000]  # remove anomalies
+    elif type =='forsale':
+        df_d = df_d[df_d['last_price'] > 300_000]  # remove anomalies
+    else:
+        raise ValueError()
+    cat_features = ['type', 'city', 'city_loc', 'status']
+    X = df_d.drop('last_price', axis=1)
+    y = df_d['last_price']
+    clfs = MajorityVote(5)
+
+    clfs.fit(X, y, cat_features)
+    res = clfs.predict_price(X)
+    # mask_invalid = res['ai_std_pct'] > 0.3
+    # # res['ai_price'] = res['ai_price']
+    # res.loc[res[mask_invalid].index, 'ai_mean'] = None
+    df = pd.concat([df, res], axis=1)
+    return df

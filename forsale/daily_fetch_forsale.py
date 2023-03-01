@@ -1,5 +1,5 @@
-from forsale.daily_fetch import process_tables, add_distance
-from forsale.utils import get_connetor, get_today, get_price_hist
+from forsale.daily_fetch import process_tables, add_distance, add_ai_price
+from forsale.utils import get_connetor, get_today, get_price_hist, get_nadlan
 
 if __name__ == '__main__':
     conn = get_connetor()
@@ -9,5 +9,19 @@ if __name__ == '__main__':
 
     df = process_tables(df_today, df_hist)
     df = add_distance(df)
-    df.to_pickle(f'/Users/lidorazulay/Documents/DS/realestate/resources/yad2_{type}_df.pk')
-    print()
+    df = add_ai_price(df, type)
+    #
+    path = f'resources/yad2_{type}_df.pk'
+    df.to_pickle(path)
+
+    df = get_nadlan(conn, 180)
+    df.to_pickle("resources/df_nadlan_recent.pk")
+
+
+
+    # print()
+    # import pandas as pd
+    # df = pd.read_pickle(path)
+    #
+    # df = add_ai_price(df)
+    # print(len(df))

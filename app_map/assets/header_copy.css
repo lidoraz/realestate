@@ -50,9 +50,11 @@
     border-bottom: 1px solid black;
     background-color: white;
     /*position: absolute;*/
+    position: relative;
     z-index: 999;
     width: 100%;
-    height: 7vh;
+    height: 8vh;
+    font-size:smaller;
     top: 0;
     right: 0;
     direction: rtl;
@@ -89,7 +91,7 @@ p.rtl {
 
 /*https://stackoverflow.com/questions/36469631/how-to-get-leaflet-for-r-use-100-of-shiny-dashboard-height?rq=1*/
 #map {
-    height: calc(100vh - 12vh) !important;
+    height: calc(100vh - 8vh) !important;
 }
 
 .price-diff-table td, .price-diff-table th {
@@ -143,7 +145,8 @@ p.rtl {
 
 .grid-container {
     margin: auto;
-    padding: 10px;
+    gap:10px;
+    /*padding: 10px;*/
     /*display: grid;*/
     /*grid-template-columns: 1fr 1fr;*/
     /*!*grid-*!*/
@@ -159,5 +162,5 @@ p.rtl {
 .right-container{
     margin-left: 20%;
     /*float: left;*/
-    width: 85%;
+    /*width: 85%;*/
 }

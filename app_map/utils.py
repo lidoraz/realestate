@@ -6,6 +6,7 @@ import dash_leaflet.express as dlx
 from dash_extensions.javascript import assign
 
 from forsale.scraper_yad2 import _get_parse_item_add_info
+from forsale.utils import calc_dist, get_similar_closed_deals
 
 icon_05 = "https://cdn-icons-png.flaticon.com/128/9387/9387262.png"
 icon_10 = "https://cdn-icons-png.flaticon.com/128/6912/6912962.png"
@@ -36,8 +37,8 @@ def get_icon(deal, metric='pct_diff_median'):
         return icon_regular
 
 
-icon1 = "https://cdn-icons-png.flaticon.com/128/447/447031.png"  # "/resources/location-pin.png" # "/Users/lidorazulay/Downloads/location-pin.png"
-icon2 = "https://cdn-icons-png.flaticon.com/128/7976/7976202.png"  # "/resources/location.png" # '/Users/lidorazulay/Downloads/location.png'
+icon1 = "https://cdn-icons-png.flaticon.com/128/447/447031.png"
+icon2 = "https://cdn-icons-png.flaticon.com/128/7976/7976202.png"
 
 # https://stackoverflow.com/questions/34775308/leaflet-how-to-add-a-text-label-to-a-custom-marker-icon
 # Can use text instead of just icon with using DivIcon in JS.
@@ -56,10 +57,13 @@ def get_geojsons(df, icon_metric):
                    for
                    idx, d in df.iterrows()]
     deal_points = dlx.dicts_to_geojson([{**deal, **dict(tooltip=create_tooltip(deal),
-                                                        icon=get_icon(deal, icon_metric),  # f"{deal['metadata'][metric]:.0%}"
+                                                        icon=get_icon(deal, icon_metric),
+                                                        # f"{deal['metadata'][metric]:.0%}"
                                                         icon_text=deal['metadata']['last_price_s'])}
                                         for deal in deal_points])
     return deal_points
+
+
 # function(feature, latlng){
 #     const ico = L.DivIcon({
 #         className: 'my-div-icon',
@@ -170,6 +174,40 @@ def create_tooltip(deal):
     return html_tp
 
 
+def get_asset_points(df_all, price_from=None, price_to=None, median_price_pct=None, discount_price_pct=None,
+                     date_added_days=None, updated_at=None,
+                     rooms_range=(None, None), with_agency=True, with_parking=None, with_balconies=None, state_asset=(),
+                     map_bounds=None, is_median=True,
+                     limit=True):
+    if len(state_asset) > 0:
+        states = ','.join([f"'{x}'" for x in state_asset])
+        sql_state_asset = f' and status in ({states})'
+    else:
+        sql_state_asset = ""
+    rooms_from = rooms_range[0] or 1
+    rooms_to = rooms_range[1] or 100
+    sql_cond = dict(
+        sql_rooms_range=f"{rooms_from} <= rooms <= {rooms_to}.5" if rooms_from is not None and rooms_to is not None else "",
+        sql_price_from=f"and {price_from} <= last_price" if price_from is not None else "",
+        sql_price_to=f"and {price_to} >= last_price" if price_to is not None else "",
+        sql_is_agency="and is_agency == False" if not with_agency else "",
+        sql_is_parking="and parking > 0" if with_parking else "",
+        sql_is_balcony="and balconies == True" if with_balconies else "",
+        sql_state_asset=sql_state_asset,
+        sql_median_price_pct=f"and group_size > 30 and pct_diff_median <= {median_price_pct}" if median_price_pct is not None else "",
+        sql_discount_pct=f"and -0.90 <= price_pct <= {discount_price_pct}" if discount_price_pct is not None else "",
+        sql_map_bounds=f"and {map_bounds[0][0]} < lat < {map_bounds[1][0]} and {map_bounds[0][1]} < long < {map_bounds[1][1]}" if map_bounds else "",
+        sql_date_added=f"and date_added_d <= {date_added_days}" if date_added_days else "",
+        sql_updated_at=f"and updated_at_d <= {updated_at}" if updated_at else "")
+    q = ' '.join(list(sql_cond.values()))
+    print(q)
+    df_f = df_all.query(q)
+    if limit:
+        df_f = df_f[:1_000]
+    print(f"Triggerd, Fetched: {len(df_f)} rows")
+    return df_f
+
+
 def build_sidebar(deal):
     maps_url = f"http://maps.google.com/maps?z=12&t=m&q=loc:{deal['lat']}+{deal['long']}&hl=iw"  # ?hl=iw, t=k sattalite
     days_online = (datetime.today() - pd.to_datetime(deal['date_added'])).days
@@ -197,6 +235,10 @@ def build_sidebar(deal):
                    html.Span(str_price_pct, className="text-ltr")]),
          html.Span(f"מחיר הנכס מהחציון באיזור: "),
          html.Span(f"{deal['pct_diff_median']:0.2%}", className="text-ltr"),
+         html.P([html.Span(f"מחיר הנכס ממודל AI : "),
+                 html.Span(f"{deal['ai_mean']:,.0f} ({deal['ai_std_pct']    :.2%})", className="text-ltr"),
+                 ]),
+
          html.H6(f"הועלה בתאריך {date_added.date()}, (לפני {days_online / 7:0.1f} שבועות)"),
          html.Span(f"מתי עודכן: {deal['updated_at']}"),
          html.Div(df_price_hist, className='text-ltr'),
@@ -230,3 +272,57 @@ def build_sidebar(deal):
          # html.P("\n".join([f"{k}: {v}" for k, v in res_get_add_info(deal.name).items()])),
          ])
     return txt_html
+
+
+from plotly import graph_objects as go
+
+
+def plot_deal_vs_sale_sold(other_close_deals, df_tax, deal, round_rooms=True):
+    # When the hist becomes square thats because there a huge anomaly in terms of extreme value
+    if round_rooms:
+        other_close_deals = other_close_deals.dropna(subset='rooms')
+        sale_items = \
+            other_close_deals[other_close_deals['rooms'].astype(float).astype(int) == int(float(deal['rooms']))][
+                'last_price']
+    else:
+        sale_items = other_close_deals[other_close_deals['rooms'] == deal['rooms']]['last_price']
+    sale_items = sale_items.rename(
+        f'last_price #{len(sale_items)}')  # .hist(bins=min(70, len(sale_items)), legend=True, alpha=0.8)
+    fig = go.Figure()
+    tr_1 = go.Histogram(x=sale_items, name=sale_items.name, opacity=0.75, nbinsx=len(sale_items))
+    fig.add_trace(tr_1)
+    sold_items = df_tax['mcirMorach']
+    days_back = df_tax.attrs['days_back']
+    if len(sold_items):
+        sold_items = sold_items.rename(
+            f'realPrice{days_back}D #{len(sold_items)}')  # .hist(bins=min(70, len(sold_items)), legend=True,alpha=0.8)
+        tr_2 = go.Histogram(x=sold_items, name=sold_items.name, opacity=0.75, nbinsx=len(sold_items))
+        fig.add_trace(tr_2)
+    fig.add_vline(x=deal['last_price'], line_width=2, line_color='red', line_dash='dash',
+                  name=f"{deal['last_price']:,.0f}")
+    fig.update_layout(  # title_text=str_txt,
+        # barmode='stack',
+        width=450,
+        height=250,
+        margin=dict(l=0, r=0, b=0, t=0),
+        legend=dict(x=0.0, y=1),
+        dragmode=False)
+    # fig['layout']['yaxis'].update(autorange=True)
+    # fig['layout']['xaxis'].update(autorange=True)
+    fig.update_xaxes(range=[deal['last_price'] // 2, deal['last_price'] * 2.5])
+    return fig
+    # plt.legend()
+
+
+def get_similar_deals(df_all, deal, days_back=99, dist_km=1):
+    # https://plotly.com/python/histograms/
+    # deal = df.loc[deal_id]
+    other_close_deals = calc_dist(df_all, deal, dist_km)  # .join(df)
+    df_tax = get_similar_closed_deals(deal, days_back, dist_km, True)
+    print(f'get_similar_deals: other_close_deals={len(other_close_deals)}, df_tax={len(df_tax)}')
+    # display(df_tax)
+    # nice cols:
+    #
+    # df_tax[['dist_from_deal', 'gush', 'tarIska', 'yeshuv', 'rechov', 'bayit', 'dira', 'mcirMozhar', 'shetachBruto', 'shetachNeto', 'shnatBniya', 'misHadarim', 'lblKoma']]
+    fig = plot_deal_vs_sale_sold(other_close_deals, df_tax, deal)
+    return fig

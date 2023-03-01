@@ -22,97 +22,102 @@ price_pct_txt = 'שינוי במחיר'
 rooms_marks = {r: str(r) for r in range(7)}
 rooms_marks[6] = '6+'
 
-div_top_bar = html.Div(className="top-toolbar", children=[
-    dbc.Button(children=[html.Span('סה"כ:'), html.Span("0", id="fetched-assets")]),
-    html.Span(from_price_txt),
-    dcc.Input(
-        id="price-from",
-        type="number",
-        placeholder=from_price_txt,
-        value=0.5,
-        step=0.1,
-        min=0,
-        debounce=True,
-        className='input-ltr'
-    ),
-    html.Span(to_price_txt),
-    dcc.Input(
-        id="price-to",
-        type="number",
-        placeholder=to_price_txt,
-        value=3,
-        step=0.1,
-        min=0,
-        debounce=True,
-        className='input-ltr'
-    ),
-    html.Span(median_price_txt),
-    dcc.Input(
-        id="median-price-pct",
-        type="number",
-        placeholder=median_price_txt,
-        value=-0.2,
-        debounce=True,
-        step=0.01,
-        min=-1,
-        max=1,
-        className="input-ltr"
-    ),
-    html.Span(price_pct_txt),
-    dcc.Input(
-        id="discount-price-pct",
-        type="number",
-        placeholder=price_pct_txt,
-        value=None,
-        debounce=True,
-        step=0.01,
-        min=-1,
-        max=1,
-        className="input-ltr"
-    ),
-    html.Span(date_added_txt),
-    dcc.Input(
-        id="date-added",
-        type="number",
-        placeholder=date_added_txt,
-        value=100,
-        debounce=True,
-        className="input-ltr"
-    ),
-    html.Span(date_updated_text),
-    dcc.Input(
-        id="date-updated",
-        type="number",
-        placeholder=date_updated_text,
-        value=30,
-        debounce=True,
-        className="input-ltr"
-    ),
-    dcc.Checklist(options=[{'label': 'כולל תיווך', 'value': 'Y'}], value=['Y'], inline=True,
-                  id='agency-check'),
-    dcc.Checklist(options=[{'label': 'חובה חניה', 'value': 'Y'}], value=[], inline=True,
-                  id='parking-check'),
-    dcc.Checklist(options=[{'label': 'חובה מרפסת', 'value': 'Y'}], value=[], inline=True,
-                  id='balconies-check'),
-    dcc.Dropdown(
-        ['משופץ', 'במצב שמור', 'חדש (גרו בנכס)', 'חדש מקבלן (לא גרו בנכס)', 'דרוש שיפוץ'],
-        [],
-        placeholder="מצב הנכס",
-        multi=True,
-        searchable=False,
-        id='state-asset',
-        style=dict(width='10em', )),
-    html.Span('שיטה'),
-    dbc.Switch(value=True, id='switch-median'),
-    # dbc.Button(children="AAAAAA"),
-    dbc.Button("באיזור", id="button-around"),
-    dbc.Button("סנן", id='button-return'),
 
-    dbc.Button(children="נקה", id="button-clear"),
-    html.Span(n_rooms_txt),
-    html.Div(dcc.RangeSlider(1, 6, 1, value=[3, 4], marks=rooms_marks, id='rooms-slider'),
-             style=dict(width="30em")),
-])
+def get_div_top_bar(config_defaults):
+    div_top_bar = html.Div(className="top-toolbar", children=[
+        dbc.Button(children=[html.Span('סה"כ:'), html.Span("0", id="fetched-assets")]),
+        html.Span(from_price_txt),
+        dcc.Input(
+            id="price-from",
+            type="number",
+            placeholder=from_price_txt,
+            value=config_defaults["price-from"],
+            step=0.1,
+            min=0,
+            debounce=True,
+            className='input-ltr'
+        ),
+        html.Span(to_price_txt),
+        dcc.Input(
+            id="price-to",
+            type="number",
+            placeholder=to_price_txt,
+            value=config_defaults["price-to"],
+            step=0.1,
+            min=0,
+            debounce=True,
+            className='input-ltr'
+        ),
+        html.Span(median_price_txt),
+        dcc.Input(
+            id="median-price-pct",
+            type="number",
+            placeholder=median_price_txt,
+            value=config_defaults["median-price-pct"],
+            debounce=True,
+            step=0.01,
+            min=-1,
+            max=1,
+            className="input-ltr"
+        ),
+        html.Span(price_pct_txt),
+        dcc.Input(
+            id="discount-price-pct",
+            type="number",
+            placeholder=price_pct_txt,
+            value=config_defaults["discount-price-pct"],
+            debounce=True,
+            step=0.01,
+            min=-1,
+            max=1,
+            className="input-ltr"
+        ),
+        html.Span(date_added_txt),
+        dcc.Input(
+            id="date-added",
+            type="number",
+            placeholder=date_added_txt,
+            value=100,
+            debounce=True,
+            className="input-ltr"
+        ),
+        html.Span(date_updated_text),
+        dcc.Input(
+            id="date-updated",
+            type="number",
+            placeholder=date_updated_text,
+            value=30,
+            debounce=True,
+            className="input-ltr"
+        ),
+        dcc.Checklist(options=[{'label': 'כולל תיווך', 'value': 'Y'}], value=['Y'], inline=True,
+                      id='agency-check'),
+        dcc.Checklist(options=[{'label': 'חובה חניה', 'value': 'Y'}], value=[], inline=True,
+                      id='parking-check'),
+        dcc.Checklist(options=[{'label': 'חובה מרפסת', 'value': 'Y'}], value=[], inline=True,
+                      id='balconies-check'),
+        dcc.Dropdown(
+            ['משופץ', 'במצב שמור', 'חדש (גרו בנכס)', 'חדש מקבלן (לא גרו בנכס)', 'דרוש שיפוץ'],
+            [],
+            placeholder="מצב הנכס",
+            multi=True,
+            searchable=False,
+            id='state-asset',
+            style=dict(width='10em', )),
+        html.Span('שיטה'),
+        dbc.Switch(value=config_defaults["switch-median"], id='switch-median'),
+        # dbc.Button(children="AAAAAA"),
+        dbc.Button("באיזור", id="button-around"),
+        dbc.Button("סנן", id='button-return'),
+
+        dbc.Button(children="נקה", id="button-clear"),
+        html.Span(n_rooms_txt),
+        html.Div(dcc.RangeSlider(1, 6, 1, value=[3, 4], marks=rooms_marks, id='rooms-slider'),
+                 style={"min-width": "10em"}),
+    ])
+    return div_top_bar
+
+
 div_left_map = html.Div(className="left-div", children=[
     dl.Map(children=[dl.TileLayer(),
                      dl.GeoJSON(data=None, id="geojson", zoomToBounds=False, cluster=True,
@@ -145,15 +150,69 @@ div_offcanvas = html.Div([dbc.Offcanvas(
 )])
 
 
+def _discrete_background_color_bins(df, n_bins=10, columns='all', reverse=False):
+    import colorlover
+    bounds = [i * (1.0 / n_bins) for i in range(n_bins + 1)]
+    if columns == 'all':
+        if 'id' in df:
+            df_numeric_columns = df.select_dtypes('number').drop(['id'], axis=1)
+        else:
+            df_numeric_columns = df.select_dtypes('number')
+    else:
+        df_numeric_columns = df[columns]
+    df_max = 0.2  # df_numeric_columns.max().max()
+    df_min = -0.2  # df_numeric_columns.min().min()
+    ranges = [((df_max - df_min) * i) + df_min for i in bounds]
+    ranges[0] = -1
+    ranges[-1] = 1
+    styles = []
+    legend = []
+    for i in range(1, len(bounds)):
+        min_bound = ranges[i - 1]
+        max_bound = ranges[i]
+        bg_color = colorlover.scales[str(n_bins)]['div']['RdYlGn']
+        if reverse:
+            bg_color = bg_color[::-1]
+        bg_color = bg_color[i - 1]
+        color = 'white' if i == 1 or i == len(bounds) - 1 else 'inherit'
+
+        for column in df_numeric_columns:
+            styles.append({
+                'if': {
+                    'filter_query': (
+                            '{{{column}}} >= {min_bound}' +
+                            (' && {{{column}}} < {max_bound}' if (i < len(bounds) - 1) else '')
+                    ).format(column=column, min_bound=min_bound, max_bound=max_bound),
+                    'column_id': column
+                },
+                'backgroundColor': bg_color,
+                'color': color
+            })
+        legend.append(
+            html.Div(style={'display': 'inline-block', 'width': '35px'}, children=[
+                html.Div(
+                    style={
+                        'backgroundColor': bg_color,
+                        'borderLeft': '1px rgb(50, 50, 50) solid',
+                        'height': '10px'
+                    }
+                ),
+                html.Small(f'{round(min_bound * 100)}%', style={'paddingLeft': '2px'}) if i > 1 else html.Small('%:')
+            ])
+        )
+    return styles, html.Div(legend, style={'padding': '5px 0 5px 0'})
+
+
 def get_table(df):
-    columns = ['last_price', 'rooms', 'price_pct', 'city']
+    table_price_col = 'ai_mean_pct'
+    columns = ['last_price', 'rooms', table_price_col, 'city']  # price_pct
     from dash.dash_table.Format import Format, Symbol, Group, Scheme
     df = df[columns]
     money = FormatTemplate.money(2)
     percentage = FormatTemplate.percentage(2)
     # Format().symbol(Symbol.yes).symbol_prefix('₪ ')._specifier(',.0f')d
-    price_format = Format(scheme=Scheme.fixed,
-                          precision=0,
+    price_format = Format(scheme=Scheme.decimal_si_prefix,
+                          precision=3,
                           group=Group.yes,
                           groups=3,
                           group_delimiter=',',
@@ -163,9 +222,11 @@ def get_table(df):
     columns_output = [
         dict(id='last_price', name='Price', type='numeric', format=price_format),  # , locale=dict(symbol=['₪ ', ''])
         dict(id='rooms', name='R', type='numeric'),
-        dict(id='price_pct', name='% Chg', type='numeric', format=percentage),
+        dict(id=table_price_col, name='% AI', type='numeric', format=FormatTemplate.percentage(0)),
+        # dict(id='price_pct', name='% Chg', type='numeric', format=percentage),
         dict(id='city', name='city'),
     ]
+    cond_styles, legend = _discrete_background_color_bins(df, columns=[table_price_col], reverse=True)
     tbl = DataTable(
         id='datatable-interactivity',
         columns=columns_output,
@@ -178,12 +239,20 @@ def get_table(df):
         sort_action="native",
         sort_mode="multi",
         column_selectable="single",
-        row_selectable=False,  # "multi",
+        row_selectable= False, # 'single',  # "multi",
         row_deletable=False,
+        # active_cell=False,
         selected_columns=[],
         selected_rows=[],
         page_action="native",
         page_current=0,
         page_size=20,
+        style_cell={
+            'overflow': 'hidden',
+            'textOverflow': 'ellipsis',
+            'maxWidth': 0
+        },
+        style_data_conditional=cond_styles
     )
     return [tbl]
+

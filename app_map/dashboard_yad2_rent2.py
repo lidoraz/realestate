@@ -5,21 +5,23 @@
 import time
 import dash
 import dash_bootstrap_components as dbc
-from dash import dcc, dash_table
-import dash_leaflet as dl
-from plotly import graph_objects as go
-from dash import html, Output, Input, State, ctx
-import numpy as np
-from datetime import datetime
-import pandas as pd
+from dash import Output, Input, State, ctx
 
-from app_map.util_layout import div_left_map, div_offcanvas, div_top_bar, get_table
+from app_map.util_layout import div_left_map, div_offcanvas, get_div_top_bar, get_table
 from app_map.utils import *
-from forsale.utils import calc_dist, get_similar_closed_deals  # , plot_deal_vs_sale_sold
 
-df_all = pd.read_pickle('/Users/lidorazulay/Documents/DS/realestate/resources/yad2_rent_df.pk')
+rent_config_default = {"price-from": 0.5, "price-to": 3, "median-price-pct": None,
+                       "switch-median": False,
+                       "discount-price-pct": -0.05,
+                       "price_mul": 1e3}
+df_all = pd.read_pickle('resources/yad2_rent_df.pk')
 # TODO: df_all.query("last_price > 500000 and square_meters < 200 and status == 'משופץ'").sort_values('avg_price_m'), can create a nice view for sorting by avg_price per meter.
 df_all['pct_diff_median'] = 0
+
+df_all['ai_mean'] = df_all['ai_mean'] * (df_all['ai_std_pct'] < 0.15)  # Take only certain AI predictions
+df_all['ai_mean_pct'] = df_all['ai_mean'].replace(0, np.nan)
+df_all['ai_mean_pct'] = df_all['last_price'] / df_all['ai_mean_pct'] - 1
+
 df_all['avg_price_m'] = df_all['last_price'] / df_all['square_meters']
 df_all['date_added'] = pd.to_datetime(df_all['date_added'])
 df_all['date_added_d'] = (datetime.today() - df_all['date_added']).dt.days
@@ -29,45 +31,12 @@ df_all['updated_at_d'] = (datetime.today() - df_all['updated_at']).dt.days
 df_all.query('-0.89 <price_pct < -0.05').to_csv('df_rent.csv')
 app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
 
-
 # def get_asset_points(price_from=500_000, price_to=3_000_000, median_price_pct=-0.1, date_added_days=100,
 #                      rooms_range=(3, 4), with_agency=True, state_asset=()):
-def get_asset_points(price_from=None, price_to=None, median_price_pct=None, discount_price_pct=None,
-                     date_added_days=None, updated_at=None,
-                     rooms_range=(None, None), with_agency=True, with_parking=None, with_balconies=None, state_asset=(),
-                     map_bounds=None, is_median=True,
-                     limit=False):
-    if len(state_asset) > 0:
-        states = ','.join([f"'{x}'" for x in state_asset])
-        sql_state_asset = f' and status in ({states})'
-    else:
-        sql_state_asset = ""
-    rooms_from = rooms_range[0] or 1
-    rooms_to = rooms_range[1] or 100
-    sql_cond = dict(
-        sql_rooms_range=f"{rooms_from} <= rooms <= {rooms_to}.5" if rooms_from is not None and rooms_to is not None else "",
-        sql_price_from=f"and {price_from} <= last_price" if price_from is not None else "",
-        sql_price_to=f"and {price_to} >= last_price" if price_to is not None else "",
-        sql_is_agency="and is_agency == False" if not with_agency else "",
-        sql_is_parking="and parking > 0" if with_parking else "",
-        sql_is_balcony="and balconies == True" if with_balconies else "",
-        sql_state_asset=sql_state_asset,
-        # sql_median_price_pct=f"and group_size > 30 and pct_diff_median <= {median_price_pct}" if median_price_pct is not None else "",
-        sql_discount_pct=f"and -0.90 <= price_pct <= {discount_price_pct}" if discount_price_pct is not None else "",
-        sql_map_bounds=f"and {map_bounds[0][0]} < lat < {map_bounds[1][0]} and {map_bounds[0][1]} < long < {map_bounds[1][1]}" if map_bounds else "",
-        sql_date_added=f"and date_added_d <= {date_added_days}" if date_added_days else "",
-        sql_updated_at=f"and updated_at_d <= {updated_at}" if updated_at else "")
-    q = ' '.join(list(sql_cond.values()))
-    print(q)
-    df_f = df_all.query(q)
-    if limit:
-        df_f = df_f[:10_000]
-    print(f"Triggerd, Fetched: {len(df_f)} rows")
-    return df_f
 
 
 app.layout = html.Div(children=[
-    html.Div(className="top-container", children=div_top_bar),
+    html.Div(className="top-container", children=get_div_top_bar(rent_config_default)),
     html.Div(className="grid-container", children=[
         html.Div(className="left-container", children=[html.Div(id='table-container', children=None)]),
         html.Div(className="right-container", children=[div_left_map]),
@@ -75,57 +44,6 @@ app.layout = html.Div(children=[
 
     html.Div(className="modal-container", children=[div_offcanvas])
 ])
-
-
-def plot_deal_vs_sale_sold(other_close_deals, df_tax, deal, round_rooms=True):
-    # When the hist becomes square thats because there a huge anomaly in terms of extreme value
-    if round_rooms:
-        other_close_deals = other_close_deals.dropna(subset='rooms')
-        sale_items = \
-            other_close_deals[other_close_deals['rooms'].astype(float).astype(int) == int(float(deal['rooms']))][
-                'last_price']
-    else:
-        sale_items = other_close_deals[other_close_deals['rooms'] == deal['rooms']]['last_price']
-    sale_items = sale_items.rename(
-        f'last_price #{len(sale_items)}')  # .hist(bins=min(70, len(sale_items)), legend=True, alpha=0.8)
-    fig = go.Figure()
-    tr_1 = go.Histogram(x=sale_items, name=sale_items.name, opacity=0.75, nbinsx=len(sale_items))
-    fig.add_trace(tr_1)
-    sold_items = df_tax['mcirMorach']
-    days_back = df_tax.attrs['days_back']
-    if len(sold_items):
-        sold_items = sold_items.rename(
-            f'realPrice{days_back}D #{len(sold_items)}')  # .hist(bins=min(70, len(sold_items)), legend=True,alpha=0.8)
-        tr_2 = go.Histogram(x=sold_items, name=sold_items.name, opacity=0.75, nbinsx=len(sold_items))
-        fig.add_trace(tr_2)
-    fig.add_vline(x=deal['last_price'], line_width=2, line_color='red', line_dash='dash',
-                  name=f"{deal['last_price']:,.0f}")
-    fig.update_layout(  # title_text=str_txt,
-        # barmode='stack',
-        width=450,
-        height=250,
-        margin=dict(l=0, r=0, b=0, t=0),
-        legend=dict(x=0.0, y=1),
-        dragmode=False)
-    # fig['layout']['yaxis'].update(autorange=True)
-    # fig['layout']['xaxis'].update(autorange=True)
-    fig.update_xaxes(range=[deal['last_price'] // 2, deal['last_price'] * 2.5])
-    return fig
-    # plt.legend()
-
-
-def get_similar_deals(deal, days_back=99, dist_km=1):
-    # https://plotly.com/python/histograms/
-    # deal = df.loc[deal_id]
-    other_close_deals = calc_dist(df_all, deal, dist_km)  # .join(df)
-    df_tax = get_similar_closed_deals(deal, days_back, dist_km, True)
-    print(f'get_similar_deals: other_close_deals={len(other_close_deals)}, df_tax={len(df_tax)}')
-    # display(df_tax)
-    # nice cols:
-    #
-    # df_tax[['dist_from_deal', 'gush', 'tarIska', 'yeshuv', 'rechov', 'bayit', 'dira', 'mcirMozhar', 'shetachBruto', 'shetachNeto', 'shnatBniya', 'misHadarim', 'lblKoma']]
-    fig = plot_deal_vs_sale_sold(other_close_deals, df_tax, deal)
-    return fig
 
 
 @app.callback(
@@ -209,22 +127,21 @@ def show_assets(price_from, price_to, median_price_pct, discount_price_pct, date
     print(ctx.triggered_prop_ids, map_zoom)
     # sleep_bounds()
     if n_clicks_around:
-        df_f = get_asset_points(map_bounds=map_bounds, limit=True)
+        df_f = get_asset_points(df_all, map_bounds=map_bounds, limit=True)
     else:
-        price_from = price_from * 1e3 if price_from is not None else None
-        price_to = price_to * 1e3 if price_to is not None else None
+        price_from = price_from * rent_config_default["price_mul"] if price_from is not None else None
+        price_to = price_to * rent_config_default["price_mul"] if price_to is not None else None
         with_agency = True if len(with_agency) else False
         with_parking = True if len(with_parking) else None
         with_balconies = True if len(with_balconies) else None
-        median_pricse_pct = 0
-        df_f = get_asset_points(price_from, price_to, median_pricse_pct, discount_price_pct, date_added, updated_at,
+        df_f = get_asset_points(df_all, price_from, price_to, median_price_pct, discount_price_pct, date_added,
+                                updated_at,
                                 rooms_range,
                                 with_agency, with_parking, with_balconies, map_bounds=map_bounds,
-                                state_asset=state_asset, is_median=is_median)
+                                state_asset=state_asset, is_median=is_median, limit=True)
     # Can keep a list of points, if after fetch there was no new, no need to build new points, just keep them to save resources
-    df_f = df_f[:1000]
     df_f = preprocess_to_str_deals(df_f)
-    # icon_metric = 'pct_diff_median' if is_median else 'price_pct'
+    icon_metric = 'pct_diff_median' if is_median else 'price_pct'
     icon_metric = 'price_pct'
     deal_points = get_geojsons(df_f, icon_metric)
 
@@ -247,10 +164,20 @@ def toggle_modal(feature, n2, is_open):
             deal_id = feature['properties']['deal_id']
             deal = df_all.loc[deal_id]
             str_html = build_sidebar(deal)
-            fig = get_similar_deals(deal)
+            fig = get_similar_deals(df_all, deal)
             return not is_open, None, str_html, fig
     return is_open, None, None, {}
 
+
+# @app.callback(
+#     Output('datatable-interactivity', "editable"),
+#     # [Output("datatable-rfStats", "data"), Output("datatable-rfStats", "selected_rows")],
+#     [Input("datatable-interactivity", "selected_rows")]# + plot_dev_lvl_filter_inputs
+# )
+# def handle_table_row_select(row):
+#     print("handle_table_row_select", row)
+#     return dash.no_update
+#      # filtered_df.sort_values(by=['lastUpdated']).to_dict('records'), [row_id]
 
 if __name__ == '__main__':
     app.run_server(debug=True)

@@ -16,7 +16,7 @@ import pandas as pd
 from app_map.utils import *
 from forsale.utils import calc_dist, get_similar_closed_deals  # , plot_deal_vs_sale_sold
 
-df_all = pd.read_pickle('/Users/lidorazulay/Documents/DS/realestate/resources/yad2_rent_df.pk')
+df_all = pd.read_pickle('resources/yad2_rent_df.pk')
 # TODO: df_all.query("last_price > 500000 and square_meters < 200 and status == 'משופץ'").sort_values('avg_price_m'), can create a nice view for sorting by avg_price per meter.
 df_all['pct_diff_median'] = 0
 df_all['avg_price_m'] = df_all['last_price'] / df_all['square_meters']

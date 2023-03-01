@@ -8,7 +8,8 @@ from datetime import datetime
 
 def get_connetor():
     import sys
-    sys.path.insert(0, '/Users/lidorazulay/Documents/DS/Crypto')
+    import os
+    sys.path.insert(0, f'/Users/{os.environ["USERNAME"]}/Documents/DS/Crypto')
     from Twitter.connector import connect_remote_sql_alchemy
     conn = connect_remote_sql_alchemy()
     return conn
@@ -60,6 +61,26 @@ def get_today(type, conn):
     return df_today
 
 
+def get_nadlan(conn, days_back):
+    q = """SELECT {cols_str} from nadlan_trans where 
+    trans_date > TO_DATE('{from_date}', 'YYYY-MM-DD')
+    and price_declared = price_estimated
+    and deal_part = 1
+    """
+    used_cols = ["trans_date", "city", "n_rooms", "price_declared",
+                 "sq_m_gross", "sq_m_net", "floor", "n_floors",
+                 "year_built", "parking", "lat", "long",
+                 'gush', 'helka']
+    dt = (datetime.today() - pd.to_timedelta(f"{days_back}D")).date()
+    q_frmt = q.format(cols_str=', '.join(used_cols), from_date=str(dt))
+    #     conn.execute(wrap(q)).all()
+    df = pd.read_sql(q_frmt, conn)
+
+    df['trans_date'] = pd.to_datetime(df['trans_date'])
+    df = df.set_index('trans_date')
+    return df
+
+
 def get_similar_closed_deals(deal, days_back, dist_km, with_room):
     if np.isnan(deal['lat']) or np.isnan(deal['long']):
         raise ValueError('lat or long are not valid')
@@ -74,7 +95,7 @@ def get_similar_closed_deals(deal, days_back, dist_km, with_room):
         f' {sql_room_cond}' \
         f' and helekNimkar = 1.0'
     # print(q)
-    con_taxes = sqlite3.connect('/Users/lidorazulay/Documents/DS/realestate/resources/nadlan.db')
+    con_taxes = sqlite3.connect('resources/nadlan.db')
     df_tax = pd.read_sql(q, con_taxes)
     df_tax.attrs['days_back'] = days_back
     return df_tax
