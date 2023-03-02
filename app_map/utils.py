@@ -1,100 +1,15 @@
-import numpy as np
-from dash import html
-import pandas as pd
-from datetime import datetime
-import dash_leaflet.express as dlx
-from dash_extensions.javascript import assign
-
-from forsale.scraper_yad2 import _get_parse_item_add_info
-from forsale.utils import calc_dist, get_similar_closed_deals
-
-icon_05 = "https://cdn-icons-png.flaticon.com/128/9387/9387262.png"
-icon_10 = "https://cdn-icons-png.flaticon.com/128/6912/6912962.png"
-icon_20 = "https://cdn-icons-png.flaticon.com/128/6913/6913127.png"
-icon_30 = "https://cdn-icons-png.flaticon.com/128/6913/6913198.png"
-icon_40 = "https://cdn-icons-png.flaticon.com/128/9556/9556570.png"
-icon_50 = "https://cdn-icons-png.flaticon.com/128/5065/5065451.png"
-icon_regular = "https://cdn-icons-png.flaticon.com/128/6153/6153497.png"
-icon_maps = "https://cdn-icons-png.flaticon.com/128/684/684809.png"
-icon_real_estate = "https://cdn-icons-png.flaticon.com/128/602/602275.png"
-
-
-def get_icon(deal, metric='pct_diff_median'):
-    p = deal['metadata'][metric]
-    if -0.1 < p <= -0.05:
-        return icon_05
-    elif -0.2 < p <= -0.1:
-        return icon_10
-    elif -0.3 < p <= -0.2:
-        return icon_20
-    elif -0.4 < p <= -0.3:
-        return icon_30
-    elif -0.5 < p <= -0.4:
-        return icon_40
-    elif p <= -0.5:
-        return icon_50
-    else:
-        return icon_regular
-
-
-icon1 = "https://cdn-icons-png.flaticon.com/128/447/447031.png"
-icon2 = "https://cdn-icons-png.flaticon.com/128/7976/7976202.png"
-
-# https://stackoverflow.com/questions/34775308/leaflet-how-to-add-a-text-label-to-a-custom-marker-icon
-# Can use text instead of just icon with using DivIcon in JS.
-js_draw_icon = assign("""
-function(feature, latlng){
-    const flag = L.icon({iconUrl: feature.properties.icon,
-                         iconSize: [28, 28],
-                         });
-    console.log(feature.properties.icon);
-    return L.marker(latlng, {icon: flag});
-}""")
+from app_map.marker import get_marker_tooltip, icon_maps, icon_real_estate
+from app_map.util_layout import *
+from scrape_yad2.scraper_yad2 import _get_parse_item_add_info
+from fetch_data.utils import filter_by_dist, get_nadlan_trans
 
 
 def get_geojsons(df, icon_metric):
-    deal_points = [dict(deal_id=idx, lat=d['lat'], lon=d['long'], color='black', icon="fa-light fa-house", metadata=d)
+    deal_points = [dict(deal_id=idx, lat=d['lat'], lon=d['long'], metadata=d)
                    for
                    idx, d in df.iterrows()]
-    deal_points = dlx.dicts_to_geojson([{**deal, **dict(tooltip=create_tooltip(deal),
-                                                        icon=get_icon(deal, icon_metric),
-                                                        # f"{deal['metadata'][metric]:.0%}"
-                                                        icon_text=deal['metadata']['last_price_s'])}
-                                        for deal in deal_points])
+    deal_points = get_marker_tooltip(deal_points, icon_metric)
     return deal_points
-
-
-# function(feature, latlng){
-#     const ico = L.DivIcon({
-#         className: 'my-div-icon',
-#         html: '<img class="icon-div-image" src=${feature.properties.icon}/>'+
-#               '<span class="icon-div-span">feature.properties.icon_text</span>'
-#     })
-#     return L.Marker(latlng, {icon: ico})
-# }
-js_draw_icon_div = assign("""
-function(feature, latlng){
-    console.log("1");
-    // console.log(feature.properties.icon);
-    const x = L.divIcon({
-        className: 'marker-div-icon',
-        html: `<img class="marker-div-image" src="${feature.properties.icon}"/>
-        <span class="marker-div-span">${feature.properties.icon_text}</span>`
-    })
-    console.log("2");
-    return L.marker(latlng, {icon: x});
-}
-""")
-
-
-def gen_color(x):
-    if x == np.NaN:
-        return 'black'
-    if x > 0.02:
-        return 'red'
-    if x < -0.02:
-        return 'green'
-    return 'black'
 
 
 def res_get_add_info(item):
@@ -148,33 +63,14 @@ def format_number(num):
 def preprocess_to_str_deals(df):
     df['rooms_s'] = df['rooms'].apply(lambda m: f"{m if m % 10 == 0 else round(m)}")
     df['last_price_s'] = df['last_price'].apply(lambda m: f"₪{format_number(m)}")
+    df['ai_mean_pct_s'] = df['ai_mean_pct'].apply(lambda m: f"{m:0.1%}")
     df['pct_diff_median_s'] = df['pct_diff_median'].apply(lambda m: f"{m:0.1%}")
     df['price_pct_s'] = df['price_pct'].apply(lambda m: f"{m:0.1%}")
     return df
 
 
-def create_tooltip(deal):
-    m = deal['metadata']
-    #  <img src="{icon_05}" class="tooltip-icon"/>
-    # f"{deal['deal_id']}</br>
-    style_color_pct_med = f"""style="color:{gen_color(m['pct_diff_median'])}" """
-    style_color_pct = f"""style="color:{gen_color(m['price_pct'])}" """
-    # print(style_color_pct)
-    html_tp = f"""
-    <table class="">
-    <tr><td class="text-ltr">{m['last_price_s']}</td>      <td class="text-rtl">מחיר</td>   </tr>
-    <tr><td class="text-ltr"></td> <td class="text-rtl" colspan="2"><b>{m['status']}</b></td>  </tr>
-    <tr><td class="text-ltr">{m['rooms_s']}</td>          <td class="text-rtl">חדרים</td>  </tr>
-    <tr><td class="text-ltr">{m['floor']:.0f}</td>          <td class="text-rtl">קומה</td>  </tr>
-    <tr><td class="text-ltr">{m['square_meters']:,.0f}</td>          <td class="text-rtl">מ״ר</td>  </tr>
-    <tr><td class="text-ltr">₪{m['last_price'] / m['square_meters']:,.0f}</td>          <td class="text-rtl">למ״ר</td>  </tr>
-    <tr><td class="text-ltr" {style_color_pct_med}>{m['pct_diff_median_s']}</td><td class="text-rtl">חציון</td>  </tr>
-    <tr><td class="text-ltr" {style_color_pct}>{m['price_pct_s']}</td>       <td class="text-rtl">הנחה</td>   </tr>
-    </table>"""
-    return html_tp
-
-
-def get_asset_points(df_all, price_from=None, price_to=None, median_price_pct=None, discount_price_pct=None,
+def get_asset_points(df_all, price_from=None, price_to=None,
+                     median_price_pct=None, discount_price_pct=None, ai_pct=None,
                      date_added_days=None, updated_at=None,
                      rooms_range=(None, None), with_agency=True, with_parking=None, with_balconies=None, state_asset=(),
                      map_bounds=None, is_median=True,
@@ -196,6 +92,7 @@ def get_asset_points(df_all, price_from=None, price_to=None, median_price_pct=No
         sql_state_asset=sql_state_asset,
         sql_median_price_pct=f"and group_size > 30 and pct_diff_median <= {median_price_pct}" if median_price_pct is not None else "",
         sql_discount_pct=f"and -0.90 <= price_pct <= {discount_price_pct}" if discount_price_pct is not None else "",
+        sql_ai_pct = f"and -0.90 <= ai_mean_pct <= {ai_pct}" if ai_pct is not None else "",
         sql_map_bounds=f"and {map_bounds[0][0]} < lat < {map_bounds[1][0]} and {map_bounds[0][1]} < long < {map_bounds[1][1]}" if map_bounds else "",
         sql_date_added=f"and date_added_d <= {date_added_days}" if date_added_days else "",
         sql_updated_at=f"and updated_at_d <= {updated_at}" if updated_at else "")
@@ -277,28 +174,24 @@ def build_sidebar(deal):
 from plotly import graph_objects as go
 
 
-def plot_deal_vs_sale_sold(other_close_deals, df_tax, deal, round_rooms=True):
+def plot_deal_vs_sale_sold(other_close_deals, df_tax, deal):
     # When the hist becomes square thats because there a huge anomaly in terms of extreme value
-    if round_rooms:
-        other_close_deals = other_close_deals.dropna(subset='rooms')
-        sale_items = \
-            other_close_deals[other_close_deals['rooms'].astype(float).astype(int) == int(float(deal['rooms']))][
-                'last_price']
-    else:
-        sale_items = other_close_deals[other_close_deals['rooms'] == deal['rooms']]['last_price']
+    sale_items = other_close_deals['last_price']
     sale_items = sale_items.rename(
         f'last_price #{len(sale_items)}')  # .hist(bins=min(70, len(sale_items)), legend=True, alpha=0.8)
     fig = go.Figure()
     tr_1 = go.Histogram(x=sale_items, name=sale_items.name, opacity=0.75, nbinsx=len(sale_items))
     fig.add_trace(tr_1)
-    sold_items = df_tax['mcirMorach']
-    days_back = df_tax.attrs['days_back']
-    if len(sold_items):
-        sold_items = sold_items.rename(
-            f'realPrice{days_back}D #{len(sold_items)}')  # .hist(bins=min(70, len(sold_items)), legend=True,alpha=0.8)
-        tr_2 = go.Histogram(x=sold_items, name=sold_items.name, opacity=0.75, nbinsx=len(sold_items))
-        fig.add_trace(tr_2)
-    fig.add_vline(x=deal['last_price'], line_width=2, line_color='red', line_dash='dash',
+    if df_tax is not None:
+        sold_items = df_tax['price_declared']
+        days_back = df_tax.attrs['days_back']
+        if len(sold_items):
+            sold_items = sold_items.rename(
+                f'realPrice{days_back}D #{len(sold_items)}')  # .hist(bins=min(70, len(sold_items)), legend=True,alpha=0.8)
+            tr_2 = go.Histogram(x=sold_items, name=sold_items.name, opacity=0.75, nbinsx=len(sold_items))
+            fig.add_trace(tr_2)
+    fig.add_vline(x=deal['last_price'], line_width=2,
+                  line_color='red', line_dash='dash',
                   name=f"{deal['last_price']:,.0f}")
     fig.update_layout(  # title_text=str_txt,
         # barmode='stack',
@@ -314,15 +207,13 @@ def plot_deal_vs_sale_sold(other_close_deals, df_tax, deal, round_rooms=True):
     # plt.legend()
 
 
-def get_similar_deals(df_all, deal, days_back=99, dist_km=1):
-    # https://plotly.com/python/histograms/
-    # deal = df.loc[deal_id]
-    other_close_deals = calc_dist(df_all, deal, dist_km)  # .join(df)
-    df_tax = get_similar_closed_deals(deal, days_back, dist_km, True)
-    print(f'get_similar_deals: other_close_deals={len(other_close_deals)}, df_tax={len(df_tax)}')
-    # display(df_tax)
-    # nice cols:
-    #
-    # df_tax[['dist_from_deal', 'gush', 'tarIska', 'yeshuv', 'rechov', 'bayit', 'dira', 'mcirMozhar', 'shetachBruto', 'shetachNeto', 'shnatBniya', 'misHadarim', 'lblKoma']]
-    fig = plot_deal_vs_sale_sold(other_close_deals, df_tax, deal)
+def get_similar_deals(df_all, deal, days_back=99, dist_km=1, get_nadlan=True):
+    filter_rooms = True
+    df_open_deals = filter_by_dist(df_all, deal, dist_km)
+    if filter_rooms:
+        df_open_deals = df_open_deals.dropna(subset='rooms')
+        df_open_deals = df_open_deals[df_open_deals['rooms'].astype(float).astype(int) == int(float(deal['rooms']))]
+    df_tax = get_nadlan_trans(deal, days_back, dist_km, filter_rooms) if get_nadlan else None
+    print(f'get_similar_deals: other_close_deals={len(df_open_deals)}, df_tax={len(df_tax)}')
+    fig = plot_deal_vs_sale_sold(df_open_deals, df_tax, deal)
     return fig

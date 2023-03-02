@@ -10,17 +10,23 @@ import numpy as np
 from datetime import datetime
 import pandas as pd
 
-from app_map.utils import *
+from app_map.marker import POINT_TO_LAYER_FUN
+# from app_map.utils import *
 
-from_price_txt = 'ממחיר(א)'
-to_price_txt = 'עד מחיר(א)'
+from_price_txt = 'ממחיר'
+to_price_txt = 'עד מחיר'
 date_added_txt = 'הועלה עד '
 date_updated_text = 'עודכן לפני'
 n_rooms_txt = 'מספר חדרים'
 median_price_txt = '% מהחציון'
+ai_pct_txt = '% ממחירAI '
 price_pct_txt = 'שינוי במחיר'
 rooms_marks = {r: str(r) for r in range(7)}
 rooms_marks[6] = '6+'
+
+# https://stackoverflow.com/questions/34775308/leaflet-how-to-add-a-text-label-to-a-custom-marker-icon
+# https://community.plotly.com/t/dash-leaflet-custom-icon-for-each-marker-on-data-from-geojson/54158/10
+# Can use text instead of just icon with using DivIcon in JS.
 
 
 def get_div_top_bar(config_defaults):
@@ -72,6 +78,18 @@ def get_div_top_bar(config_defaults):
             max=1,
             className="input-ltr"
         ),
+        html.Span(ai_pct_txt),
+        dcc.Input(
+            id="ai_pct",
+            type="number",
+            placeholder=ai_pct_txt,
+            value=config_defaults["ai_pct"],
+            debounce=True,
+            step=0.01,
+            min=-1,
+            max=1,
+            className="input-ltr"
+        ),
         html.Span(date_added_txt),
         dcc.Input(
             id="date-added",
@@ -105,13 +123,14 @@ def get_div_top_bar(config_defaults):
             id='state-asset',
             style=dict(width='10em', )),
         html.Span('שיטה'),
+        # TODO: ADD SWITCH FOR ADDING AI_PCT as a dropdown.
         dbc.Switch(value=config_defaults["switch-median"], id='switch-median'),
         # dbc.Button(children="AAAAAA"),
-        dbc.Button("באיזור", id="button-around"),
+        dbc.Button("איזור", id="button-around"),
         dbc.Button("סנן", id='button-return'),
 
         dbc.Button(children="נקה", id="button-clear"),
-        html.Span(n_rooms_txt),
+        # html.Span(n_rooms_txt),
         html.Div(dcc.RangeSlider(1, 6, 1, value=[3, 4], marks=rooms_marks, id='rooms-slider'),
                  style={"min-width": "10em"}),
     ])
@@ -122,7 +141,7 @@ div_left_map = html.Div(className="left-div", children=[
     dl.Map(children=[dl.TileLayer(),
                      dl.GeoJSON(data=None, id="geojson", zoomToBounds=False, cluster=True,
                                 # superClusterOptions=dict(radius=50, maxZoom=12),
-                                options=dict(pointToLayer=js_draw_icon_div),
+                                options=dict(pointToLayer=POINT_TO_LAYER_FUN),
                                 ),
                      ],
            zoom=3, id='map', zoomControl=True,
@@ -239,7 +258,7 @@ def get_table(df):
         sort_action="native",
         sort_mode="multi",
         column_selectable="single",
-        row_selectable= False, # 'single',  # "multi",
+        row_selectable=False,  # 'single',  # "multi",
         row_deletable=False,
         # active_cell=False,
         selected_columns=[],
@@ -255,4 +274,3 @@ def get_table(df):
         style_data_conditional=cond_styles
     )
     return [tbl]
-

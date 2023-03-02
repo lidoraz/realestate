@@ -5,39 +5,47 @@
 import time
 import dash
 import dash_bootstrap_components as dbc
-from dash import Output, Input, State, ctx
+from dash import html, Output, Input, State, ctx
+import numpy as np
+from datetime import datetime
+import pandas as pd
 
 from app_map.util_layout import div_left_map, div_offcanvas, get_div_top_bar, get_table
-from app_map.utils import *
+from app_map.utils import build_sidebar, preprocess_to_str_deals, \
+    get_geojsons, get_similar_deals, get_asset_points
 
-rent_config_default = {"price-from": 0.5, "price-to": 3, "median-price-pct": None,
-                       "switch-median": False,
-                       "discount-price-pct": -0.05,
-                       "ai_pct": None,
-                       "price_mul": 1e3}
-df_all = pd.read_pickle('../resources/yad2_rent_df.pk')
+df_all = pd.read_pickle('../resources/yad2_forsale_df.pk')
 # TODO: df_all.query("last_price > 500000 and square_meters < 200 and status == 'משופץ'").sort_values('avg_price_m'), can create a nice view for sorting by avg_price per meter.
-df_all['pct_diff_median'] = 0
-
 df_all['ai_mean'] = df_all['ai_mean'] * (df_all['ai_std_pct'] < 0.15)  # Take only certain AI predictions
 df_all['ai_mean_pct'] = df_all['ai_mean'].replace(0, np.nan)
 df_all['ai_mean_pct'] = df_all['last_price'] / df_all['ai_mean_pct'] - 1
-
 df_all['avg_price_m'] = df_all['last_price'] / df_all['square_meters']
 df_all['date_added'] = pd.to_datetime(df_all['date_added'])
 df_all['date_added_d'] = (datetime.today() - df_all['date_added']).dt.days
 df_all['updated_at'] = pd.to_datetime(df_all['updated_at'])
 df_all['updated_at_d'] = (datetime.today() - df_all['updated_at']).dt.days
 # df_f = df.query('last_price < 3000000 and -0.9 < price_pct < -0.01 and price_diff < 1e7')  # [:30]
-df_all.query('-0.89 <price_pct < -0.05').to_csv('df_rent.csv')
+df_all.query('-0.89 <price_pct < -0.05').to_csv('df.csv')
 app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
 
-# def get_asset_points(price_from=500_000, price_to=3_000_000, median_price_pct=-0.1, date_added_days=100,
-#                      rooms_range=(3, 4), with_agency=True, state_asset=()):
+from_price_txt = 'עד מחיר(מ)'
+to_price_txt = 'עד מחיר(מ)'
+date_added_txt = 'הועלה עד '
+date_updated_text = 'עודכן לפני'
+n_rooms_txt = 'מספר חדרים'
+median_price_txt = '% מהחציון'
+price_pct_txt = 'שינוי במחיר'
+rooms_marks = {r: str(r) for r in range(7)}
+rooms_marks[6] = '6+'
 
-
+forsale_config_default = {"price-from": 0.5, "price-to": 3, "median-price-pct": -0.2,
+                          "switch-median": True,
+                          "discount-price-pct": None,
+                          "ai_pct": None,
+                          "price_mul": 1e6
+                          }
 app.layout = html.Div(children=[
-    html.Div(className="top-container", children=get_div_top_bar(rent_config_default)),
+    html.Div(className="top-container", children=get_div_top_bar(forsale_config_default)),
     html.Div(className="grid-container", children=[
         html.Div(className="left-container", children=[html.Div(id='table-container', children=None)]),
         html.Div(className="right-container", children=[div_left_map]),
@@ -130,8 +138,8 @@ def show_assets(price_from, price_to, median_price_pct, discount_price_pct, ai_p
     if n_clicks_around:
         df_f = get_asset_points(df_all, map_bounds=map_bounds, limit=True)
     else:
-        price_from = price_from * rent_config_default["price_mul"] if price_from is not None else None
-        price_to = price_to * rent_config_default["price_mul"] if price_to is not None else None
+        price_from = price_from * forsale_config_default["price_mul"] if price_from is not None else None
+        price_to = price_to * forsale_config_default["price_mul"] if price_to is not None else None
         with_agency = True if len(with_agency) else False
         with_parking = True if len(with_parking) else None
         with_balconies = True if len(with_balconies) else None
@@ -143,7 +151,6 @@ def show_assets(price_from, price_to, median_price_pct, discount_price_pct, ai_p
     # Can keep a list of points, if after fetch there was no new, no need to build new points, just keep them to save resources
     df_f = preprocess_to_str_deals(df_f)
     icon_metric = 'pct_diff_median' if is_median else 'price_pct'
-    icon_metric = 'price_pct'
     deal_points = get_geojsons(df_f, icon_metric)
 
     return deal_points, get_table(df_f), len(df_f), None, None
@@ -170,15 +177,5 @@ def toggle_modal(feature, n2, is_open):
     return is_open, None, None, {}
 
 
-# @app.callback(
-#     Output('datatable-interactivity', "editable"),
-#     # [Output("datatable-rfStats", "data"), Output("datatable-rfStats", "selected_rows")],
-#     [Input("datatable-interactivity", "selected_rows")]# + plot_dev_lvl_filter_inputs
-# )
-# def handle_table_row_select(row):
-#     print("handle_table_row_select", row)
-#     return dash.no_update
-#      # filtered_df.sort_values(by=['lastUpdated']).to_dict('records'), [row_id]
-
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=True, port=8049)

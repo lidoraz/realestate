@@ -5,7 +5,7 @@ import os
 import time
 import schedule
 from datetime import datetime
-from RealEstate.scraper_yad2 import get_scraper_yad2_forsale, get_scraper_yad2_rent
+from scrape_yad2.scraper_yad2 import get_scraper_yad2_forsale, get_scraper_yad2_rent
 
 
 def _scraper():

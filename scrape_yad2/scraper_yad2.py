@@ -1,13 +1,9 @@
 import os
-
-import numpy as np
 import requests
-import schedule
 from tqdm import tqdm
 import time
 import pandas as pd
 from datetime import datetime
-import sqlite3
 
 import sqlalchemy
 
@@ -30,21 +26,25 @@ forsale_today_cols = ['line_1', 'line_2', 'line_3', 'row_1', 'row_2', 'row_3', '
                       'cat_id', 'customer_id', 'feed_source', 'id', 'link_token', 'merchant',
                       'contact_name', 'merchant_name', 'record_id', 'subcat_id', 'currency',
                       'price', 'date', 'date_added', 'updated_at', 'promotional_ad',
-                      'address_more', 'hood_id', 'office_about', 'office_logo_url',
+                      'address_more', 'hood_id',  # 'office_about', 'office_logo_url',
                       'square_meters', 'hometypeid_text', 'neighborhood',
                       'assetclassificationid_text', 'rooms_text', 'aboveprice', 'is_platinum',
                       'is_mobile_platinum', 'processing_date']
 # Can use this to classify::
 # 'PrimaryArea': 'hamerkaz_area'
 # 'AreaID_text': 'אזור רמת גן וגבעתיים'
+
+to_be_removed_cols = ['merchant_name', 'currency', 'office_about', 'office_logo_url', ]
 rent_today_cols = ['line_1', 'line_2', 'line_3', 'row_1', 'row_2', 'row_3', 'row_4',
                    'search_text', 'title_1', 'title_2', 'images_count', 'img_url',
                    'images_urls', 'video_url', 'primaryarea', 'primaryareaid',
                    'areaid_text', 'secondaryarea', 'area_id', 'city', 'city_code',
                    'street', 'coordinates', 'geohash', 'ad_highlight_type',
-                   'background_color', 'highlight_text', 'order_type_id', 'ad_number',
+                   'background_color', 'highlight_text',
+                   'order_type_id', 'ad_number',
                    'cat_id', 'customer_id', 'feed_source', 'id', 'link_token', 'merchant',
-                   'contact_name', 'merchant_name', 'record_id', 'subcat_id', 'currency',
+                   'contact_name', 'merchant_name',
+                   'record_id', 'subcat_id', 'currency',
                    'price', 'date', 'date_added', 'updated_at',
                    'address_more', 'hood_id', 'office_about', 'office_logo_url',
                    'square_meters', 'hometypeid_text', 'neighborhood',
@@ -142,6 +142,8 @@ class ScraperYad2:
         for col, dtype in df.dtypes.items():
             if dtype == 'object':
                 df[col] = df[col].astype(str)
+        df['area_id'] = pd.to_numeric(df['area_id'], errors="coerce")
+        df['city_code'] = pd.to_numeric(df['city_code'], errors="coerce")
         df.to_sql(name=f'{self.today_table}_temp', con=con, if_exists='append', index=False)
 
     def track_active(self, con):
