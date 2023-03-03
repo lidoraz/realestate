@@ -1,4 +1,4 @@
-from sqlalchemy import Integer, Date, String, Boolean, Float
+from sqlalchemy import Integer, Date, String, Boolean, Float, DateTime
 
 history_dtype = {
     "price": Integer,
@@ -26,11 +26,12 @@ cols_renamer_today = {
     "primaryareaid": "primary_area_id",
     "area_id": "area_id",
     "city_code": "city_id",
-    "merchant": "merchant",
+    "merchant": "is_agency",
+    "merchant_name": "agency_name",
     "img_url": "img_url",
     "latitude": "lat",  # Added
     "longitude": "long",  # Added
-    "date": "date",
+    "date": "date_updated",
     "date_added": "date_added",
     "processing_date": "processing_date"  # Added
 }
@@ -72,10 +73,25 @@ sql_today_log_dtypes = {'asset_type': String, 'id': String,
                         'price': Integer, 'city': String, 'rooms': Float, 'floor': Integer,
                         'square_meters': Float, 'asset_status': String, 'neighborhood': String,
                         'street': String, 'street_num': String, 'primary_area': String,
-                        'primary_area_id': Float, 'area_id': Float,
-                        'city_id': Integer, 'merchant': String, 'img_url': String,
-                        'lat': Float, 'long': Float, 'date': String,
-                        'date_added': String, 'processing_date': String, 'active': Boolean}
+                        'primary_area_id': Integer, 'area_id': Integer,
+                        'city_id': Integer,
+                        'is_agency': Boolean, 'agency_name': String,
+                        'img_url': String,
+                        'lat': Float, 'long': Float, 'date_updated': DateTime,
+                        'date_added': DateTime, 'processing_date': Date}
+
+assert len(sql_today_log_dtypes) == len(cols_renamer_today)
+
+sql_price_history_dtypes = {'id': String, 'price': Integer, 'date_updated': DateTime, 'date_added': DateTime,
+                            'processing_date': Date}
+
+sql_items_dtypes = {'id': String, 'parking': Integer, 'balconies': Boolean, 'number_of_floors': Integer,
+                    'renovated': Boolean, 'asset_exclusive_declaration': Boolean, 'air_conditioner': Boolean,
+                    'bars': Boolean, 'elevator': Boolean, 'boiler': Boolean, 'accessibility': Boolean,
+                    'shelter': Boolean, 'warhouse': Boolean, 'tadiran_c': Boolean, 'furniture': Boolean,
+                    'flexible_enter_date': Boolean, 'kosher_kitchen': String, 'housing_unit': String,
+                    'square_meters': Integer, 'square_meter_build': Integer, 'garden_area': Integer,
+                    'info_text': String, 'image_urls': String, 'processing_date': Date}
 
 q_history_last_price = """SELECT id, price as last_price from (select id, price, processing_date, ROW_NUMBER() over (partition by id order by processing_date desc)
  as rn from {}) a where rn=1"""

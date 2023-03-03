@@ -7,7 +7,7 @@ from datetime import datetime
 
 import sqlalchemy
 
-from scrape_nadlan.utils_insert import get_table
+from scrape_nadlan.utils_insert import get_table, create_ignore_if_exists
 from scrape_yad2.utils import _get_parse_item_add_info
 from scrape_yad2.config import *
 
@@ -28,20 +28,10 @@ def remove_dup(table, partitions, con, debug):
     con.execute(q_today_remove_duplicates)
 
 
-# def _process_price(x):
-#     if x == 'לא צוין מחיר':
-#         return None
-#     else:
-#         return x.replace(',', '').replace(' ₪', '').replace(' $', '')
-#
-#
-# def extract_rooms_floor_sq(df):
-#     res = pd.DataFrame([{x[0]['key']: x[0]['value'],
-#                          x[1]['key']: x[1]['value'],
-#                          x[2]['key']: x[2]['value']} for x in
-#                         df['row_4'].tolist()])
-#     assert res.columns.to_list() == ['rooms', 'floor', 'SquareMeter']
-#     return res
+def escape_quote(df, cols):
+    print(cols)
+    for c in cols:
+        df[c] = df[c].astype(str).str.replace("'", "''")
 
 
 class ScraperYad2:
@@ -76,17 +66,6 @@ class ScraperYad2:
 
     def track_active(self, con):
         print("Updating log table")
-        if not sqlalchemy.inspect(con).has_table(self.log_table):
-            print("created table")
-            df = pd.read_sql(f"Select * from {self.today_table} limit 1", con)
-            df['active'] = True
-            metadata_obj = sqlalchemy.MetaData()
-            _ = get_table(self.log_table, sql_today_log_dtypes, metadata_obj, primary_keys=["id"])
-            metadata_obj.create_all(con)
-            # df.dtypes.to
-            # df.to_sql(self.log_table, con, index=False, dtype={'id': 'STRING PRIMARY KEY'})
-            # con.execute(f"ALTER TABLE {self.log_table} ADD PRIMARY KEY (id);")
-
         today_ids = pd.read_sql(f"Select distinct id from {self.today_table}", con)['id'].to_list()
         today_ids_s = set(today_ids)
         # case has rows, set active, not active
@@ -134,30 +113,29 @@ class ScraperYad2:
         df = df.rename(columns=cols_renamer_today)
         df = df[cols_renamer_today.values()]
         re_digits = "(\d+)"
+        # df['merchant'] =
         df['floor'] = df['floor'].str.replace('קומת קרקע', 'קומה 0').str.extract(re_digits)[0].astype("Int32")
         df['price'] = df['price'].str.replace(',', '').str.extract(re_digits)[0].astype('Int32')
-        for col, dtype in df.dtypes.items():
-            if dtype == 'object':
-                df[col] = df[col].astype(str)
-        df['area_id'] = pd.to_numeric(df['area_id'], errors="coerce")
-        df['city_id'] = pd.to_numeric(df['city_id'], errors="coerce")
+        # for col, dtype in df.dtypes.items():
+        #     if dtype == 'object':
+        #         df[col] = df[col].astype(str)
+        df['area_id'] = pd.to_numeric(df['area_id'], errors="coerce").astype('int32')
+        df['city_id'] = pd.to_numeric(df['city_id'], errors="coerce").astype('int32')
         return df
 
     def create_tables(self, con):
         con.execute(f"DROP table if exists {self.today_table}_temp")
-        con.execute(
-            f"CREATE TABLE IF NOT EXISTS {self.history_table}(id VARCHAR(255) not null, price float, date TIMESTAMP, date_added TIMESTAMP not null, processing_date DATE not null)")
+        create_ignore_if_exists(con, self.history_table, sql_price_history_dtypes)
+        create_ignore_if_exists(con, self.today_table, sql_today_log_dtypes)
+        sql_today_log_dtypes['active'] = sqlalchemy.Boolean
+        create_ignore_if_exists(con, self.log_table, sql_today_log_dtypes, primary_keys=["id"])
+        create_ignore_if_exists(con, self.item_table, sql_items_dtypes, primary_keys=["id"])
 
     def insert_to_items(self, con, debug):
         # item_table = "yad2_forsale_items_add"
         ids = pd.read_sql(f"SELECT id from {self.today_table}", con)['id'].to_list()
         today = datetime.today().date()
-        if not sqlalchemy.inspect(con).has_table(self.item_table):
-            entry = pd.Series(_get_parse_item_add_info(ids[0])).to_frame().T
-            entry['processing_date'] = today
-            entry.to_sql(self.item_table, con, index=False)
-            con.execute(f"ALTER TABLE {self.item_table} ADD PRIMARY KEY (id);")
-
+        #
         ids_in_items = pd.read_sql(f"SELECT id from {self.item_table}", con)['id'].to_list()
         ids_to_insert = list(set(ids) - set(ids_in_items))
         print(f"Preparing to insert: {len(ids_to_insert)} items")
@@ -167,36 +145,41 @@ class ScraperYad2:
         results = [i for i in results if i is not None]
         df_items = pd.DataFrame(results)
         df_items['processing_date'] = today
+        if debug:
+            escape_quote(df_items, ['info_text', 'image_urls'])
         df_items.to_sql(self.item_table, con, if_exists='append', index=False)
         print(f"insert_to_items: Inserted to {self.item_table} {len(df_items)} items!")
 
-    # ['row_5']
     def scraper_yad2(self, con, debug=False):
         self.create_tables(con)
         res = self._get_retry_json(1)
         last_page = res['data']['pagination']['last_page']
-        last_page = 10 if debug else last_page
+        last_page = 3 if debug else last_page
         today_dt = datetime.today()
         df_today_history = pd.read_sql(q_history_last_price.format(self.history_table), con)
         df = None
         for p in tqdm(range(1, last_page + 1)):
-            data = self._get_retry_json(p)
-            data = data.get('data')
-            if data is None:  # [ for x in df['row_4'].tolist()]
-                print(f"CAUTION - Could not fetch data for part {p}")
-            df = pd.DataFrame.from_dict(data['feed']['feed_items'])
-            df = self._preprocess(df, today_dt)
-            if debug:
-                str_cols = [k for k,v in sql_today_log_dtypes.items() if v == sqlalchemy.String]
-                for c in str_cols:
-                    df[c] = df[c].str.replace("'", "''")
-            self.log_history(df, df_today_history, con)
-            self.insert_today_temp(df, con)
-        if df is not None:
-            # update only if there was a change(prob was)
-            self.update_today(con, debug)
-            self.track_active(con)
-            self.insert_to_items(con, debug)
+            try:
+                data = self._get_retry_json(p)
+                data = data.get('data')
+                if data is None:  # [ for x in df['row_4'].tolist()]
+                    print(f"CAUTION - Could not fetch data for part {p}")
+                df = pd.DataFrame.from_dict(data['feed']['feed_items'])
+                df = self._preprocess(df, today_dt)
+                if debug:
+                    escape_quote(df, [k for k, v in sql_today_log_dtypes.items() if v == sqlalchemy.String])
+                self.log_history(df, df_today_history, con)
+                self.insert_today_temp(df, con)
+            except Exception as e:
+                print("Caught an exception in loop! ", e)
+                if debug:
+                    raise e
+        # update only if there was a change(prob was)
+        if df is None:
+            return
+        self.update_today(con, debug)
+        self.track_active(con)
+        self.insert_to_items(con, debug)
 
     def _check_exists(self, today_str, con):
         cnt_today = pd.read_sql(f"SELECT count(*) from {self.history_table} where processing_date = '{today_str}'",
@@ -206,7 +189,7 @@ class ScraperYad2:
 
     def log_history(self, df, df_today_history, con):
         # will dump only if a price of an id has changed from its current logged price, to save space and efficiency
-        minimum_cols = ['id', 'price', 'date', 'date_added', 'processing_date']
+        minimum_cols = sql_price_history_dtypes
         df = df[minimum_cols].copy()
         merged = df[['id', 'price']].merge(df_today_history, left_on='id', right_on='id', how='left')
         merged['last_price'] = merged['last_price'].astype(float)

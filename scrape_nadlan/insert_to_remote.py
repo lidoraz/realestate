@@ -38,7 +38,7 @@ def preprocessing(df, drop_duplicates, dropna):
     df['mcirMozhar'] = df['mcirMozhar'].str.replace(',', '').astype('Int32')
     df['mcirMorach'] = df['mcirMorach'].str.replace(',', '').astype('Int32')
     df['hanaya'] = df['hanaya'].str.split(' ').str[0].astype(int)
-    df['lblKoma'].apply(lambda x: 0 if x == 'קומת קרקע' else float(x)).astype(int)
+    df['lblKoma'].str.replace('קומת קרקע', '0').astype(int)
 
     df = df.rename(columns=columns_rename)
     if drop_duplicates:
@@ -56,9 +56,7 @@ def preprocessing(df, drop_duplicates, dropna):
 
 def insert_to_postgres_db(dt):
     eng = get_engine()
-    metadata_obj = MetaData()
-    nadlan_trans_tbl = get_table(tbl_name, columns_alchemy, metadata_obj, primary_keys)
-    metadata_obj.create_all(eng)
+    nadlan_trans_tbl = create_ignore_if_exists(eng, tbl_name, columns_alchemy, primary_keys)
 
     file_lst = filter_files(dt)
 

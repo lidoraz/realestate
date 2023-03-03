@@ -1,5 +1,5 @@
 import argparse
-from sqlalchemy import Column, Table
+from sqlalchemy import Column, Table, MetaData
 
 
 def get_args():
@@ -9,8 +9,11 @@ def get_args():
     return args.dt
 
 
-def create_ignore_exists():
-    pass
+def create_ignore_if_exists(con, tbl_name, cols_types, primary_keys=()):
+    metadata_obj = MetaData()
+    tbl = get_table(tbl_name, cols_types, metadata_obj, primary_keys=primary_keys)
+    metadata_obj.create_all(con)
+    return tbl
 
 
 def get_table(tbl_name, columns_alchemy, metadata_obj, primary_keys=()):
