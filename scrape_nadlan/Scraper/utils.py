@@ -6,7 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 import pandas as pd
 from tqdm import tqdm
 
-from DB import DB
+from scrape_nadlan.Scraper.DB import DB
 import itertools
 
 import platform

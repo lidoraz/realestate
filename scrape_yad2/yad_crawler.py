@@ -5,11 +5,11 @@ import os
 import time
 import schedule
 from datetime import datetime
-from scrape_yad2.scraper_yad2 import get_scraper_yad2_forsale, get_scraper_yad2_rent
+from scrape_yad2.run import get_scraper_yad2_forsale, get_scraper_yad2_rent
+from sqlalchemy import create_engine
 
 
 def _scraper():
-    from sqlalchemy import create_engine
     engine = create_engine(f'postgresql://{os.getenv("DB_USER")}:{os.getenv("DB_PASS")}@localhost:5432/vsdatabase')
     with engine.connect() as conn:
         print(f"{datetime.today()} Starting to fetch!")

@@ -1,6 +1,6 @@
 from app_map.marker import get_marker_tooltip, icon_maps, icon_real_estate
 from app_map.util_layout import *
-from scrape_yad2.scraper_yad2 import _get_parse_item_add_info
+from scrape_yad2.utils import _get_parse_item_add_info
 from fetch_data.utils import filter_by_dist, get_nadlan_trans
 
 

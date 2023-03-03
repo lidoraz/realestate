@@ -5,22 +5,14 @@ import sys
 file_dir = dirname(dirname(__file__))
 sys.path.append(file_dir)
 
-from scrape_nadlan.utils_insert import *
+from scrape_nadlan.config import *
 from sqlalchemy import Column, Table, create_engine, MetaData, sql, select
+from scrape_nadlan.utils_insert import *
 from scrape_nadlan.Scraper.utils import filter_files, read_files
 import pandas as pd
 import numpy as np
 import json
 import os
-
-
-def get_table(metadata_obj):
-    columns = [Column(name, col_type, primary_key=True if name in primary_keys else False) for
-               (name, col_type) in columns_alchemy.items()]
-    nadlan_trans_tbl = Table(tbl_name,
-                             metadata_obj,
-                             *columns)
-    return nadlan_trans_tbl
 
 
 def get_engine():
@@ -65,7 +57,7 @@ def preprocessing(df, drop_duplicates, dropna):
 def insert_to_postgres_db(dt):
     eng = get_engine()
     metadata_obj = MetaData()
-    nadlan_trans_tbl = get_table(metadata_obj)
+    nadlan_trans_tbl = get_table(tbl_name, columns_alchemy, metadata_obj, primary_keys)
     metadata_obj.create_all(eng)
 
     file_lst = filter_files(dt)
