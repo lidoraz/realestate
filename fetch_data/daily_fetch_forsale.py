@@ -6,7 +6,7 @@ if __name__ == '__main__':
     type = 'forsale'
     df_hist = get_price_hist(type, conn)
     df_today = get_today(type, conn)
-
+    # os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     df = process_tables(df_today, df_hist)
     df = add_distance(df)
     df = add_ai_price(df, type)

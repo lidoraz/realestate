@@ -29,7 +29,7 @@ def remove_dup(table, partitions, con, debug):
 
 
 def escape_quote(df, cols):
-    print(cols)
+    # print(cols)
     for c in cols:
         df[c] = df[c].astype(str).str.replace("'", "''")
 
@@ -95,12 +95,10 @@ class ScraperYad2:
 
     def update_today(self, con, debug):
         con.execute(f"DROP table if exists {self.today_table}")
-        if debug:
-            con.execute(f"CREATE TABLE  {self.today_table} AS SELECT * FROM {self.today_table}_temp WHERE 0")
-            con.execute(f"INSERT INTO {self.today_table} SELECT * FROM {self.today_table}_temp")
-        else:
-            con.execute(f"CREATE TABLE {self.today_table} AS TABLE {self.today_table}_temp")
-            con.execute(f"DROP table {self.today_table}_temp")
+        #pd.read_sql(f"select * from {self.today_table}_temp", con)
+        create_ignore_if_exists(con, self.today_table, sql_today_dtypes)
+        con.execute(f"INSERT INTO {self.today_table} SELECT * FROM {self.today_table}_temp")
+        con.execute(f"DROP table {self.today_table}_temp")
         remove_dup(self.today_table, 'id', con, debug)
         remove_dup(self.history_table, ['id', 'processing_date'], con, debug)
 
@@ -116,19 +114,16 @@ class ScraperYad2:
         # df['merchant'] =
         df['floor'] = df['floor'].str.replace('קומת קרקע', 'קומה 0').str.extract(re_digits)[0].astype("Int32")
         df['price'] = df['price'].str.replace(',', '').str.extract(re_digits)[0].astype('Int32')
-        # for col, dtype in df.dtypes.items():
-        #     if dtype == 'object':
-        #         df[col] = df[col].astype(str)
-        df['area_id'] = pd.to_numeric(df['area_id'], errors="coerce").astype('int32')
-        df['city_id'] = pd.to_numeric(df['city_id'], errors="coerce").astype('int32')
         return df
 
     def create_tables(self, con):
         con.execute(f"DROP table if exists {self.today_table}_temp")
+        create_ignore_if_exists(con, f'{self.today_table}_temp', sql_today_dtypes)
         create_ignore_if_exists(con, self.history_table, sql_price_history_dtypes)
-        create_ignore_if_exists(con, self.today_table, sql_today_log_dtypes)
-        sql_today_log_dtypes['active'] = sqlalchemy.Boolean
-        create_ignore_if_exists(con, self.log_table, sql_today_log_dtypes, primary_keys=["id"])
+        create_ignore_if_exists(con, self.today_table, sql_today_dtypes)
+        sql_today_dtypes_log = sql_today_dtypes.copy()
+        sql_today_dtypes_log['active'] = sqlalchemy.Boolean
+        create_ignore_if_exists(con, self.log_table, sql_today_dtypes_log, primary_keys=["id"])
         create_ignore_if_exists(con, self.item_table, sql_items_dtypes, primary_keys=["id"])
 
     def insert_to_items(self, con, debug):
@@ -167,7 +162,7 @@ class ScraperYad2:
                 df = pd.DataFrame.from_dict(data['feed']['feed_items'])
                 df = self._preprocess(df, today_dt)
                 if debug:
-                    escape_quote(df, [k for k, v in sql_today_log_dtypes.items() if v == sqlalchemy.String])
+                    escape_quote(df, [k for k, v in sql_today_dtypes.items() if v == sqlalchemy.String])
                 self.log_history(df, df_today_history, con)
                 self.insert_today_temp(df, con)
             except Exception as e:
@@ -189,7 +184,7 @@ class ScraperYad2:
 
     def log_history(self, df, df_today_history, con):
         # will dump only if a price of an id has changed from its current logged price, to save space and efficiency
-        minimum_cols = sql_price_history_dtypes
+        minimum_cols = sql_price_history_dtypes.keys()
         df = df[minimum_cols].copy()
         merged = df[['id', 'price']].merge(df_today_history, left_on='id', right_on='id', how='left')
         merged['last_price'] = merged['last_price'].astype(float)

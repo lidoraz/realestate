@@ -1,6 +1,3 @@
-"""
-# Collect Tweets logic: Save in db by name and ts, if exists, ignore it, check every 30sec. limit is 900 per 15min
-"""
 import os
 import time
 import schedule

@@ -9,7 +9,6 @@ url_forsale_apartments_houses = "https://gw.yad2.co.il/feed-search-legacy/reales
 url_rent_apartments_houses = "https://gw.yad2.co.il/feed-search-legacy/realestate/rent?propertyGroup=apartments,houses&page={}&forceLdLoad=true"
 TRIES = 5
 N_THREADS_ITEM_ADD = 10
-
 cols_renamer_today = {
     "hometypeid_text": "asset_type",
     "id": "id",
@@ -22,10 +21,10 @@ cols_renamer_today = {
     "neighborhood": "neighborhood",
     "street": "street",
     "title_1": "street_num",
-    "primaryarea": "primary_area",
+    # "primaryarea": "primary_area",
     "primaryareaid": "primary_area_id",
     "area_id": "area_id",
-    "city_code": "city_id",
+    # "city_code": "city_id",
     "merchant": "is_agency",
     "merchant_name": "agency_name",
     "img_url": "img_url",
@@ -35,6 +34,7 @@ cols_renamer_today = {
     "date_added": "date_added",
     "processing_date": "processing_date"  # Added
 }
+
 
 forsale_today_cols = ['line_1', 'line_2', 'line_3', 'row_1', 'row_2', 'row_3', 'row_4',
                       'search_text', 'title_1', 'title_2', 'images_count', 'img_url',
@@ -69,18 +69,20 @@ rent_today_cols = ['line_1', 'line_2', 'line_3', 'row_1', 'row_2', 'row_3', 'row
                    'square_meters', 'hometypeid_text', 'neighborhood',
                    'assetclassificationid_text', 'rooms_text', 'aboveprice', 'processing_date']
 
-sql_today_log_dtypes = {'asset_type': String, 'id': String,
-                        'price': Integer, 'city': String, 'rooms': Float, 'floor': Integer,
-                        'square_meters': Float, 'asset_status': String, 'neighborhood': String,
-                        'street': String, 'street_num': String, 'primary_area': String,
-                        'primary_area_id': Integer, 'area_id': Integer,
-                        'city_id': Integer,
-                        'is_agency': Boolean, 'agency_name': String,
-                        'img_url': String,
-                        'lat': Float, 'long': Float, 'date_updated': DateTime,
-                        'date_added': DateTime, 'processing_date': Date}
+sql_today_dtypes = {'id': String, 'asset_type': String,
+                    'price': Integer, 'city': String, 'rooms': Float,
+                    'square_meters': Float, 'asset_status': String, 'floor': Integer,
+                    'neighborhood': String,
+                    'street': String, 'street_num': String,
+                    # 'primary_area': String,
+                    'primary_area_id': Integer, 'area_id': Integer,
+                    # 'city_id': Integer,
+                    'is_agency': Boolean, 'agency_name': String,
+                    'img_url': String,
+                    'lat': Float, 'long': Float, 'date_updated': DateTime,
+                    'date_added': DateTime, 'processing_date': Date}
 
-assert len(sql_today_log_dtypes) == len(cols_renamer_today)
+assert len(sql_today_dtypes) == len(cols_renamer_today)
 
 sql_price_history_dtypes = {'id': String, 'price': Integer, 'date_updated': DateTime, 'date_added': DateTime,
                             'processing_date': Date}

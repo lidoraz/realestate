@@ -27,9 +27,9 @@ def _get_parse_item_add_info(item_id):
                         flexible_enter_date=items_v2.get('flexible_enter_date'),
                         kosher_kitchen=items_v2.get('kosher_kitchen'),
                         housing_unit=items_v2.get('housing_unit'),
-                        square_meters=d.get('square_meters'),
-                        square_meter_build=d.get('square_meter_build'),
-                        garden_area=d.get('garden_area'),
+                        square_meters=d.get('square_meters'),  #
+                        square_meter_build=d.get('square_meter_build'),  #
+                        garden_area=d.get('garden_area'),  #
                         info_text=d['info_text'],
                         image_urls=d['images_urls']
                         )

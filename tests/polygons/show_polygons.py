@@ -34,7 +34,7 @@ import json
 
 
 # gdf = gpd.read_file("../notebooks/dataframe.geojson")
-gdf = gpd.read_file("../notebooks/gdf_gush.geojson")
+gdf = gpd.read_file("../../notebooks/gdf_gush.geojson")
 # df = pd.read_csv("../notebooks/city_poly.csv")
 from shapely import wkt
 
