@@ -111,8 +111,8 @@ class ScraperYad2:
         df = df.rename(columns=cols_renamer_today)
         df = df[cols_renamer_today.values()]
         re_digits = "(\d+)"
-        df['floor'] = df['floor'].str.replace('קומת קרקע', 'קומה 0').str.extract(re_digits)[0].astype("Int32")
-        df['price'] = df['price'].str.replace(',', '').str.extract(re_digits)[0].astype('Int64')
+        df['floor'] = df['floor'].str.replace('קומת קרקע', 'קומה 0').str.extract(re_digits)[0].astype('float').astype("Int32")
+        df['price'] = df['price'].str.replace(',', '').str.extract(re_digits)[0].astype('float').astype('Int64')
         df['primary_area_id'] = pd.to_numeric(df['primary_area_id'], errors="coerce")
         df['area_id'] = pd.to_numeric(df['area_id'], errors="coerce")
         return df
