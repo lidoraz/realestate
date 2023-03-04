@@ -36,7 +36,7 @@ additional_columns_lst = ['parking', 'balconies', 'number_of_floors', 'renovated
                           'air_conditioner', 'bars', 'elevator', 'boiler', 'accessibility', 'shelter', 'warhouse',
                           'tadiran_c', 'furniture', 'flexible_enter_date', 'kosher_kitchen', 'housing_unit',
                           'info_text', 'image_urls']
-info_cols = ['a.id', 'row_2', 'row_1', 'line_1', 'square_meters', 'line_2', 'neighborhood', 'merchant',
+info_cols = ['a.id', 'row_2', 'row_1', 'line_1', 'a.square_meters', 'line_2', 'neighborhood', 'merchant',
              'assetclassificationid_text', 'coordinates', 'feed_source', 'address_more', 'date_added',  # 'search_text',
              'date']
 

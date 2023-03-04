@@ -94,12 +94,12 @@ class ScraperYad2:
         print("Finished Updating log table!")
 
     def update_today(self, con, debug):
+        remove_dup(f"{self.today_table}_temp", 'id', con, debug)
         con.execute(f"DROP table if exists {self.today_table}")
-        #pd.read_sql(f"select * from {self.today_table}_temp", con)
-        create_ignore_if_exists(con, self.today_table, sql_today_dtypes)
+        # pd.read_sql(f"select * from {self.today_table}_temp", con)
+        create_ignore_if_exists(con, self.today_table, sql_today_dtypes, primary_keys=["id"])
         con.execute(f"INSERT INTO {self.today_table} SELECT * FROM {self.today_table}_temp")
         con.execute(f"DROP table {self.today_table}_temp")
-        remove_dup(self.today_table, 'id', con, debug)
         remove_dup(self.history_table, ['id', 'processing_date'], con, debug)
 
     def _preprocess(self, df, today_str):
@@ -111,16 +111,16 @@ class ScraperYad2:
         df = df.rename(columns=cols_renamer_today)
         df = df[cols_renamer_today.values()]
         re_digits = "(\d+)"
-        # df['merchant'] =
         df['floor'] = df['floor'].str.replace('קומת קרקע', 'קומה 0').str.extract(re_digits)[0].astype("Int32")
-        df['price'] = df['price'].str.replace(',', '').str.extract(re_digits)[0].astype('Int32')
+        df['price'] = df['price'].str.replace(',', '').str.extract(re_digits)[0].astype('Int64')
+        df['primary_area_id'] = pd.to_numeric(df['primary_area_id'], errors="coerce")
+        df['area_id'] = pd.to_numeric(df['area_id'], errors="coerce")
         return df
 
     def create_tables(self, con):
         con.execute(f"DROP table if exists {self.today_table}_temp")
         create_ignore_if_exists(con, f'{self.today_table}_temp', sql_today_dtypes)
         create_ignore_if_exists(con, self.history_table, sql_price_history_dtypes)
-        create_ignore_if_exists(con, self.today_table, sql_today_dtypes)
         sql_today_dtypes_log = sql_today_dtypes.copy()
         sql_today_dtypes_log['active'] = sqlalchemy.Boolean
         create_ignore_if_exists(con, self.log_table, sql_today_dtypes_log, primary_keys=["id"])

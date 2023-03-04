@@ -1,4 +1,4 @@
-from sqlalchemy import Integer, Date, String, Boolean, Float, DateTime
+from sqlalchemy import Integer, Date, String, Boolean, BigInteger, INTEGER, DateTime, Float
 
 history_dtype = {
     "price": Integer,
@@ -70,7 +70,7 @@ rent_today_cols = ['line_1', 'line_2', 'line_3', 'row_1', 'row_2', 'row_3', 'row
                    'assetclassificationid_text', 'rooms_text', 'aboveprice', 'processing_date']
 
 sql_today_dtypes = {'id': String, 'asset_type': String,
-                    'price': Integer, 'city': String, 'rooms': Float,
+                    'price': BigInteger, 'city': String, 'rooms': Float,
                     'square_meters': Float, 'asset_status': String, 'floor': Integer,
                     'neighborhood': String,
                     'street': String, 'street_num': String,
@@ -84,7 +84,7 @@ sql_today_dtypes = {'id': String, 'asset_type': String,
 
 assert len(sql_today_dtypes) == len(cols_renamer_today)
 
-sql_price_history_dtypes = {'id': String, 'price': Integer, 'date_updated': DateTime, 'date_added': DateTime,
+sql_price_history_dtypes = {'id': String, 'price': BigInteger, 'date_updated': DateTime, 'date_added': DateTime,
                             'processing_date': Date}
 
 sql_items_dtypes = {'id': String, 'parking': Integer, 'balconies': Boolean, 'number_of_floors': Integer,
