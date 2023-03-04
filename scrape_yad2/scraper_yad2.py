@@ -139,6 +139,9 @@ class ScraperYad2:
             results = list(tqdm(executor.map(_get_parse_item_add_info, ids_to_insert), total=len(ids_to_insert)))
         results = [i for i in results if i is not None]
         df_items = pd.DataFrame(results)
+        df_items['square_meters'] = pd.to_numeric(df_items['square_meters'], errors="coerce")
+        df_items['square_meter_build'] = pd.to_numeric(df_items['square_meter_build'], errors="coerce")
+        df_items['garden_area'] = pd.to_numeric(df_items['garden_area'], errors="coerce")
         df_items['processing_date'] = today
         if debug:
             escape_quote(df_items, ['info_text', 'image_urls'])
