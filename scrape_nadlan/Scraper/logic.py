@@ -5,8 +5,8 @@ from selenium.webdriver.support.ui import Select
 from selenium.common.exceptions import NoSuchElementException
 import pandas as pd
 from datetime import datetime
-from DB import columns
-from ocr import OCR1
+from scrape_nadlan.Scraper.DB import columns
+from scrape_nadlan.Scraper.ocr import OCR1
 from pyproj import Transformer
 import logging
 import tempfile
@@ -16,6 +16,7 @@ import random
 from scrape_nadlan.Scraper.utils import sleep
 
 PATH = "resources/geckodriver.exe"
+print(f"GECKO DRIVER IS SER TO: '{PATH}'")
 
 logging.basicConfig(
     format='%(asctime)s %(levelname)-8s %(message)s',
