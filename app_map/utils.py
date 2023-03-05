@@ -63,7 +63,7 @@ def format_number(num):
 def preprocess_to_str_deals(df):
     df['rooms_s'] = df['rooms'].apply(lambda m: f"{m if m % 10 == 0 else round(m)}")
     df['last_price_s'] = df['last_price'].apply(lambda m: f"₪{format_number(m)}")
-    df['ai_mean_pct_s'] = df['ai_mean_pct'].apply(lambda m: f"{m:0.1%}")
+    df['ai_price_pct_s'] = df['ai_price_pct'].apply(lambda m: f"{m:0.1%}")
     df['pct_diff_median_s'] = df['pct_diff_median'].apply(lambda m: f"{m:0.1%}")
     df['price_pct_s'] = df['price_pct'].apply(lambda m: f"{m:0.1%}")
     return df
@@ -71,13 +71,13 @@ def preprocess_to_str_deals(df):
 
 def get_asset_points(df_all, price_from=None, price_to=None,
                      median_price_pct=None, discount_price_pct=None, ai_pct=None,
-                     date_added_days=None, updated_at=None,
+                     date_added_days=None, date_updated=None,
                      rooms_range=(None, None), with_agency=True, with_parking=None, with_balconies=None, state_asset=(),
                      map_bounds=None, is_median=True,
                      limit=True):
     if len(state_asset) > 0:
         states = ','.join([f"'{x}'" for x in state_asset])
-        sql_state_asset = f' and status in ({states})'
+        sql_state_asset = f' and asset_status in ({states})'
     else:
         sql_state_asset = ""
     rooms_from = rooms_range[0] or 1
@@ -92,10 +92,10 @@ def get_asset_points(df_all, price_from=None, price_to=None,
         sql_state_asset=sql_state_asset,
         sql_median_price_pct=f"and group_size > 30 and pct_diff_median <= {median_price_pct}" if median_price_pct is not None else "",
         sql_discount_pct=f"and -0.90 <= price_pct <= {discount_price_pct}" if discount_price_pct is not None else "",
-        sql_ai_pct = f"and -0.90 <= ai_mean_pct <= {ai_pct}" if ai_pct is not None else "",
+        sql_ai_pct = f"and -0.90 <= ai_price_pct <= {ai_pct}" if ai_pct is not None else "",
         sql_map_bounds=f"and {map_bounds[0][0]} < lat < {map_bounds[1][0]} and {map_bounds[0][1]} < long < {map_bounds[1][1]}" if map_bounds else "",
         sql_date_added=f"and date_added_d <= {date_added_days}" if date_added_days else "",
-        sql_updated_at=f"and updated_at_d <= {updated_at}" if updated_at else "")
+        sql_date_updated=f"and date_updated_d <= {date_updated}" if date_updated else "")
     q = ' '.join(list(sql_cond.values()))
     print(q)
     df_f = df_all.query(q)
@@ -133,22 +133,22 @@ def build_sidebar(deal):
          html.Span(f"מחיר הנכס מהחציון באיזור: "),
          html.Span(f"{deal['pct_diff_median']:0.2%}", className="text-ltr"),
          html.P([html.Span(f"מחיר הנכס ממודל AI : "),
-                 html.Span(f"{deal['ai_mean']:,.0f} ({deal['ai_std_pct']    :.2%})", className="text-ltr"),
+                 html.Span(f"{deal['ai_price']:,.0f} ({deal['ai_std_pct']    :.2%})", className="text-ltr"),
                  ]),
 
          html.H6(f"הועלה בתאריך {date_added.date()}, (לפני {days_online / 7:0.1f} שבועות)"),
-         html.Span(f"מתי עודכן: {deal['updated_at']}"),
+         html.Span(f"מתי עודכן: {deal['date_updated']}"),
          html.Div(df_price_hist, className='text-ltr'),
          html.Span(),
          html.P([
              'תיווך' if deal['is_agency'] else 'לא תיווך',
              html.Br(),
              f"מצב הנכס: ",
-             html.B(deal['status'])]),
+             html.B(deal['asset_status'])]),
          html.P([f" {deal['rooms']} חדרים",
                  f" קומה  {round(deal['floor']) if deal['floor'] > 0 else 'קרקע'} ",
                  html.Br(),
-                 f"{deal['type']}, {deal['city']},{deal['street']}",
+                 f"{deal['asset_type']}, {deal['city']},{deal['street']}",
                  html.Br(),
                  f"{deal['square_meters']:,.0f} מטר",
 

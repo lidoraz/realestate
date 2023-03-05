@@ -448,6 +448,7 @@ class Scraper:
     def solve_captcha_get_data(self):
         n_tries = 10
         for tries in range(n_tries):
+            # TODO: CHECK IF THIS CAN BE IMPROVED TO HAVE LESS ERRORS (but gettings this out wont solve)
             self.fill_details(self._from_gush, self._to_gush)
             self.fill_exact_range(from_date=self._date, to_date=self._date)
             if self._from_room or self._to_room:

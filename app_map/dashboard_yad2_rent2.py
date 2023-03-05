@@ -19,15 +19,15 @@ df_all = pd.read_pickle('../resources/yad2_rent_df.pk')
 # TODO: df_all.query("last_price > 500000 and square_meters < 200 and status == 'משופץ'").sort_values('avg_price_m'), can create a nice view for sorting by avg_price per meter.
 df_all['pct_diff_median'] = 0
 
-df_all['ai_mean'] = df_all['ai_mean'] * (df_all['ai_std_pct'] < 0.15)  # Take only certain AI predictions
-df_all['ai_mean_pct'] = df_all['ai_mean'].replace(0, np.nan)
-df_all['ai_mean_pct'] = df_all['last_price'] / df_all['ai_mean_pct'] - 1
+df_all['ai_price'] = df_all['ai_price'] * (df_all['ai_std_pct'] < 0.15)  # Take only certain AI predictions
+df_all['ai_price_pct'] = df_all['ai_price'].replace(0, np.nan)
+df_all['ai_price_pct'] = df_all['last_price'] / df_all['ai_price_pct'] - 1
 
 df_all['avg_price_m'] = df_all['last_price'] / df_all['square_meters']
 df_all['date_added'] = pd.to_datetime(df_all['date_added'])
 df_all['date_added_d'] = (datetime.today() - df_all['date_added']).dt.days
-df_all['updated_at'] = pd.to_datetime(df_all['updated_at'])
-df_all['updated_at_d'] = (datetime.today() - df_all['updated_at']).dt.days
+df_all['date_updated'] = pd.to_datetime(df_all['date_updated'])
+df_all['date_updated_d'] = (datetime.today() - df_all['date_updated']).dt.days
 # df_f = df.query('last_price < 3000000 and -0.9 < price_pct < -0.01 and price_diff < 1e7')  # [:30]
 df_all.query('-0.89 <price_pct < -0.05').to_csv('df_rent.csv')
 app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
@@ -107,7 +107,7 @@ context = dict(map_zoom=300, zoom_ts=time.time())
     #                 dcc.Checklist(options=[{'label': 'מרפסת', 'value': 'Y'}], value=['Y'], inline=True,
     #                               id='balconies-check')
 )
-def show_assets(price_from, price_to, median_price_pct, discount_price_pct, ai_pct, date_added, updated_at,
+def show_assets(price_from, price_to, median_price_pct, discount_price_pct, ai_pct, date_added, date_updated,
                 rooms_range, with_agency, with_parking, with_balconies, state_asset, n_clicks_around, n_clicks_return,
                 is_median,
                 map_bounds, map_zoom):
@@ -137,7 +137,7 @@ def show_assets(price_from, price_to, median_price_pct, discount_price_pct, ai_p
         with_balconies = True if len(with_balconies) else None
         df_f = get_asset_points(df_all, price_from, price_to,
                                 median_price_pct, discount_price_pct, ai_pct,
-                                date_added, updated_at, rooms_range,
+                                date_added, date_updated, rooms_range,
                                 with_agency, with_parking, with_balconies, map_bounds=map_bounds,
                                 state_asset=state_asset, is_median=is_median, limit=True)
     # Can keep a list of points, if after fetch there was no new, no need to build new points, just keep them to save resources

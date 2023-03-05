@@ -44,7 +44,7 @@ forsale_today_cols = ['line_1', 'line_2', 'line_3', 'row_1', 'row_2', 'row_3', '
                       'background_color', 'highlight_text', 'order_type_id', 'ad_number',
                       'cat_id', 'customer_id', 'feed_source', 'id', 'link_token', 'merchant',
                       'contact_name', 'merchant_name', 'record_id', 'subcat_id', 'currency',
-                      'price', 'date', 'date_added', 'updated_at', 'promotional_ad',
+                      'price', 'date', 'date_added', 'date_updated', 'promotional_ad',
                       'address_more', 'hood_id',  # 'office_about', 'office_logo_url',
                       'square_meters', 'hometypeid_text', 'neighborhood',
                       'assetclassificationid_text', 'rooms_text', 'aboveprice', 'is_platinum',
@@ -64,7 +64,7 @@ rent_today_cols = ['line_1', 'line_2', 'line_3', 'row_1', 'row_2', 'row_3', 'row
                    'cat_id', 'customer_id', 'feed_source', 'id', 'link_token', 'merchant',
                    'contact_name', 'merchant_name',
                    'record_id', 'subcat_id', 'currency',
-                   'price', 'date', 'date_added', 'updated_at',
+                   'price', 'date', 'date_added', 'date_updated',
                    'address_more', 'hood_id', 'office_about', 'office_logo_url',
                    'square_meters', 'hometypeid_text', 'neighborhood',
                    'assetclassificationid_text', 'rooms_text', 'aboveprice', 'processing_date']

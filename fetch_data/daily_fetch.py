@@ -1,37 +1,8 @@
 # TODO: ADD TO DAILY STATS a flag for ACTIVE and NOT active such that we can see previous deals and investigate.
-
-
-import json
 import os
+import numpy as np
 
 import pandas as pd
-
-# from fetch_data.utils import additional_columns_lst
-
-print("connecting to remote")
-
-
-def preproccess(df_today):
-    # info_rename = dict(row_2='city', row_1='street', line_1='rooms', line_2='floor', date='updated_at',
-    #                    assetclassificationid_text='status')
-    # df_today['is_agency'] = df_today['feed_source'].apply(
-    #     lambda x: True if x == 'commercial' else False if x == 'private' else None)
-    df_today = df_today.set_index('id').rename(columns=info_rename)
-    # df_today['coordinates'] = df_today['coordinates'].apply(lambda x: json.loads(x.replace("'", '"')))
-    # # df_today['info_text'] = df_today['info_text'].apply(
-    # #     lambda x: x.split('תאור לקוח')[1] if len(x.split('תאור לקוח')) > 1 else None)
-    #
-    # df_today['floor'] = df_today['floor'].apply(
-    #     lambda x: 0 if x == 'קומת קרקע' else x.split(' ')[1].replace('-', '') if len(
-    #         x.split(' ')) > 1 else None).astype(float).astype('Int32')
-    # df_today['rooms'] = df_today['rooms'].apply(
-    #     lambda x: None if x == 'לא צויינו חדרים' else '1' if x == 'חדר אחד' else x.split(' ')[0]).astype(float)
-    # df_today['type'] = df_today['city'].apply(lambda x: x.split(',')[0])
-    # df_today['city_loc'] = df_today['city'].apply(lambda x: ','.join(x.split(',')[1:-1]))
-    # df_today['city'] = df_today['city'].apply(lambda x: x.split(',')[-1])
-    # df_today['lat'] = df_today['coordinates'].apply(lambda x: x.get('latitude'))
-    # df_today['long'] = df_today['coordinates'].apply(lambda x: x.get('longitude'))
-    return df_today
 
 
 def preprocess_history(df_hist, today_indexes):
@@ -52,7 +23,7 @@ def preprocess_history(df_hist, today_indexes):
     last_price = price_hist['price'].apply(lambda x: x[-1]).rename('last_price')
     # last_date = price_hist['processing_date'].apply(lambda x: x[-1])
     price_hist.columns = ['price_hist', 'dt_hist']
-    price_pct = (last_price / first_price).rename('price_pct')
+    price_pct = (last_price / first_price - 1).rename('price_pct')
     price_diff = (last_price - first_price).rename('price_diff')
     df_metrics = pd.concat([first_price, last_price, price_diff, price_pct, price_hist], axis=1)
     return df_metrics
@@ -65,9 +36,6 @@ def process_tables(df_today, df_hist):
     df_metrics = preprocess_history(df_hist, today_indexes)
     df = df_today.join(df_metrics)
     return df
-
-
-import numpy as np
 
 
 def haversine(lat1, lon1, lat2, lon2, to_radians=True, earth_radius=6371):
@@ -102,14 +70,14 @@ def add_distance(df, dist_km=1):
     def get_metrics(deal):
         pct = None
         length = 0
-        if not np.isnan(deal['last_price']):
+        if not np.isnan(deal['price']):
             try:
                 other_close_deals = calc_dist(df, deal, dist_km)  # .join(df)
                 other_close_deals = other_close_deals[
                     other_close_deals['rooms'].astype(float).astype(int) == int(float(deal['rooms']))]
                 if len(other_close_deals):
                     # print(deal['last_price'], other_close_deals['last_price'].median())
-                    pct = deal['last_price'] / other_close_deals['last_price'].median() - 1
+                    pct = deal['price'] / other_close_deals['price'].median() - 1
                     length = len(other_close_deals)
             except:
                 pass
@@ -161,7 +129,7 @@ class MajorityVote:
         clf_res.index = x.index
         print(len(clf_res))
         # clf_res = y.to_frame().join(clf_res)  # .query('ai_std < 1_000_000').sort_values('ai_std')
-        clf_res['ai_std_pct'] = (clf_res['ai_mean'] + clf_res['ai_std']) / clf_res['ai_mean'] - 1
+        clf_res['ai_std_pct'] = (clf_res['ai_price'] + clf_res['ai_price_std']) / clf_res['ai_price'] - 1
         print(len(clf_res))
         return clf_res
 
@@ -171,49 +139,53 @@ class MajorityVote:
             res.append({k: v for k, v in zip(clf.feature_names_, clf.feature_importances_)})
         self.df_feat_imp = pd.DataFrame(res)
         print
-        return self.df_feat_imp.mean(axis=0)
+        return self.df_feat_imp.mean(axis=0).sort_values()
         # feat_import [x for x ]
         # self.clfs._feature_importance
 
 
-def add_ai_price(df, type):
-    df['housing_unit'] = df['housing_unit'].astype(bool)  # .value_counts()
-    df['info_text'] = df['info_text'].fillna('')
-    df['is_keycrap'] = df['info_text'].str.contains('דמי מפתח')
-    df['is_tama'] = df['info_text'].str.contains('תמא|תמ״א')
+def remove_anomalies_add_feat(df, type_):
+    # remove anomalies
+    if type_ == 'rent':
+        df = df.query('700 <= price <= 30_000')
+    elif type_ == 'forsale':
+        df = df.query('250_000 <= price <= 50_000_000')
+    else:
+        raise ValueError()
+    df_d = df.copy()
+    df_d['housing_unit'] = df_d['housing_unit'].astype(bool)  # .value_counts()
+    df_d['is_keycrap'] = df_d['info_text'].str.contains('דמי מפתח')
+    df_d['is_tama'] = df_d['info_text'].str.contains('תמא|תמ״א')
+    return df_d
+
+
+def pre_processing(df_d, cat_features):
+    # impute if missing according to dtypes
     must_have_cols = ['price', 'lat', 'long']
-    # info_cols = ['price_pct', 'asset_type', 'city', 'neighborhood', 'rooms', 'asset_status',
-    #              'square_meters', 'square_meter_build', 'garden_area', 'elevator',
-    #              'floor', 'parking', 'balconies', 'number_of_floors', 'renovated',
-    #              'is_agency', 'housing_unit',
-    #              'is_keycrap', 'is_tama']
     bool_cols = ['renovated', 'balconies', 'elevator', 'is_agency',
-                 'housing_unit',
-                 'is_keycrap', 'is_tama'
-                 ]
+                 'housing_unit', 'is_keycrap', 'is_tama']
     num_cols = ['price_pct', 'rooms', 'square_meters',
                 'square_meter_build', 'garden_area', 'floor', 'parking', 'number_of_floors']
-    cat_features = ['asset_type', 'city', 'neighborhood', 'asset_status']
-    df_d = df.dropna(subset=must_have_cols, axis=0).copy()
+
+    df_d = df_d.dropna(subset=must_have_cols, axis=0).copy()
     df_d[bool_cols] = df_d[bool_cols].fillna(False)
     df_d[num_cols] = df_d[num_cols].fillna(-1)
     df_d[cat_features] = df_d[cat_features].fillna('')
     df_d = df_d[must_have_cols + bool_cols + num_cols + cat_features]
-    # remove anomalies
-    if type == 'rent':
-        df_d = df_d.query('700 <= price <= 30_000')
-    elif type == 'forsale':
-        df_d = df_d.query('250_000 <= price <= 50_000_000')
-    else:
-        raise ValueError()
+    return df_d
+
+
+def add_ai_price(df, type_):
+    # Create features
+    df_d = remove_anomalies_add_feat(df, type_)
+    # select cols to fill na
+    cat_features = ['asset_type', 'city', 'neighborhood', 'asset_status']
+    df_d = pre_processing(df_d, cat_features)
     X = df_d.drop('price', axis=1)
     y = df_d['price']
     clf = MajorityVote(5, 5000)
     clf.fit(X, y, cat_features)
     print(clf.get_feat_importance())
     res = clf.predict_price(X)
-    # mask_invalid = res['ai_std_pct'] > 0.3
-    # # res['ai_price'] = res['ai_price']
-    # res.loc[res[mask_invalid].index, 'ai_mean'] = None
     df = pd.concat([df, res], axis=1)
     return df

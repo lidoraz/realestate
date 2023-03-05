@@ -98,7 +98,7 @@ def create_tooltip(deal):
     html_tp = f"""
     <table class="">
     <tr><td class="text-ltr">{m['last_price_s']}</td>      <td class="text-rtl">מחיר</td>   </tr>
-    <tr><td class="text-ltr"></td> <td class="text-rtl" colspan="2"><b>{m['status']}</b></td>  </tr>
+    <tr><td class="text-ltr"></td> <td class="text-rtl" colspan="2"><b>{m['asset_status']}</b></td>  </tr>
     <tr><td class="text-ltr">{m['rooms_s']}</td>          <td class="text-rtl">חדרים</td>  </tr>
     <tr><td class="text-ltr">{m['floor']:.0f}</td>          <td class="text-rtl">קומה</td>  </tr>
     <tr><td class="text-ltr">{m['square_meters']:,.0f}</td>          <td class="text-rtl">מ״ר</td>  </tr>
@@ -131,10 +131,10 @@ def generate_icon(deal):
         # icon_text=m['last_price_s'],
         _t1=m['price_pct_s'],
         _t2=m['pct_diff_median_s'],
-        _t3=m['ai_mean_pct_s'],
+        _t3=m['ai_price_pct_s'],
         _c1=get_color(m['price_pct']),
         _c2=get_color(m['pct_diff_median']),
-        _c3=get_color(m['ai_mean_pct'])
+        _c3=get_color(m['ai_price_pct'])
     )
 
 marker_tooltip = "simple"

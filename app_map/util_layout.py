@@ -223,7 +223,7 @@ def _discrete_background_color_bins(df, n_bins=10, columns='all', reverse=False)
 
 
 def get_table(df):
-    table_price_col = 'ai_mean_pct'
+    table_price_col = 'ai_price_pct'
     columns = ['last_price', 'rooms', table_price_col, 'city']  # price_pct
     from dash.dash_table.Format import Format, Symbol, Group, Scheme
     df = df[columns]

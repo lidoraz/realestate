@@ -89,10 +89,10 @@ def _insert_not_safe(df, eng):
 
 
 if __name__ == '__main__':
-    # _dt = '2023-01-01'
+    _dt = '2023-01-01'
     # _dt = '2023'
-    _dt = None
-    # if _dt is None:
-    #     _dt = get_args()
+    # _dt = None # will insert all DATA
+    if _dt is None:
+        _dt = get_args()
 
     insert_to_postgres_db(_dt)
