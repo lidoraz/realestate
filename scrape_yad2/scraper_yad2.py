@@ -4,7 +4,7 @@ from tqdm import tqdm
 import time
 import pandas as pd
 from datetime import datetime
-
+import numpy as np
 import sqlalchemy
 
 from scrape_nadlan.utils_insert import get_table, create_ignore_if_exists
@@ -135,18 +135,25 @@ class ScraperYad2:
         ids_to_insert = list(set(ids) - set(ids_in_items))
         print(f"Preparing to insert: {len(ids_to_insert)} items")
         from concurrent.futures import ThreadPoolExecutor
+        if len(ids_to_insert) == 0:
+            return
+        chunk_size = 1000
+        n_splits = np.ceil(len(ids_to_insert)/chunk_size)
         with ThreadPoolExecutor(N_THREADS_ITEM_ADD) as executor:
-            results = list(tqdm(executor.map(_get_parse_item_add_info, ids_to_insert), total=len(ids_to_insert)))
-        results = [i for i in results if i is not None]
-        df_items = pd.DataFrame(results)
-        df_items['square_meters'] = pd.to_numeric(df_items['square_meters'], errors="coerce")
-        df_items['square_meter_build'] = pd.to_numeric(df_items['square_meter_build'], errors="coerce")
-        df_items['garden_area'] = pd.to_numeric(df_items['garden_area'], errors="coerce")
-        df_items['processing_date'] = today
-        if debug:
-            escape_quote(df_items, ['info_text', 'image_urls'])
-        df_items.to_sql(self.item_table, con, if_exists='append', index=False)
-        print(f"insert_to_items: Inserted to {self.item_table} {len(df_items)} items!")
+            for split in tqdm(np.array_split(ids_to_insert, n_splits)):
+
+                results = executor.map(_get_parse_item_add_info, split)
+                results = [i for i in results if i is not None]
+                df_items = pd.DataFrame(results)
+                if len(df_items) == 0:
+                    continue
+                for c in ['square_meters', 'square_meter_build', 'garden_area']:
+                    df_items[c] = pd.to_numeric(df_items[c], errors="coerce")
+                df_items['processing_date'] = today
+                if debug:
+                    escape_quote(df_items, ['info_text', 'image_urls'])
+                df_items.to_sql(self.item_table, con, if_exists='append', index=False)
+        print(f"insert_to_items: Inserted to {self.item_table} about ~ {len(ids_to_insert)} items!")
 
     def scraper_yad2(self, con, debug=False):
         self.create_tables(con)
