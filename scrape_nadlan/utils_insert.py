@@ -1,5 +1,8 @@
 import argparse
-from sqlalchemy import Column, Table, MetaData
+import json
+import os
+
+from sqlalchemy import Column, Table, MetaData, create_engine
 
 
 def get_args():
@@ -23,3 +26,12 @@ def get_table(tbl_name, columns_alchemy, metadata_obj, primary_keys=()):
                              metadata_obj,
                              *columns)
     return nadlan_trans_tbl
+
+
+def get_engine():
+    path = os.path.expanduser('~')
+    path = os.path.join(path, '.ssh', "creds_postgres.json")
+    with open(path) as f:
+        c = json.load(f)
+    eng = create_engine(f"postgresql://{c['user']}:{c['passwd']}@{c['host']}:{c['port']}/{c['db']}")
+    return eng

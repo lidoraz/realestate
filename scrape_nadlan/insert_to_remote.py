@@ -6,22 +6,11 @@ file_dir = dirname(dirname(__file__))
 sys.path.append(file_dir)
 
 from scrape_nadlan.config import *
-from sqlalchemy import Column, Table, create_engine, MetaData, sql, select
+from sqlalchemy import sql, select
 from scrape_nadlan.utils_insert import *
 from scrape_nadlan.Scraper.utils import filter_files, read_files
 import pandas as pd
 import numpy as np
-import json
-import os
-
-
-def get_engine():
-    path = f"C:\\Users\\{os.environ.get('USERNAME')}\\.ssh"
-    path = os.path.join(path, "creds_postgres.json")
-    with open(path) as f:
-        c = json.load(f)
-    eng = create_engine(f"postgresql://{c['user']}:{c['passwd']}@{c['host']}:{c['port']}/{c['db']}")
-    return eng
 
 
 def preprocessing(df, drop_duplicates, dropna):
