@@ -66,7 +66,7 @@ def convert_wgs84_to_itm(lat, long):
 
 class Scraper:
     def __init__(self, proxy_ip=None, silent=None):
-        PATH = "../geckodriver.exe"
+        PATH = "geckodriver.exe"
         self.proxy_ip = proxy_ip
         profile = webdriver.FirefoxProfile()
         if proxy_ip:

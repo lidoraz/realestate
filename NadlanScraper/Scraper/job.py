@@ -8,7 +8,7 @@ from NadlanScraper.Scraper.logic import Scraper
 from NadlanScraper.Scraper.utils import get_missing_combinations, generate_job_comb, clear_and_add_my_ip, run_every_time_check_ip, \
     copy_csv_files_to_db
 import threading
-
+import time
 TIMEOUT_SEC = 120
 
 
@@ -103,7 +103,7 @@ def run_multiple(jobs_list):
 
 
 def load_proxies(no_proxy=False):
-    with open('../../proxyscrape_premium_http_proxies.txt', 'r') as f:
+    with open('proxyscrape_premium_http_proxies.txt', 'r') as f:
         proxies = f.read().splitlines()
         random.shuffle(proxies)
         for proxy in proxies:
