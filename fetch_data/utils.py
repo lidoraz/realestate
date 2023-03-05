@@ -1,19 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import sqlite3
-from pyproj import Transformer
 import pandas as pd
 from datetime import datetime
 
-DF_NADLAN_RECENT_PK = "../resources/df_nadlan_recent.pk"
+from scrape_yad2.config import sql_today_dtypes, sql_items_dtypes
 
-def get_connetor():
-    import sys
-    import os
-    sys.path.insert(0, f'/Users/{os.environ["USER"]}/Documents/DS/Crypto')
-    from Twitter.connector import connect_remote_sql_alchemy
-    conn = connect_remote_sql_alchemy()
-    return conn
+DF_NADLAN_RECENT_PK = "../resources/df_nadlan_recent.pk"
 
 
 TABLES = dict(forsale=dict(hist_tbl="yad2_forsale_history",
@@ -32,17 +24,17 @@ def get_tbl(type, tbl_type):
     return tbl
 
 
-additional_columns_lst = ['parking', 'balconies', 'number_of_floors', 'renovated', 'asset_exclusive_declaration',
-                          'air_conditioner', 'bars', 'elevator', 'boiler', 'accessibility', 'shelter', 'warhouse',
-                          'tadiran_c', 'furniture', 'flexible_enter_date', 'kosher_kitchen', 'housing_unit',
-                          'info_text', 'image_urls']
-info_cols = ['a.id', 'row_2', 'row_1', 'line_1', 'a.square_meters', 'line_2', 'neighborhood', 'merchant',
-             'assetclassificationid_text', 'coordinates', 'feed_source', 'address_more', 'date_added',  # 'search_text',
-             'date']
+# additional_columns_lst = ['parking', 'balconies', 'number_of_floors', 'renovated', 'asset_exclusive_declaration',
+#                           'air_conditioner', 'bars', 'elevator', 'boiler', 'accessibility', 'shelter', 'warhouse',
+#                           'tadiran_c', 'furniture', 'flexible_enter_date', 'kosher_kitchen', 'housing_unit',
+#                           'info_text', 'image_urls']
+# info_cols = ['a.id', 'row_2', 'row_1', 'line_1', 'a.square_meters', 'line_2', 'neighborhood', 'merchant',
+#              'assetclassificationid_text', 'coordinates', 'feed_source', 'address_more', 'date_added',  # 'search_text',
+#              'date']
 
 
-def get_price_hist(type, conn):
-    hist_tbl = get_tbl(type, "hist_tbl")
+def get_price_hist(type_, conn):
+    hist_tbl = get_tbl(type_, "hist_tbl")
     df_hist = pd.read_sql(f"select id, price, processing_date from {hist_tbl}", conn)
     print(df_hist.groupby('processing_date').size())
     max_date = df_hist['processing_date'].max()
@@ -55,10 +47,12 @@ def get_price_hist(type, conn):
 def get_today(type, conn):
     today_tbl = get_tbl(type, "today_tbl")
     item_tbl = get_tbl(type, "item_tbl")
-    q_today = f"""
-    SELECT  {','.join(info_cols)}, {','.join(additional_columns_lst)} FROM  {today_tbl} a left join {item_tbl} b on a.id = b.id
-    """
-    df_today = pd.read_sql(q_today, conn)
+    tbl_today_cols = [f'a.{c}' for c in sql_today_dtypes.keys()]
+    tbl_items_cols = [f'b.{c}' for c in sql_items_dtypes.keys() if c not in ('id', 'square_meters')]
+    q = f"""
+    SELECT {','.join(tbl_today_cols)}, {','.join(tbl_items_cols)} FROM {today_tbl} a inner join {item_tbl} b on a.id = b.id
+    """ # 56691
+    df_today = pd.read_sql(q, conn)
     return df_today
 
 
