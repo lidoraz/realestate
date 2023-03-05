@@ -13,21 +13,26 @@ import pandas as pd
 import numpy as np
 
 
+def _fix_invalid_cords(df):
+    df.loc[(df['corX'] == 0) & (df['corY'] == 0), 'lat'] = np.nan
+    df.loc[(df['corX'] == 0) & (df['corY'] == 0), 'long'] = np.nan
+
+
 def preprocessing(df, drop_duplicates, dropna):
     df['tarIska'] = pd.to_datetime(df['tarIska'], format="%d/%m/%Y").dt.date
     df['gush_full'] = df['gush']
     gush_temp = df['gush_full'].str.split('-')
     df['gush'] = gush_temp.str[0].astype(int)
     df['helka'] = gush_temp.str[1].astype(int)
+    df['t_helka'] = gush_temp.str[2].astype(int)
     lat, long = trans_itm_to_wgs84.transform(df['corX'], df['corY'])
     df['lat'] = lat
     df['long'] = long
-    df.loc[(df['corX'] == 0) & (df['corY'] == 0), 'lat'] = np.nan
-    df.loc[(df['corX'] == 0) & (df['corY'] == 0), 'long'] = np.nan
+    _fix_invalid_cords(df)
     df['mcirMozhar'] = df['mcirMozhar'].str.replace(',', '').astype('Int32')
     df['mcirMorach'] = df['mcirMorach'].str.replace(',', '').astype('Int32')
     df['hanaya'] = df['hanaya'].str.split(' ').str[0].astype(int)
-    df['lblKoma'].str.replace('קומת קרקע', '0').astype(int)
+    df['lblKoma'].astype(str).str.replace('קומת קרקע', '0').astype(float).astype(int)
 
     df = df.rename(columns=columns_rename)
     if drop_duplicates:
@@ -84,10 +89,10 @@ def _insert_not_safe(df, eng):
 
 
 if __name__ == '__main__':
-    _dt = '2023-01-01'
-    _dt = '2023'
+    # _dt = '2023-01-01'
+    # _dt = '2023'
     _dt = None
-    if _dt is None:
-        _dt = get_args()
+    # if _dt is None:
+    #     _dt = get_args()
 
     insert_to_postgres_db(_dt)

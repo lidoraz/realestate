@@ -9,7 +9,7 @@ from scrape_nadlan.Scraper.utils import get_missing_combinations, generate_job_c
     run_every_time_check_ip, \
     copy_csv_files_to_db
 import threading
-
+import time
 TIMEOUT_SEC = 120
 
 
@@ -119,7 +119,7 @@ def load_proxies(no_proxy=False):
 
 
 def start_threads(n_workers, use_proxy):
-    threads = [threading.Thread(target=start_routine, daemon=True, args=(use_proxy)) for _ in range(n_workers)]
+    threads = [threading.Thread(target=start_routine, daemon=True, args=(use_proxy,)) for _ in range(n_workers)]
     for t in threads:
         t.start()
     return threads
