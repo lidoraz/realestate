@@ -162,7 +162,7 @@ class MajorityVote:
         clf_res.index = x.index
         print(len(clf_res))
         # clf_res = y.to_frame().join(clf_res)  # .query('ai_std < 1_000_000').sort_values('ai_std')
-        clf_res['ai_std_pct'] = (clf_res['ai_price'] + clf_res['ai_std']) / clf_res['ai_price'] - 1
+        clf_res['ai_std_pct'] = (clf_res['ai_price'] + clf_res['ai_price_std']) / clf_res['ai_price'] - 1
         print(len(clf_res))
         return clf_res
 
