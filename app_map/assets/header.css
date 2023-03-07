@@ -169,6 +169,7 @@ p.rtl {
     /*border: black 1px solid;*/
 
     /*display:grid;*/
+    font-size: small;
     font-weight: bold;
     padding:2px
 }

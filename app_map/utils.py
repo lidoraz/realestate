@@ -62,7 +62,7 @@ def format_number(num):
 
 def preprocess_to_str_deals(df):
     df['rooms_s'] = df['rooms'].apply(lambda m: f"{m if m % 10 == 0 else round(m)}")
-    df['last_price_s'] = df['last_price'].apply(lambda m: f"₪{format_number(m)}")
+    df['price_s'] = df['price'].apply(lambda m: f"₪{format_number(m)}")
     df['ai_price_pct_s'] = df['ai_price_pct'].apply(lambda m: f"{m:0.1%}")
     df['pct_diff_median_s'] = df['pct_diff_median'].apply(lambda m: f"{m:0.1%}")
     df['price_pct_s'] = df['price_pct'].apply(lambda m: f"{m:0.1%}")
@@ -84,8 +84,8 @@ def get_asset_points(df_all, price_from=None, price_to=None,
     rooms_to = rooms_range[1] or 100
     sql_cond = dict(
         sql_rooms_range=f"{rooms_from} <= rooms <= {rooms_to}.5" if rooms_from is not None and rooms_to is not None else "",
-        sql_price_from=f"and {price_from} <= last_price" if price_from is not None else "",
-        sql_price_to=f"and {price_to} >= last_price" if price_to is not None else "",
+        sql_price_from=f"and {price_from} <= price" if price_from is not None else "",
+        sql_price_to=f"and {price_to} >= price" if price_to is not None else "",
         sql_is_agency="and is_agency == False" if not with_agency else "",
         sql_is_parking="and parking > 0" if with_parking else "",
         sql_is_balcony="and balconies == True" if with_balconies else "",
@@ -128,7 +128,7 @@ def build_sidebar(deal):
     df_price_hist = html.Table([html.Tr([html.Td(v) for v in row.values]) for i, row in df_hist.iterrows()],
                                className="price-diff-table") if df_hist is not None else ""
     txt_html = html.Div(
-        [html.Div([html.Span(f"{deal['last_price']:,.0f}₪", style={"font-size": "1.5vw"}),
+        [html.Div([html.Span(f"{deal['price']:,.0f}₪", style={"font-size": "1.5vw"}),
                    html.Span(str_price_pct, className="text-ltr")]),
          html.Span(f"מחיר הנכס מהחציון באיזור: "),
          html.Span(f"{deal['pct_diff_median']:0.2%}", className="text-ltr"),
@@ -177,9 +177,9 @@ from plotly import graph_objects as go
 
 def plot_deal_vs_sale_sold(other_close_deals, df_tax, deal):
     # When the hist becomes square thats because there a huge anomaly in terms of extreme value
-    sale_items = other_close_deals['last_price']
+    sale_items = other_close_deals['price']
     sale_items = sale_items.rename(
-        f'last_price #{len(sale_items)}')  # .hist(bins=min(70, len(sale_items)), legend=True, alpha=0.8)
+        f'price #{len(sale_items)}')  # .hist(bins=min(70, len(sale_items)), legend=True, alpha=0.8)
     fig = go.Figure()
     tr_1 = go.Histogram(x=sale_items, name=sale_items.name, opacity=0.75, nbinsx=len(sale_items))
     fig.add_trace(tr_1)
@@ -191,9 +191,9 @@ def plot_deal_vs_sale_sold(other_close_deals, df_tax, deal):
                 f'realPrice{days_back}D #{len(sold_items)}')  # .hist(bins=min(70, len(sold_items)), legend=True,alpha=0.8)
             tr_2 = go.Histogram(x=sold_items, name=sold_items.name, opacity=0.75, nbinsx=len(sold_items))
             fig.add_trace(tr_2)
-    fig.add_vline(x=deal['last_price'], line_width=2,
+    fig.add_vline(x=deal['price'], line_width=2,
                   line_color='red', line_dash='dash',
-                  name=f"{deal['last_price']:,.0f}")
+                  name=f"{deal['price']:,.0f}")
     fig.update_layout(  # title_text=str_txt,
         # barmode='stack',
         width=450,
@@ -203,7 +203,7 @@ def plot_deal_vs_sale_sold(other_close_deals, df_tax, deal):
         dragmode=False)
     # fig['layout']['yaxis'].update(autorange=True)
     # fig['layout']['xaxis'].update(autorange=True)
-    fig.update_xaxes(range=[deal['last_price'] // 2, deal['last_price'] * 2.5])
+    fig.update_xaxes(range=[deal['price'] // 2, deal['price'] * 2.5])
     return fig
     # plt.legend()
 

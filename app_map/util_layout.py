@@ -45,8 +45,10 @@ def get_div_top_bar(config_defaults):
         ),
         # dcc.Slider(0, 2, 1, value=1, marks={0: 'a', 1: 'b', 2: 'c'}, id='marker-type1'),
         # html.Span(from_price_txt),
-        html.Div(dcc.RangeSlider(min=0.5, max=4.0, step=0.1, value=[config_defaults['price-from'],
-                                                                    config_defaults['price-to']],
+        html.Div(dcc.RangeSlider(min=config_defaults["price-min"],
+                                 max=config_defaults["price-max"],
+                                 step=0.1, value=[config_defaults['price-from'],
+                                                  config_defaults['price-to']],
                                  id='price-slider', marks={4.0: '+', 0.5: '-'},
                                  allowCross=False,
                                  tooltip={'always_visible': True}), style={"min-width": "10em"}),
@@ -86,6 +88,20 @@ def get_div_top_bar(config_defaults):
             max=1,
             className="input-ltr"
         ),
+        dcc.Checklist(options=[{'label': 'כולל תיווך', 'value': 'Y'}], value=['Y'], inline=True,
+                      id='agency-check'),
+        dcc.Checklist(options=[{'label': 'חובה חניה', 'value': 'Y'}], value=[], inline=True,
+                      id='parking-check'),
+        dcc.Checklist(options=[{'label': 'חובה מרפסת', 'value': 'Y'}], value=[], inline=True,
+                      id='balconies-check'),
+        dcc.Dropdown(
+            ['משופץ', 'במצב שמור', 'חדש (גרו בנכס)', 'חדש מקבלן (לא גרו בנכס)', 'דרוש שיפוץ'],
+            [],
+            placeholder="מצב הנכס",
+            multi=True,
+            searchable=False,
+            id='state-asset',
+            style=dict(width='10em', )),
         html.Span(date_added_txt),
         dcc.Input(
             id="date-added",
@@ -104,20 +120,6 @@ def get_div_top_bar(config_defaults):
             debounce=True,
             className="input-ltr"
         ),
-        dcc.Checklist(options=[{'label': 'כולל תיווך', 'value': 'Y'}], value=['Y'], inline=True,
-                      id='agency-check'),
-        dcc.Checklist(options=[{'label': 'חובה חניה', 'value': 'Y'}], value=[], inline=True,
-                      id='parking-check'),
-        dcc.Checklist(options=[{'label': 'חובה מרפסת', 'value': 'Y'}], value=[], inline=True,
-                      id='balconies-check'),
-        dcc.Dropdown(
-            ['משופץ', 'במצב שמור', 'חדש (גרו בנכס)', 'חדש מקבלן (לא גרו בנכס)', 'דרוש שיפוץ'],
-            [],
-            placeholder="מצב הנכס",
-            multi=True,
-            searchable=False,
-            id='state-asset',
-            style=dict(width='10em', )),
         # dbc.Switch(value=config_defaults["switch-median"], id='switch-median'),
         # dbc.Button(children="AAAAAA"),
         dbc.Button("איזור", id="button-around"),
@@ -219,7 +221,7 @@ def _discrete_background_color_bins(df, n_bins=10, columns='all', reverse=False)
 
 def get_table(df):
     table_price_col = 'ai_price_pct'
-    columns = ['last_price', 'rooms', table_price_col, 'city']  # price_pct
+    columns = ['price', 'rooms', table_price_col, 'city']  # price_pct
     from dash.dash_table.Format import Format, Symbol, Group, Scheme
     df = df[columns]
     money = FormatTemplate.money(2)
@@ -234,7 +236,7 @@ def get_table(df):
                           symbol=Symbol.yes,
                           symbol_prefix=u'₪ ')
     columns_output = [
-        dict(id='last_price', name='Price', type='numeric', format=price_format),  # , locale=dict(symbol=['₪ ', ''])
+        dict(id='price', name='Price', type='numeric', format=price_format),  # , locale=dict(symbol=['₪ ', ''])
         dict(id='rooms', name='R', type='numeric'),
         dict(id=table_price_col, name='% AI', type='numeric', format=FormatTemplate.percentage(0)),
         # dict(id='price_pct', name='% Chg', type='numeric', format=percentage),

@@ -52,7 +52,7 @@ def preprocess_history(df_hist, today_indexes):
     last_price = price_hist['price'].apply(lambda x: x[-1]).rename('last_price')
     # last_date = price_hist['processing_date'].apply(lambda x: x[-1])
     price_hist.columns = ['price_hist', 'dt_hist']
-    price_pct = (last_price / first_price).rename('price_pct')
+    price_pct = (last_price / first_price - 1).rename('price_pct')
     price_diff = (last_price - first_price).rename('price_diff')
     df_metrics = pd.concat([first_price, last_price, price_diff, price_pct, price_hist], axis=1)
     return df_metrics
@@ -117,8 +117,8 @@ def add_distance(df, dist_km=1):
 
     dfp = DataFrameParallel(df, n_cores=os.cpu_count(), pbar=True)
     out_mp = dfp.apply(get_metrics, axis=1)
-    res = pd.DataFrame(out_mp.tolist(), columns=['pct_diff_median', 'group_size'], index=out.index)
-    df = df.join()
+    res = pd.DataFrame(out_mp.tolist(), columns=['pct_diff_median', 'group_size'], index=out_mp.index)
+    df = df.join(res)
     return df
 
 

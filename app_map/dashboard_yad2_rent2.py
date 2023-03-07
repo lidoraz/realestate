@@ -10,25 +10,26 @@ from dash import Output, Input, State, ctx
 from app_map.util_layout import div_left_map, div_offcanvas, get_div_top_bar, get_table
 from app_map.utils import *
 
-rent_config_default = {"price-from": 0.5, "price-to": 3, "median-price-pct": None,
+rent_config_default = {"price-from": 1, "price-to": 3, "median-price-pct": None,
+                       "price-min": 0.5, "price-max": 10,
                        "switch-median": False,
                        "discount-price-pct": -0.05,
                        "ai_pct": None,
                        "price_mul": 1e3}
 df_all = pd.read_pickle('../resources/yad2_rent_df.pk')
-# TODO: df_all.query("last_price > 500000 and square_meters < 200 and status == 'משופץ'").sort_values('avg_price_m'), can create a nice view for sorting by avg_price per meter.
+# TODO: df_all.query("price > 500000 and square_meters < 200 and status == 'משופץ'").sort_values('avg_price_m'), can create a nice view for sorting by avg_price per meter.
 df_all['pct_diff_median'] = 0
 
 df_all['ai_price'] = df_all['ai_price'] * (df_all['ai_std_pct'] < 0.15)  # Take only certain AI predictions
 df_all['ai_price_pct'] = df_all['ai_price'].replace(0, np.nan)
-df_all['ai_price_pct'] = df_all['last_price'] / df_all['ai_price_pct'] - 1
+df_all['ai_price_pct'] = df_all['price'] / df_all['ai_price_pct'] - 1
 
-df_all['avg_price_m'] = df_all['last_price'] / df_all['square_meters']
+df_all['avg_price_m'] = df_all['price'] / df_all['square_meters']
 df_all['date_added'] = pd.to_datetime(df_all['date_added'])
 df_all['date_added_d'] = (datetime.today() - df_all['date_added']).dt.days
 df_all['date_updated'] = pd.to_datetime(df_all['date_updated'])
 df_all['date_updated_d'] = (datetime.today() - df_all['date_updated']).dt.days
-# df_f = df.query('last_price < 3000000 and -0.9 < price_pct < -0.01 and price_diff < 1e7')  # [:30]
+# df_f = df.query('price < 3000000 and -0.9 < price_pct < -0.01 and price_diff < 1e7')  # [:30]
 df_all.query('-0.89 <price_pct < -0.05').to_csv('df_rent.csv')
 app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
 
@@ -58,7 +59,7 @@ app.layout = html.Div(children=[
 )
 def clear_filter(n_clicks):
     if n_clicks:
-        return [1, 3.5], None, None, None, (1, 6), []
+        return [1, 3.5], None, None, (1, 6), []
     return dash.no_update
 
 
