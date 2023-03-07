@@ -48,8 +48,7 @@ app.layout = html.Div(children=[
 
 
 @app.callback(
-    [Output("price-from", "value"),
-     Output("price-to", "value"),
+    [Output("price-slider", "value"),
      Output("median-price-pct", "value"),
      Output("date-added", "value"),
      Output("rooms-slider", "value"),
@@ -59,7 +58,7 @@ app.layout = html.Div(children=[
 )
 def clear_filter(n_clicks):
     if n_clicks:
-        return None, None, None, None, (1, 6), []
+        return [1, 3.5], None, None, None, (1, 6), []
     return dash.no_update
 
 
@@ -94,7 +93,7 @@ context = dict(map_zoom=300, zoom_ts=time.time())
     [Output("geojson", "data"), Output("table-container", "children"), Output("fetched-assets", "children"),
      Output("button-around", "n_clicks"),
      Output("button-return", "n_clicks")],
-    [Input("price-from", "value"), Input("price-to", "value"), Input("median-price-pct", "value"),
+    [Input('price-slider', 'value'), Input("median-price-pct", "value"),
      Input("discount-price-pct", "value"), Input('ai_pct', "value"),
      Input("date-added", "value"), Input("date-updated", "value"),
      Input("rooms-slider", "value"), Input('agency-check', "value"),
@@ -107,7 +106,7 @@ context = dict(map_zoom=300, zoom_ts=time.time())
     #                 dcc.Checklist(options=[{'label': 'מרפסת', 'value': 'Y'}], value=['Y'], inline=True,
     #                               id='balconies-check')
 )
-def show_assets(price_from, price_to, median_price_pct, discount_price_pct, ai_pct, date_added, date_updated,
+def show_assets(price_range, median_price_pct, discount_price_pct, ai_pct, date_added, date_updated,
                 rooms_range, with_agency, with_parking, with_balconies, state_asset, n_clicks_around, n_clicks_return,
                 marker_type,
                 map_bounds, map_zoom):
@@ -130,8 +129,8 @@ def show_assets(price_from, price_to, median_price_pct, discount_price_pct, ai_p
     if n_clicks_around:
         df_f = get_asset_points(df_all, map_bounds=map_bounds, limit=True)
     else:
-        price_from = price_from * rent_config_default["price_mul"] if price_from is not None else None
-        price_to = price_to * rent_config_default["price_mul"] if price_to is not None else None
+        price_from = price_range[0] * rent_config_default["price_mul"] if price_range[0] is not None else None
+        price_to = price_range[1] * rent_config_default["price_mul"] if price_range[1] is not None else None
         with_agency = True if len(with_agency) else False
         with_parking = True if len(with_parking) else None
         with_balconies = True if len(with_balconies) else None

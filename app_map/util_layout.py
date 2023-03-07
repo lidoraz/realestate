@@ -44,31 +44,12 @@ def get_div_top_bar(config_defaults):
             id='marker-type'
         ),
         # dcc.Slider(0, 2, 1, value=1, marks={0: 'a', 1: 'b', 2: 'c'}, id='marker-type1'),
-        # html.Div(dcc.RangeSlider(min=0.5, max=3, step=0.5, value=[1, 3], id='price-slider',
-        #                          tooltip={'always_visible': True}),
-        #          style={"min-width": "10em"}),
         # html.Span(from_price_txt),
-        dcc.Input(
-            id="price-from",
-            type="number",
-            placeholder=from_price_txt,
-            value=config_defaults["price-from"],
-            step=0.1,
-            min=0,
-            debounce=True,
-            className='input-ltr'
-        ),
-        # html.Span(to_price_txt),
-        dcc.Input(
-            id="price-to",
-            type="number",
-            placeholder=to_price_txt,
-            value=config_defaults["price-to"],
-            step=0.1,
-            min=0,
-            debounce=True,
-            className='input-ltr'
-        ),
+        html.Div(dcc.RangeSlider(min=0.5, max=4.0, step=0.1, value=[config_defaults['price-from'],
+                                                                    config_defaults['price-to']],
+                                 id='price-slider', marks={4.0: '+', 0.5: '-'},
+                                 allowCross=False,
+                                 tooltip={'always_visible': True}), style={"min-width": "10em"}),
         html.Span(median_price_txt),
         dcc.Input(
             id="median-price-pct",
