@@ -128,13 +128,13 @@ def create_tooltip(deal):
 
 from colour import Color
 
-max_colors = 7
+max_colors = 9
 colors = list(Color("green").range_to(Color("red"), max_colors))
 half_idx = max_colors // 2
 
 
 def get_color(x):
-    x = x * 3
+    x = x * 2
     x = max(min(x, 1), -1)
     idx = int(x * half_idx + half_idx)
     return colors[idx].hex
