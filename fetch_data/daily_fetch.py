@@ -12,7 +12,7 @@ print("connecting to remote")
 
 
 def preproccess(df_today):
-    # info_rename = dict(row_2='city', row_1='street', line_1='rooms', line_2='floor', date='updated_at',
+    # info_rename = dict(row_2='city', row_1='street', line_1='rooms', line_2='floor', date='date_updated',
     #                    assetclassificationid_text='status')
     # df_today['is_agency'] = df_today['feed_source'].apply(
     #     lambda x: True if x == 'commercial' else False if x == 'private' else None)
@@ -102,22 +102,23 @@ def add_distance(df, dist_km=1):
     def get_metrics(deal):
         pct = None
         length = 0
-        if not np.isnan(deal['last_price']):
+        if not np.isnan(deal['price']):
             try:
                 other_close_deals = calc_dist(df, deal, dist_km)  # .join(df)
                 other_close_deals = other_close_deals[
                     other_close_deals['rooms'].astype(float).astype(int) == int(float(deal['rooms']))]
                 if len(other_close_deals):
                     # print(deal['last_price'], other_close_deals['last_price'].median())
-                    pct = deal['last_price'] / other_close_deals['last_price'].median() - 1
+                    pct = deal['price'] / other_close_deals['price'].median() - 1
                     length = len(other_close_deals)
             except:
                 pass
         return pct, length
 
     dfp = DataFrameParallel(df, n_cores=os.cpu_count(), pbar=True)
-    out = dfp.apply(get_metrics, axis=1)
-    df = df.join(pd.DataFrame(out.tolist(), columns=['pct_diff_median', 'group_size'], index=out.index))
+    out_mp = dfp.apply(get_metrics, axis=1)
+    res = pd.DataFrame(out_mp.tolist(), columns=['pct_diff_median', 'group_size'], index=out.index)
+    df = df.join()
     return df
 
 
@@ -161,7 +162,7 @@ class MajorityVote:
         clf_res.index = x.index
         print(len(clf_res))
         # clf_res = y.to_frame().join(clf_res)  # .query('ai_std < 1_000_000').sort_values('ai_std')
-        clf_res['ai_std_pct'] = (clf_res['ai_mean'] + clf_res['ai_std']) / clf_res['ai_mean'] - 1
+        clf_res['ai_std_pct'] = (clf_res['ai_price'] + clf_res['ai_std']) / clf_res['ai_price'] - 1
         print(len(clf_res))
         return clf_res
 
@@ -214,6 +215,6 @@ def add_ai_price(df, type):
     res = clf.predict_price(X)
     # mask_invalid = res['ai_std_pct'] > 0.3
     # # res['ai_price'] = res['ai_price']
-    # res.loc[res[mask_invalid].index, 'ai_mean'] = None
+    # res.loc[res[mask_invalid].index, 'ai_price'] = None
     df = pd.concat([df, res], axis=1)
     return df

@@ -12,7 +12,7 @@ if __name__ == '__main__':
         df_today = get_today(type_, conn)
         # os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         df = process_tables(df_today, df_hist)
-        # df = add_distance(df)
+        df = add_distance(df)
         df.to_pickle("test.pk")
         df = pd.read_pickle('test.pk')
         df = add_ai_price(df, type_)

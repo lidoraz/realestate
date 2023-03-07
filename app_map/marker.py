@@ -13,8 +13,8 @@ icon_maps = "https://cdn-icons-png.flaticon.com/128/684/684809.png"
 icon_real_estate = "https://cdn-icons-png.flaticon.com/128/602/602275.png"
 
 
-def get_icon(deal, metric='pct_diff_median'):
-    p = deal['metadata'][metric]
+def get_icon(deal, marker_metric='median'):
+    p = deal['metadata'][marker_metric]
     if -0.1 < p <= -0.05:
         return icon_05
     elif -0.2 < p <= -0.1:
@@ -98,7 +98,7 @@ def create_tooltip(deal):
     html_tp = f"""
     <table class="">
     <tr><td class="text-ltr">{m['last_price_s']}</td>      <td class="text-rtl">מחיר</td>   </tr>
-    <tr><td class="text-ltr"></td> <td class="text-rtl" colspan="2"><b>{m['status']}</b></td>  </tr>
+    <tr><td class="text-ltr"></td> <td class="text-rtl" colspan="2"><b>{m['asset_status']}</b></td>  </tr>
     <tr><td class="text-ltr">{m['rooms_s']}</td>          <td class="text-rtl">חדרים</td>  </tr>
     <tr><td class="text-ltr">{m['floor']:.0f}</td>          <td class="text-rtl">קומה</td>  </tr>
     <tr><td class="text-ltr">{m['square_meters']:,.0f}</td>          <td class="text-rtl">מ״ר</td>  </tr>
@@ -131,10 +131,10 @@ def generate_icon(deal):
         # icon_text=m['last_price_s'],
         _t1=m['price_pct_s'],
         _t2=m['pct_diff_median_s'],
-        _t3=m['ai_mean_pct_s'],
+        _t3=m['ai_price_pct_s'],
         _c1=get_color(m['price_pct']),
         _c2=get_color(m['pct_diff_median']),
-        _c3=get_color(m['ai_mean_pct'])
+        _c3=get_color(m['ai_price_pct'])
     )
 
 marker_tooltip = "simple"
@@ -149,17 +149,17 @@ else:
     raise ValueError()
 
 
-def get_marker_tooltip(deal_points, icon_metric):
+def get_marker_tooltip(deal_points, marker_metric):
     if marker_tooltip == 'complex':
         deal_points = dlx.dicts_to_geojson([{**deal, **dict(tooltip=create_tooltip(deal),
-                                                            icon=get_icon(deal, icon_metric),
+                                                            icon=get_icon(deal, marker_metric),
                                                             icon_text=deal['metadata']['last_price_s'],
                                                             **generate_icon(deal)
                                                             )}
                                             for deal in deal_points])
     elif marker_tooltip == 'simple':
         deal_points = dlx.dicts_to_geojson([{**deal, **dict(tooltip=create_tooltip(deal),
-                                                            icon=get_icon(deal, icon_metric),
+                                                            icon=get_icon(deal, marker_metric),
                                                             icon_text=deal['metadata']['last_price_s']
                                                             )}
                                             for deal in deal_points])

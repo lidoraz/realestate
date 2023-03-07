@@ -11,6 +11,7 @@ from datetime import datetime
 import pandas as pd
 
 from app_map.marker import POINT_TO_LAYER_FUN
+
 # from app_map.utils import *
 
 from_price_txt = 'ממחיר'
@@ -24,6 +25,7 @@ price_pct_txt = 'שינוי במחיר'
 rooms_marks = {r: str(r) for r in range(7)}
 rooms_marks[6] = '6+'
 
+
 # https://stackoverflow.com/questions/34775308/leaflet-how-to-add-a-text-label-to-a-custom-marker-icon
 # https://community.plotly.com/t/dash-leaflet-custom-icon-for-each-marker-on-data-from-geojson/54158/10
 # Can use text instead of just icon with using DivIcon in JS.
@@ -31,8 +33,21 @@ rooms_marks[6] = '6+'
 
 def get_div_top_bar(config_defaults):
     div_top_bar = html.Div(className="top-toolbar", children=[
-        dbc.Button(children=[html.Span('סה"כ:'), html.Span("0", id="fetched-assets")]),
-        html.Span(from_price_txt),
+        # TODO: ADD SWITCH FOR ADDING AI_PCT as a dropdown.
+        dcc.RadioItems(
+            options=[
+                {'label': 'M', 'value': 'pct_diff_median'},
+                {'label': '%', 'value': 'price_pct'},
+                {'label': 'AI', 'value': 'ai_price_pct'},
+            ],
+            value='pct_diff_median',
+            id='marker-type'
+        ),
+        # dcc.Slider(0, 2, 1, value=1, marks={0: 'a', 1: 'b', 2: 'c'}, id='marker-type1'),
+        # html.Div(dcc.RangeSlider(min=0.5, max=3, step=0.5, value=[1, 3], id='price-slider',
+        #                          tooltip={'always_visible': True}),
+        #          style={"min-width": "10em"}),
+        # html.Span(from_price_txt),
         dcc.Input(
             id="price-from",
             type="number",
@@ -43,7 +58,7 @@ def get_div_top_bar(config_defaults):
             debounce=True,
             className='input-ltr'
         ),
-        html.Span(to_price_txt),
+        # html.Span(to_price_txt),
         dcc.Input(
             id="price-to",
             type="number",
@@ -122,9 +137,7 @@ def get_div_top_bar(config_defaults):
             searchable=False,
             id='state-asset',
             style=dict(width='10em', )),
-        html.Span('שיטה'),
-        # TODO: ADD SWITCH FOR ADDING AI_PCT as a dropdown.
-        dbc.Switch(value=config_defaults["switch-median"], id='switch-median'),
+        # dbc.Switch(value=config_defaults["switch-median"], id='switch-median'),
         # dbc.Button(children="AAAAAA"),
         dbc.Button("איזור", id="button-around"),
         dbc.Button("סנן", id='button-return'),
@@ -133,6 +146,7 @@ def get_div_top_bar(config_defaults):
         # html.Span(n_rooms_txt),
         html.Div(dcc.RangeSlider(1, 6, 1, value=[3, 4], marks=rooms_marks, id='rooms-slider'),
                  style={"min-width": "10em"}),
+        dbc.Button(html.Span("0", id="fetched-assets")),
     ])
     return div_top_bar
 
@@ -140,7 +154,7 @@ def get_div_top_bar(config_defaults):
 div_left_map = html.Div(className="left-div", children=[
     dl.Map(children=[dl.TileLayer(),
                      dl.GeoJSON(data=None, id="geojson", zoomToBounds=False, cluster=True,
-                                # superClusterOptions=dict(radius=50, maxZoom=12),
+                                superClusterOptions=dict(maxZoom=15),  # radius=50,
                                 options=dict(pointToLayer=POINT_TO_LAYER_FUN),
                                 ),
                      ],
@@ -223,7 +237,7 @@ def _discrete_background_color_bins(df, n_bins=10, columns='all', reverse=False)
 
 
 def get_table(df):
-    table_price_col = 'ai_mean_pct'
+    table_price_col = 'ai_price_pct'
     columns = ['last_price', 'rooms', table_price_col, 'city']  # price_pct
     from dash.dash_table.Format import Format, Symbol, Group, Scheme
     df = df[columns]
