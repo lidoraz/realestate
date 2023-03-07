@@ -371,13 +371,7 @@ class Scraper:
             logging.warning("Too much time took to load, ERR")
             return False
 
-    def solve_captcha_once(self, digits=4):
-        click_btn_start = "ContentUsersPage_btnHipus"
-        try:
-            self.driver.find_element("id", click_btn_start).click()
-        except Exception as e:
-            logging.error("FATAL ERROR IN clicking button, trying to sleep and retry again...")
-            logging.info(e)
+    def get_solved_captcha(self):
         captcha_id = "ContentUsersPage_RadCaptcha1_CaptchaImageUP"
         time.sleep(3)  # wait for caphta to refresh
         self.wait_for_id("ContentUsersPage_RadCaptcha1_CaptchaImageUP", WAIT_TIME_TIMEOUT)
@@ -386,8 +380,19 @@ class Scraper:
         path = f'{os.path.join(tempfile.gettempdir(), str(uuid.uuid4()))}.png'
         img.screenshot(path)
         ocr_text = self.ocr.detect_text(path)
+        return ocr_text
+
+    def solve_captcha_once(self, digits=4):
+
+        ocr_text = self.get_solved_captcha()
         if len(ocr_text) != digits or not ocr_text.isdigit():
-            return None, False
+            captcha_refresh_id = "ContentUsersPage_RadCaptcha1_CaptchaLinkButton"
+            print("bad num")
+            self.driver.find_element("id", captcha_refresh_id).click()
+            # self.driver.find_element("id", captcha_refresh_id).click()
+            time.sleep(3)
+            return None
+
         captcha_insert_id = "ContentUsersPage_RadCaptcha1_CaptchaTextBox"
         captcha_send_id = "ContentUsersPage_btnIshur"
         self.driver.find_element("id", captcha_insert_id).send_keys(ocr_text)
@@ -445,17 +450,33 @@ class Scraper:
         txt = "The requested URL was rejected. Please consult with your administrator."
         return True if self.driver.title == "Request Rejected" else False
 
+    def _click_start_search(self):
+        click_btn_start = "ContentUsersPage_btnHipus"
+        try:
+            self.driver.find_element("id", click_btn_start).click()
+        except Exception as e:
+            logging.error("FATAL ERROR IN clicking button, trying to sleep and retry again...")
+            logging.info(e)
+            return "ERR"
+        return "OK"
+
     def solve_captcha_get_data(self):
         n_tries = 10
-        for tries in range(n_tries):
-            self.fill_details(self._from_gush, self._to_gush)
-            self.fill_exact_range(from_date=self._date, to_date=self._date)
-            if self._from_room or self._to_room:
-                self.fill_rooms(self._from_room, self._to_room)
-            if self._from_year or self._to_year:
-                self.fill_year_built(self._from_year, self._to_year)
+        self.fill_details(self._from_gush, self._to_gush)
+        self.fill_exact_range(from_date=self._date, to_date=self._date)
+        if self._from_room or self._to_room:
+            self.fill_rooms(self._from_room, self._to_room)
+        if self._from_year or self._to_year:
+            self.fill_year_built(self._from_year, self._to_year)
 
+        res = self._click_start_search()
+        if res == "ERR":
+            return None, -10
+
+        for tries in range(n_tries):
             ocr_text = self.solve_captcha_once()
+            if ocr_text is None:
+                continue
             result = self.validate_after_captcha_try(ocr_text)
             if result == "found_table":
                 try:
@@ -478,6 +499,10 @@ class Scraper:
             elif result == "stuck_restart":
                 logging.warning("stuck_restart - sleep and restart fetch")
                 sleep(WAIT_TIME_TIMEOUT)
+            elif result == "captcha_fail":
+                res = self._click_start_search()
+                if res == "ERR":
+                    return None, - 10
             logging.info(f"solve_captcha_get_data - {result} ({tries}/{n_tries})")
         return None, -10  # should  be result "captcha_fail"
 

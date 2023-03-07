@@ -137,7 +137,7 @@ def run_daily_job():
     curr_date = datetime.today() - timedelta(days=days_before)
     jobs_list = generate_job_comb(pd.date_range(curr_date, curr_date))
     load_proxies(no_proxy=True)
-    start_threads(1)
+    start_threads(1, use_proxy=False)
     run_multiple(jobs_list)
 
 
