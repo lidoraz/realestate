@@ -159,8 +159,10 @@ def generate_icon_custom(deal, marker_metric):
         p_text = "?"
         color = "Black"
     else:
-        p_text = f"{'+' if p > 0 else '-'}{abs(p):.0%}"
-        color = get_color(p)
+        prefix = '+' if p > 0 else '-' if p < 0 else ''
+        p_text = f"{abs(p):.0%}" if p != 0 else ""
+        p_text = f"{prefix}{p_text}"
+        color = get_color(p) if p != 0 else "#00000000"
     return dict(_marker_text=p_text, _marker_color=color)
 
 
