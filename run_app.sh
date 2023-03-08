@@ -4,7 +4,7 @@
 #wget $path/yad2_forsale_df.pk
 #wget $path/df_nadlan_recent.pk.pk
 #cd ..
-
+#
 
 #https://real-estate-public.s3.eu-west-2.amazonaws.com/resources/df_nadlan_recent.pk
 export PYTHONPATH=.;
