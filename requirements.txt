@@ -4,6 +4,7 @@ matplotlib
 plotly
 scikit-learn
 catboost
+requests
 smart-open
 protobuf==3.20.0
 dash
