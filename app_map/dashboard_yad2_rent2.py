@@ -21,6 +21,7 @@ rent_config_default = {"price-from": 1, "price-to": 3, "median-price-pct": None,
 
 path_df = "resources/yad2_rent_df.pk"
 if not os.path.exists(path_df):
+    print("Downloading file")
     from smart_open import open
     s3_file = "https://real-estate-public.s3.eu-west-2.amazonaws.com/resources/yad2_rent_df.pk"
     # s3_file_name = "s3://real-estate-public/resources/yad2_rent_df.pk"
@@ -28,6 +29,7 @@ if not os.path.exists(path_df):
         df_all = pd.read_pickle(f)
         df_all.to_pickle("resources/yad2_rent_df.pk")
 else:
+    print("loading from FS file")
     df_all = pd.read_pickle(path_df)
 
 # df_all = pd.read_pickle('../resources/yad2_rent_df.pk')
@@ -177,7 +179,7 @@ def toggle_modal(feature, n2, is_open):
             deal_id = feature['properties']['deal_id']
             deal = df_all.loc[deal_id]
             str_html = build_sidebar(deal)
-            fig = get_similar_deals(df_all, deal)
+            fig = get_similar_deals(df_all, deal, get_nadlan=False)
             return not is_open, None, str_html, fig
     return is_open, None, None, {}
 

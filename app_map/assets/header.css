@@ -74,7 +74,7 @@ p.rtl {
     direction: ltr;
     unicode-bidi: bidi-override;
     text-align: right;
-    width: 4em;
+    width: 5em;
 }
 
 .text-ltr {
