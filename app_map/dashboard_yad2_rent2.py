@@ -3,13 +3,10 @@
 # https://dash-leaflet-docs.onrender.com/#geojson
 import os
 import sys
-import time
-import dash
-import dash_bootstrap_components as dbc
-import pandas as pd
-from dash import Output, Input, State, ctx
+is_prod = False
+if len(sys.argv) > 1:
+    is_prod = sys.argv[1] == "prod"
 
-from app_map.util_layout import div_left_map, div_offcanvas, get_div_top_bar, get_table
 from app_map.utils import *
 
 rent_config_default = {"price-from": 1, "price-to": 3, "median-price-pct": None,
@@ -19,18 +16,22 @@ rent_config_default = {"price-from": 1, "price-to": 3, "median-price-pct": None,
                        "ai_pct": None,
                        "price_mul": 1e3}
 
-path_df = "resources/yad2_rent_df.pk"
-if not os.path.exists(path_df):
-    print("Downloading file")
-    from smart_open import open
-    s3_file = "https://real-estate-public.s3.eu-west-2.amazonaws.com/resources/yad2_rent_df.pk"
-    # s3_file_name = "s3://real-estate-public/resources/yad2_rent_df.pk"
-    with open(s3_file, 'rb') as f:
-        df_all = pd.read_pickle(f)
-        df_all.to_pickle("resources/yad2_rent_df.pk")
+if is_prod:
+    path_df = "resources/yad2_rent_df.pk"
+    if not os.path.exists(path_df):
+        print("Downloading file")
+        from smart_open import open
+        s3_file = "https://real-estate-public.s3.eu-west-2.amazonaws.com/resources/yad2_rent_df.pk"
+        # s3_file_name = "s3://real-estate-public/resources/yad2_rent_df.pk"
+        with open(s3_file, 'rb') as f:
+            df_all = pd.read_pickle(f)
+            df_all.to_pickle("resources/yad2_rent_df.pk")
+    else:
+        print("loading from FS file")
+        df_all = pd.read_pickle(path_df)
 else:
-    print("loading from FS file")
-    df_all = pd.read_pickle(path_df)
+    print("Not PROD using local read from resources")
+    df_all = pd.read_pickle("../resources/yad2_rent_df.pk")
 
 # df_all = pd.read_pickle('../resources/yad2_rent_df.pk')
 # TODO: df_all.query("price > 500000 and square_meters < 200 and status == 'משופץ'").sort_values('avg_price_m'), can create a nice view for sorting by avg_price per meter.
@@ -195,9 +196,6 @@ def toggle_modal(feature, n2, is_open):
 #      # filtered_df.sort_values(by=['lastUpdated']).to_dict('records'), [row_id]
 
 if __name__ == '__main__':
-    is_prod = False
-    if len(sys.argv) > 1:
-        is_prod = sys.argv[1] == "prod"
     if is_prod:
         app.run_server(debug=True, host="0.0.0.0")
     else:

@@ -35,9 +35,8 @@ def escape_quote(df, cols):
 
 
 class ScraperYad2:
-    def __init__(self, url, use_cols, today_table, history_table, log_table, item_table):
+    def __init__(self, url, today_table, history_table, log_table, item_table):
         self.url = url
-        self.use_cols = use_cols
         self.history_table = history_table
         self.today_table = today_table
         self.log_table = log_table

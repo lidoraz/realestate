@@ -14,8 +14,7 @@ from app_map.util_layout import div_left_map, div_offcanvas, get_div_top_bar, ge
 from app_map.utils import build_sidebar, preprocess_to_str_deals, \
     get_geojsons, get_similar_deals, get_asset_points
 
-
-df_all = pd.read_pickle('resources/yad2_forsale_df.pk')
+df_all = pd.read_pickle('../resources/yad2_forsale_df.pk')
 # TODO: df_all.query("price > 500000 and square_meters < 200 and status == 'משופץ'").sort_values('avg_price_m'), can create a nice view for sorting by avg_price per meter.
 df_all['ai_price'] = df_all['ai_price'] * (df_all['ai_std_pct'] < 0.15)  # Take only certain AI predictions
 df_all['ai_price_pct'] = df_all['ai_price'].replace(0, np.nan)
@@ -58,19 +57,32 @@ app.layout = html.Div(children=[
 ])
 
 
-@app.callback(
+def clear_filter(n_clicks):
+    if n_clicks:
+        return [1, 3.5], None, None, (1, 6), []
+    return dash.no_update
+
+
+app.callback(
+    clear_filter,
     [Output("price-slider", "value"),
      Output("median-price-pct", "value"),
      Output("date-added", "value"),
      Output("rooms-slider", "value"),
      Output("state-asset", "value"),
-     ],
-    Input('button-clear', "n_clicks")
+     Input('button-clear', "n_clicks")]
 )
-def clear_filter(n_clicks):
-    if n_clicks:
-        return [1, 3.5], None, None, (1, 6), []
-    return dash.no_update
+
+
+# @app.callback(
+#     [Output("price-slider", "value"),
+#      Output("median-price-pct", "value"),
+#      Output("date-added", "value"),
+#      Output("rooms-slider", "value"),
+#      Output("state-asset", "value"),
+#      ],
+#     Input('button-clear', "n_clicks")
+# )
 
 
 def print_ctx():
@@ -181,7 +193,4 @@ def toggle_modal(feature, n2, is_open):
 
 
 if __name__ == '__main__':
-    # import sys
-    # is_prod = sys.argv[1]
-    # if is_prod == "prod":
-    app.run_server(debug=True, port=80)
+    app.run_server(debug=True, port=8049)
