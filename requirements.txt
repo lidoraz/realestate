@@ -13,4 +13,5 @@ dash-table
 dash-extensions
 dash-leaflet
 dash-bootstrap-components
+colorlover
 colour
