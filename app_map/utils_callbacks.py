@@ -130,7 +130,7 @@ def toggle_modal(feature, n2, is_open):
             deal_id = feature['properties']['deal_id']
             deal = df_all.loc[deal_id]
             str_html = build_sidebar(deal)
-            fig = get_similar_deals(df_all, deal)
+            fig = get_similar_deals(df_all, deal, with_nadlan=config_defaults['with_nadlan'])
             return not is_open, None, str_html, fig
     return is_open, None, None, {}
 

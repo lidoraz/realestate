@@ -20,7 +20,8 @@ forsale_config_default = {"price-from": 0.5, "price-to": 3, "median-price-pct": 
                           "switch-median": True,
                           "discount-price-pct": None,
                           "ai_pct": None,
-                          "price_mul": 1e6
+                          "price_mul": 1e6,
+                          "with_nadlan": True
                           }
 
 app.layout = get_layout(forsale_config_default)

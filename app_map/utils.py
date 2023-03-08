@@ -216,14 +216,14 @@ def plot_deal_vs_sale_sold(other_close_deals, df_tax, deal):
     # plt.legend()
 
 
-def get_similar_deals(df_all, deal, days_back=99, dist_km=1, get_nadlan=True):
+def get_similar_deals(df_all, deal, days_back=99, dist_km=1, with_nadlan=True):
     filter_rooms = True
     df_open_deals = filter_by_dist(df_all, deal, dist_km)
     if filter_rooms:
         df_open_deals = df_open_deals.dropna(subset='rooms')
         df_open_deals = df_open_deals[df_open_deals['rooms'].astype(float).astype(int) == int(float(deal['rooms']))]
     df_tax = None
-    if get_nadlan:
+    if with_nadlan:
         df_tax = get_nadlan_trans(deal, days_back, dist_km, filter_rooms)
     fig = plot_deal_vs_sale_sold(df_open_deals, df_tax, deal)
     return fig
