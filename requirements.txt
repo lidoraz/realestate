@@ -5,6 +5,7 @@ plotly
 scikit-learn
 catboost
 dash
-dash_leaflet
-dash_bootstrap_components
+dash-table
+dash-leaflet
+dash-bootstrap-components
 colour
