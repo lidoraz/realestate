@@ -1,7 +1,55 @@
+import os
 from app_map.marker import get_marker_tooltip, icon_maps, icon_real_estate
 from app_map.util_layout import *
 from scrape_yad2.utils import _get_parse_item_add_info
 from fetch_data.utils import filter_by_dist, get_nadlan_trans
+
+
+def get_df_with_prod(is_prod, filename):
+    if is_prod:
+        path_df = f"resources/{filename}"
+        if not os.path.exists(path_df):
+            print("Downloading file")
+            from smart_open import open
+
+            s3_file = f"https://real-estate-public.s3.eu-west-2.amazonaws.com/resources/{filename}"
+            # s3_file_name = "s3://real-estate-public/resources/yad2_rent_df.pk"
+            with open(s3_file, 'rb') as f:
+                df_all = pd.read_pickle(f)
+                df_all.to_pickle(path_df)
+        else:
+            print("loading from FS file")
+            df_all = pd.read_pickle(path_df)
+    else:
+        print("Not PROD using local read from resources")
+        df_all = pd.read_pickle(f"../resources/{filename}")
+    return df_all
+
+
+def app_preprocess_df(df_all):
+    df_all['ai_price'] = df_all['ai_price'] * (df_all['ai_std_pct'] < 0.15)  # Take only certain AI predictions
+    df_all['ai_price_pct'] = df_all['ai_price'].replace(0, np.nan)
+
+    df_all['ai_price_pct'] = df_all['price'] / df_all['ai_price_pct'] - 1
+    df_all['avg_price_m'] = df_all['price'] / df_all['square_meters']
+    df_all['date_added'] = pd.to_datetime(df_all['date_added'])
+    df_all['date_added_d'] = (datetime.today() - df_all['date_added']).dt.days
+    df_all['date_updated'] = pd.to_datetime(df_all['date_updated'])
+    df_all['date_updated_d'] = (datetime.today() - df_all['date_updated']).dt.days
+
+    df_all = preprocess_to_str_deals(df_all)
+    df_all = df_all.reset_index()  # to extract id
+    # df_f = df.query('price < 3000000 and -0.9 < price_pct < -0.01 and price_diff < 1e7')  # [:30]
+    return df_all
+
+
+def preprocess_to_str_deals(df):
+    df['rooms_s'] = df['rooms'].apply(lambda m: f"{m if m % 10 == 0 else round(m)}")
+    df['price_s'] = df['price'].apply(lambda m: f"₪{format_number(m)}")
+    df['ai_price_pct_s'] = df['ai_price_pct'].apply(lambda m: f"{m:0.1%}")
+    df['pct_diff_median_s'] = df['pct_diff_median'].apply(lambda m: f"{m:0.1%}")
+    df['price_pct_s'] = df['price_pct'].apply(lambda m: f"{m:0.1%}")
+    return df
 
 
 def get_geojsons(df, marker_metric):
@@ -10,40 +58,6 @@ def get_geojsons(df, marker_metric):
                    idx, d in df.iterrows()]
     deal_points = get_marker_tooltip(deal_points, marker_metric)
     return deal_points
-
-
-def res_get_add_info(item):
-    import requests
-    add_info = None
-    try:
-        res = requests.get('https://gw.yad2.co.il/feed-search-legacy/item?token={}'.format(item))
-        d = res.json()['data']
-        image_urls = d['images_urls']
-        items_v2 = {x['key']: x['value'] for x in d['additional_info_items_v2']}
-        # add_info = dict(parking=d['parking'],
-        #                 balconies=d['balconies'],
-        #                 renovated=items_v2['renovated'],
-        #                 elevator=d['analytics_items']['elevator'],
-        #                 storeroom=d['analytics_items']['storeroom'],
-        #                 number_of_floors=d['analytics_items']['number_of_floors'],
-        #                 shelter=d['analytics_items']['shelter_room'],
-        #                 immediate=d['analytics_items']['immediate'],
-        #                 info_text=d['info_text']
-        #                 )
-        add_info = dict(חנייה=d['parking'],
-                        מרפסות=d['balconies'],
-                        משופץ=items_v2['renovated'],
-                        מעלית=d['analytics_items']['elevator'],
-                        מחסן=d['analytics_items']['storeroom'],
-                        מספר_קומות=d['analytics_items']['number_of_floors'],
-                        מקלט=d['analytics_items']['shelter_room'],
-                        פינוי_מיידי=d['analytics_items']['immediate'],
-                        טקסט_חופשי=d['info_text'],
-                        image_urls=image_urls
-                        )
-    except Exception as e:
-        print("ERROR IN res_get_add_info", e)
-    return add_info
 
 
 def format_number(num):
@@ -60,21 +74,15 @@ def format_number(num):
     return '{}{}'.format('{:f}'.format(num).rstrip('0').rstrip('.'), ['', 'K', 'M', 'B', 'T'][magnitude])
 
 
-def preprocess_to_str_deals(df):
-    df['rooms_s'] = df['rooms'].apply(lambda m: f"{m if m % 10 == 0 else round(m)}")
-    df['price_s'] = df['price'].apply(lambda m: f"₪{format_number(m)}")
-    df['ai_price_pct_s'] = df['ai_price_pct'].apply(lambda m: f"{m:0.1%}")
-    df['pct_diff_median_s'] = df['pct_diff_median'].apply(lambda m: f"{m:0.1%}")
-    df['price_pct_s'] = df['price_pct'].apply(lambda m: f"{m:0.1%}")
-    return df
-
-
 def get_asset_points(df_all, price_from=None, price_to=None,
                      median_price_pct=None, discount_price_pct=None, ai_pct=None,
                      date_added_days=None, date_updated=None,
                      rooms_range=(None, None), with_agency=True, with_parking=None, with_balconies=None, state_asset=(),
                      map_bounds=None,
-                     limit=True):
+                     limit=True, id_=None):
+    if id_ is not None:
+        df_f = df_all.query(f'id == "{id_}"')
+        return df_f
     if len(state_asset) > 0:
         states = ','.join([f"'{x}'" for x in state_asset])
         sql_state_asset = f' and asset_status in ({states})'
@@ -214,6 +222,42 @@ def get_similar_deals(df_all, deal, days_back=99, dist_km=1, get_nadlan=True):
     if filter_rooms:
         df_open_deals = df_open_deals.dropna(subset='rooms')
         df_open_deals = df_open_deals[df_open_deals['rooms'].astype(float).astype(int) == int(float(deal['rooms']))]
-    df_tax = get_nadlan_trans(deal, days_back, dist_km, filter_rooms) if get_nadlan else None
+    df_tax = None
+    if get_nadlan:
+        df_tax = get_nadlan_trans(deal, days_back, dist_km, filter_rooms)
     fig = plot_deal_vs_sale_sold(df_open_deals, df_tax, deal)
     return fig
+
+#
+# def res_get_add_info(item):
+#     import requests
+#     add_info = None
+#     try:
+#         res = requests.get('https://gw.yad2.co.il/feed-search-legacy/item?token={}'.format(item))
+#         d = res.json()['data']
+#         image_urls = d['images_urls']
+#         items_v2 = {x['key']: x['value'] for x in d['additional_info_items_v2']}
+#         # add_info = dict(parking=d['parking'],
+#         #                 balconies=d['balconies'],
+#         #                 renovated=items_v2['renovated'],
+#         #                 elevator=d['analytics_items']['elevator'],
+#         #                 storeroom=d['analytics_items']['storeroom'],
+#         #                 number_of_floors=d['analytics_items']['number_of_floors'],
+#         #                 shelter=d['analytics_items']['shelter_room'],
+#         #                 immediate=d['analytics_items']['immediate'],
+#         #                 info_text=d['info_text']
+#         #                 )
+#         add_info = dict(חנייה=d['parking'],
+#                         מרפסות=d['balconies'],
+#                         משופץ=items_v2['renovated'],
+#                         מעלית=d['analytics_items']['elevator'],
+#                         מחסן=d['analytics_items']['storeroom'],
+#                         מספר_קומות=d['analytics_items']['number_of_floors'],
+#                         מקלט=d['analytics_items']['shelter_room'],
+#                         פינוי_מיידי=d['analytics_items']['immediate'],
+#                         טקסט_חופשי=d['info_text'],
+#                         image_urls=image_urls
+#                         )
+#     except Exception as e:
+#         print("ERROR IN res_get_add_info", e)
+#     return add_info
