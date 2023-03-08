@@ -18,7 +18,12 @@ rent_config_default = {"price-from": 1, "price-to": 3, "median-price-pct": None,
                        "ai_pct": None,
                        "price_mul": 1e3}
 
-df_all = pd.read_pickle("https://real-estate-public.s3.eu-west-2.amazonaws.com/resources/df_nadlan_recent.pk")
+from smart_open import open
+s3_file = "https://real-estate-public.s3.eu-west-2.amazonaws.com/resources/df_nadlan_recent.pk"
+# s3_file_name = "s3://real-estate-public/resources/yad2_rent_df.pk"
+with open(s3_file, 'rb') as f:
+    df_all = pd.read_pickle(f)
+
 # df_all = pd.read_pickle('../resources/yad2_rent_df.pk')
 # TODO: df_all.query("price > 500000 and square_meters < 200 and status == 'משופץ'").sort_values('avg_price_m'), can create a nice view for sorting by avg_price per meter.
 df_all['pct_diff_median'] = 0
