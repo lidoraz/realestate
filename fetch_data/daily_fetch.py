@@ -1,37 +1,11 @@
 # TODO: ADD TO DAILY STATS a flag for ACTIVE and NOT active such that we can see previous deals and investigate.
-
-
-import json
 import os
-
 import pandas as pd
+import numpy as np
+from catboost import CatBoostRegressor
+from sklearn.model_selection import KFold
 
-# from fetch_data.utils import additional_columns_lst
-
-print("connecting to remote")
-
-
-def preproccess(df_today):
-    # info_rename = dict(row_2='city', row_1='street', line_1='rooms', line_2='floor', date='date_updated',
-    #                    assetclassificationid_text='status')
-    # df_today['is_agency'] = df_today['feed_source'].apply(
-    #     lambda x: True if x == 'commercial' else False if x == 'private' else None)
-    df_today = df_today.set_index('id').rename(columns=info_rename)
-    # df_today['coordinates'] = df_today['coordinates'].apply(lambda x: json.loads(x.replace("'", '"')))
-    # # df_today['info_text'] = df_today['info_text'].apply(
-    # #     lambda x: x.split('תאור לקוח')[1] if len(x.split('תאור לקוח')) > 1 else None)
-    #
-    # df_today['floor'] = df_today['floor'].apply(
-    #     lambda x: 0 if x == 'קומת קרקע' else x.split(' ')[1].replace('-', '') if len(
-    #         x.split(' ')) > 1 else None).astype(float).astype('Int32')
-    # df_today['rooms'] = df_today['rooms'].apply(
-    #     lambda x: None if x == 'לא צויינו חדרים' else '1' if x == 'חדר אחד' else x.split(' ')[0]).astype(float)
-    # df_today['type'] = df_today['city'].apply(lambda x: x.split(',')[0])
-    # df_today['city_loc'] = df_today['city'].apply(lambda x: ','.join(x.split(',')[1:-1]))
-    # df_today['city'] = df_today['city'].apply(lambda x: x.split(',')[-1])
-    # df_today['lat'] = df_today['coordinates'].apply(lambda x: x.get('latitude'))
-    # df_today['long'] = df_today['coordinates'].apply(lambda x: x.get('longitude'))
-    return df_today
+from fetch_data.utils import filter_by_dist
 
 
 def preprocess_history(df_hist, today_indexes):
@@ -67,44 +41,13 @@ def process_tables(df_today, df_hist):
     return df
 
 
-import numpy as np
-
-
-def haversine(lat1, lon1, lat2, lon2, to_radians=True, earth_radius=6371):
-    """
-    slightly modified version: of http://stackoverflow.com/a/29546836/2901002
-
-    Calculate the great circle distance between two points
-    on the earth (specified in decimal degrees or in radians)
-
-    All (lat, lon) coordinates must have numeric dtypes and be of equal length.
-
-    """
-    if to_radians:
-        lat1, lon1 = np.radians([lat1, lon1])
-        lat2, lon2 = np.radians([lat2, lon2])
-
-    a = np.sin((lat2 - lat1) / 2.0) ** 2 + \
-        np.cos(lat1) * np.cos(lat2) * np.sin((lon2 - lon1) / 2.0) ** 2
-
-    return earth_radius * 2 * np.arcsin(np.sqrt(a))
-
-
-def calc_dist(df, deal, distance):
-    dist = haversine(df['lat'], df['long'], deal['lat'], deal['long'])
-    df['dist'] = dist
-    df = df[df['dist'] < distance]
-    return df
-
-
 def add_distance(df, dist_km=1):
-    from pandas_parallel_apply import DataFrameParallel
     def get_metrics(deal):
         pct = None
         length = 0
         if not np.isnan(deal['price']):
             try:
-                other_close_deals = calc_dist(df, deal, dist_km)  # .join(df)
+                other_close_deals = filter_by_dist(df, deal, dist_km)  # .join(df)
                 other_close_deals = other_close_deals[
                     other_close_deals['rooms'].astype(float).astype(int) == int(float(deal['rooms']))]
                 if len(other_close_deals):
@@ -115,15 +58,16 @@ def add_distance(df, dist_km=1):
                 pass
         return pct, length
 
-    dfp = DataFrameParallel(df, n_cores=os.cpu_count(), pbar=True)
+    try:
+        from pandas_parallel_apply import DataFrameParallel
+        dfp = DataFrameParallel(df, n_cores=os.cpu_count(), pbar=True)
+    except ModuleNotFoundError:
+        print('pandas_parallel_apply is not installed! ignoring module')
+        dfp = df
     out_mp = dfp.apply(get_metrics, axis=1)
     res = pd.DataFrame(out_mp.tolist(), columns=['pct_diff_median', 'group_size'], index=out_mp.index)
     df = df.join(res)
     return df
-
-
-from catboost import CatBoostRegressor
-from sklearn.model_selection import KFold
 
 
 class MajorityVote:
