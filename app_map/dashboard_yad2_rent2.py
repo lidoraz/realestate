@@ -1,7 +1,7 @@
 #
 # # https://lyz-code.github.io/blue-book/coding/python/dash_leaflet/
 # https://dash-leaflet-docs.onrender.com/#geojson
-
+import sys
 import time
 import dash
 import dash_bootstrap_components as dbc
@@ -188,4 +188,10 @@ def toggle_modal(feature, n2, is_open):
 #      # filtered_df.sort_values(by=['lastUpdated']).to_dict('records'), [row_id]
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    is_prod = False
+    if len(sys.argv) > 1:
+        is_prod = sys.argv[1] == "prod"
+    if is_prod:
+        app.run_server(debug=True, host="0.0.0.0")
+    else:
+        app.run_server(debug=True)
