@@ -5,6 +5,7 @@ plotly
 scikit-learn
 catboost
 requests
+sqlalchemy
 smart-open
 protobuf==3.20.0
 dash
