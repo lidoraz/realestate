@@ -4,9 +4,10 @@ matplotlib
 plotly
 scikit-learn
 catboost
+protobuf==3.20.0
 dash
 dash-table
-protobuf==3.20.0
+dash-extensions
 dash-leaflet
 dash-bootstrap-components
 colour
