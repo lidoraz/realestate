@@ -8,4 +8,4 @@
 
 #https://real-estate-public.s3.eu-west-2.amazonaws.com/resources/df_nadlan_recent.pk
 export PYTHONPATH=.;
-python app_map/dashboard_yad2_rent2.py
+python app_map/dashboard_yad2_rent2.py prod
