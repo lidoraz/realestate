@@ -61,10 +61,12 @@ def add_distance(df, dist_km=1):
     try:
         from pandas_parallel_apply import DataFrameParallel
         dfp = DataFrameParallel(df, n_cores=os.cpu_count(), pbar=True)
+        out_mp = dfp.apply(get_metrics, axis=1)
     except ModuleNotFoundError:
         print('pandas_parallel_apply is not installed! ignoring module')
-        dfp = df
-    out_mp = dfp.apply(get_metrics, axis=1)
+        from tqdm import tqdm
+        tqdm.pandas()
+        out_mp = df.progress_apply(get_metrics, axis=1)
     res = pd.DataFrame(out_mp.tolist(), columns=['pct_diff_median', 'group_size'], index=out_mp.index)
     df = df.join(res)
     return df
