@@ -19,7 +19,8 @@ rent_config_default = {"price-from": 1, "price-to": 3, "median-price-pct": None,
                        "price_mul": 1e3}
 
 from smart_open import open
-s3_file = "https://real-estate-public.s3.eu-west-2.amazonaws.com/resources/df_nadlan_recent.pk"
+# fix
+s3_file = "https://real-estate-public.s3.eu-west-2.amazonaws.com/resources/yad2_rent_df.pk"
 # s3_file_name = "s3://real-estate-public/resources/yad2_rent_df.pk"
 with open(s3_file, 'rb') as f:
     df_all = pd.read_pickle(f)
