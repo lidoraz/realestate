@@ -5,6 +5,7 @@
 import time
 import dash
 import dash_bootstrap_components as dbc
+import pandas as pd
 from dash import Output, Input, State, ctx
 
 from app_map.util_layout import div_left_map, div_offcanvas, get_div_top_bar, get_table
@@ -16,7 +17,9 @@ rent_config_default = {"price-from": 1, "price-to": 3, "median-price-pct": None,
                        "discount-price-pct": -0.05,
                        "ai_pct": None,
                        "price_mul": 1e3}
-df_all = pd.read_pickle('../resources/yad2_rent_df.pk')
+
+df_all = pd.read_pickle("https://real-estate-public.s3.eu-west-2.amazonaws.com/resources/df_nadlan_recent.pk")
+# df_all = pd.read_pickle('../resources/yad2_rent_df.pk')
 # TODO: df_all.query("price > 500000 and square_meters < 200 and status == 'משופץ'").sort_values('avg_price_m'), can create a nice view for sorting by avg_price per meter.
 df_all['pct_diff_median'] = 0
 
