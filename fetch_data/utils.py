@@ -5,7 +5,7 @@ from datetime import datetime
 
 from scrape_yad2.config import sql_today_dtypes, sql_items_dtypes
 
-DF_NADLAN_RECENT_PK = "../resources/df_nadlan_recent.pk"
+DF_NADLAN_RECENT_PK = "resources/df_nadlan_recent.pk"
 
 
 TABLES = dict(forsale=dict(hist_tbl="yad2_forsale_history",

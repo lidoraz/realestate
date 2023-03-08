@@ -14,7 +14,8 @@ from app_map.util_layout import div_left_map, div_offcanvas, get_div_top_bar, ge
 from app_map.utils import build_sidebar, preprocess_to_str_deals, \
     get_geojsons, get_similar_deals, get_asset_points
 
-df_all = pd.read_pickle('../resources/yad2_forsale_df.pk')
+
+df_all = pd.read_pickle('resources/yad2_forsale_df.pk')
 # TODO: df_all.query("price > 500000 and square_meters < 200 and status == 'משופץ'").sort_values('avg_price_m'), can create a nice view for sorting by avg_price per meter.
 df_all['ai_price'] = df_all['ai_price'] * (df_all['ai_std_pct'] < 0.15)  # Take only certain AI predictions
 df_all['ai_price_pct'] = df_all['ai_price'].replace(0, np.nan)
@@ -180,4 +181,7 @@ def toggle_modal(feature, n2, is_open):
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True, port=8049)
+    # import sys
+    # is_prod = sys.argv[1]
+    # if is_prod == "prod":
+    app.run_server(debug=True, port=80)

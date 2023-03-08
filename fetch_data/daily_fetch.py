@@ -42,6 +42,8 @@ def process_tables(df_today, df_hist):
 
 
 def add_distance(df, dist_km=1):
+    print('Calculating Distance')
+
     def get_metrics(deal):
         pct = None
         length = 0
@@ -69,6 +71,7 @@ def add_distance(df, dist_km=1):
         out_mp = df.progress_apply(get_metrics, axis=1)
     res = pd.DataFrame(out_mp.tolist(), columns=['pct_diff_median', 'group_size'], index=out_mp.index)
     df = df.join(res)
+    print('Finished Calculated Distance')
     return df
 
 
@@ -79,6 +82,7 @@ class MajorityVote:
                                        early_stopping_rounds=500,
                                        allow_writing_files=False) for _ in range(n_folds)]
         self.n_folds = n_folds
+        self.df_feat_imp = None
 
     def fit(self, X, y, cat_features):
         kf = KFold(self.n_folds)
@@ -117,23 +121,18 @@ class MajorityVote:
         for clf in self.clfs:
             res.append({k: v for k, v in zip(clf.feature_names_, clf.feature_importances_)})
         self.df_feat_imp = pd.DataFrame(res)
-        print
-        return self.df_feat_imp.mean(axis=0)
+        return self.df_feat_imp.mean(axis=0).sort_values(ascending=False)
         # feat_import [x for x ]
         # self.clfs._feature_importance
 
 
-def add_ai_price(df, type):
+def add_ai_price(df, type_):
+    print('Calculating AI Price')
     df['housing_unit'] = df['housing_unit'].astype(bool)  # .value_counts()
     df['info_text'] = df['info_text'].fillna('')
     df['is_keycrap'] = df['info_text'].str.contains('דמי מפתח')
     df['is_tama'] = df['info_text'].str.contains('תמא|תמ״א')
     must_have_cols = ['price', 'lat', 'long']
-    # info_cols = ['price_pct', 'asset_type', 'city', 'neighborhood', 'rooms', 'asset_status',
-    #              'square_meters', 'square_meter_build', 'garden_area', 'elevator',
-    #              'floor', 'parking', 'balconies', 'number_of_floors', 'renovated',
-    #              'is_agency', 'housing_unit',
-    #              'is_keycrap', 'is_tama']
     bool_cols = ['renovated', 'balconies', 'elevator', 'is_agency',
                  'housing_unit',
                  'is_keycrap', 'is_tama'
@@ -143,13 +142,13 @@ def add_ai_price(df, type):
     cat_features = ['asset_type', 'city', 'neighborhood', 'asset_status']
     df_d = df.dropna(subset=must_have_cols, axis=0).copy()
     df_d[bool_cols] = df_d[bool_cols].fillna(False)
-    df_d[num_cols] = df_d[num_cols].fillna(-1)
+    df_d[num_cols] = df_d[num_cols].fillna(-np.inf)
     df_d[cat_features] = df_d[cat_features].fillna('')
     df_d = df_d[must_have_cols + bool_cols + num_cols + cat_features]
     # remove anomalies
-    if type == 'rent':
+    if type_ == 'rent':
         df_d = df_d.query('700 <= price <= 30_000')
-    elif type == 'forsale':
+    elif type_ == 'forsale':
         df_d = df_d.query('250_000 <= price <= 50_000_000')
     else:
         raise ValueError()
@@ -163,4 +162,5 @@ def add_ai_price(df, type):
     # # res['ai_price'] = res['ai_price']
     # res.loc[res[mask_invalid].index, 'ai_price'] = None
     df = pd.concat([df, res], axis=1)
+    print('Finished Calculating AI Price')
     return df

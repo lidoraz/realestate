@@ -1,0 +1,9 @@
+pandas
+numpy
+matplotlib
+plotly
+scikit-learn
+catboost
+dash
+dash_bootstrap_components
+colour
