@@ -109,7 +109,8 @@ def get_asset_points(df_all, price_from=None, price_to=None,
     df_f = df_all.query(q)
     if limit:
         df_f = df_f[:1_000]
-    print(f"Triggerd, Fetched: {len(df_f)} rows")
+
+    print(f"{datetime.now()} Triggerd, Fetched: {len(df_f)} rows")
     return df_f
 
 

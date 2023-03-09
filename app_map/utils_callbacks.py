@@ -59,11 +59,10 @@ def limit_refresh(map_zoom):
         update_diff = context['zoom_ts'] - past_ts
         if update_diff < 2:
             print(update_diff)
-            print("not much time has passed")
-            print("Zoom changed! - No update")
+            print("not much time has passed, Zoom changed! - No update")
             return dash.no_update
-    print(locals())
-    print(ctx.triggered_prop_ids, map_zoom)
+    # print(locals())
+    # print(ctx.triggered_prop_ids, map_zoom)
     # sleep_bounds()
 
 
@@ -140,8 +139,6 @@ focus_on_asset_input_outputs = [Output("map", "center"),
                                 Input("datatable-interactivity", "active_cell"),
                                 State("datatable-interactivity", "data"),
                                 ]
-
-
 def focus_on_asset(table_active_cell, table_data):
     if table_active_cell is None:
         return dash.no_update
