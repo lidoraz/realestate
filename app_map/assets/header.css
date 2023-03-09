@@ -177,8 +177,9 @@ p.rtl {
 }
 .marker-div-span{
     text-shadow: 0 0 1px black, 0 0 1px black, 0 0 1px black, 0 0 1px black;
-    padding:2px;
+    padding:3px;
     color: white;
+    border-radius: 25px;
 }
 
 .dash-spreadsheet-menu{ /*used to remove toggle columns in table*/

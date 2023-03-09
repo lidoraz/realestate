@@ -99,8 +99,9 @@ def get_div_top_bar(config_defaults):
         # html.Span(from_price_txt),
         html.Div([html.Span(price_text), dcc.RangeSlider(min=config_defaults["price-min"],
                                                          max=config_defaults["price-max"],
-                                                         step=config_defaults['price_step'], value=[config_defaults['price-from'],
-                                                                          config_defaults['price-to']],
+                                                         step=config_defaults['price_step'],
+                                                         value=[config_defaults['price-from'],
+                                                                config_defaults['price-to']],
                                                          id='price-slider', marks={config_defaults["price-max"]: '+',
                                                                                    config_defaults["price-min"]: '-'},
                                                          allowCross=False,
@@ -155,8 +156,11 @@ def get_div_top_bar(config_defaults):
     return div_top_bar
 
 
+# Leaflet-style URL
+# https://leaflet-extras.github.io/leaflet-providers/preview/
 div_left_map = html.Div(className="left-div", children=[
-    dl.Map(children=[dl.TileLayer(),
+
+    dl.Map(children=[dl.TileLayer(url="https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png"),
                      dl.GeoJSON(data=None, id="geojson", zoomToBounds=False, cluster=True,
                                 superClusterOptions=dict(maxZoom=15),  # radius=50,
                                 options=dict(pointToLayer=POINT_TO_LAYER_FUN),

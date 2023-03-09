@@ -77,6 +77,23 @@ function(feature, latlng){
 }
 """)
 
+# js_draw_custom = assign("""
+# function(feature, latlng){
+#     console.log("1");
+#     // console.log(feature.properties.icon);
+#     const x = L.divIcon({
+#         className: 'marker-div-icon',
+#         html: `
+#         <div class="marker-div">
+#         <span class="marker-div-span" style="background-color: ${feature.properties._marker_color}">${feature.properties._marker_text}</span>
+#         <img class="marker-div-image" src="https://cdn-icons-png.flaticon.com/128/6153/6153497.png"/>
+#         </div>`
+#     })
+#     console.log("2");
+#     return L.marker(latlng, {icon: x});
+# }
+# """)
+
 js_draw_custom = assign("""
 function(feature, latlng){
     console.log("1");
@@ -86,7 +103,6 @@ function(feature, latlng){
         html: `
         <div class="marker-div">
         <span class="marker-div-span" style="background-color: ${feature.properties._marker_color}">${feature.properties._marker_text}</span>
-        <img class="marker-div-image" src="https://cdn-icons-png.flaticon.com/128/6153/6153497.png"/>
         </div>`
     })
     console.log("2");

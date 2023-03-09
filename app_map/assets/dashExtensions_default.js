@@ -38,7 +38,6 @@ window.dashExtensions = Object.assign({}, window.dashExtensions, {
                 html: `
         <div class="marker-div">
         <span class="marker-div-span" style="background-color: ${feature.properties._marker_color}">${feature.properties._marker_text}</span>
-        <img class="marker-div-image" src="https://cdn-icons-png.flaticon.com/128/6153/6153497.png"/>
         </div>`
             })
             console.log("2");
