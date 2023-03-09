@@ -133,7 +133,7 @@ g_colors = list(Color("green").range_to('lightgray', max_colors))
 r_colors = list(Color("red").range_to('lightgray', max_colors))[::-1]
 colors = (g_colors + r_colors[1:])[::-1]
 print("len(colors)", len(colors))
-# https://stackoverflow.com/questions/929103/convert-a-number-range-to-another-range-maintaining-ratio 
+# https://stackoverflow.com/questions/929103/convert-a-number-range-to-another-range-maintaining-ratio
 old_range = (1 - (-1))
 new_range = ((len(colors) - 1) - 0)
 

@@ -15,12 +15,13 @@ from app_map.marker import POINT_TO_LAYER_FUN
 # from app_map.utils import *
 
 
+price_text = "מחיר"
 date_added_txt = 'הועלה עד'
 date_updated_text = 'עודכן לפני'
 n_rooms_txt = 'חדרים'
 median_price_txt = '% מהחציון'
 ai_pct_txt = '% ממחירAI '
-price_pct_txt = 'שינוי מחיר%'
+price_pct_txt = '% שינוי מחיר'
 rooms_marks = {r: str(r) for r in range(7)}
 rooms_marks[6] = '6+'
 
@@ -68,6 +69,20 @@ def get_layout(default_config):
     return layout
 
 
+def get_html_range_range_pct(text, element_id):
+    check_mark = dcc.Checklist(options=[{'value': 'Y', 'label': text}], value=['Y'], inline=True,
+                               id=f'{element_id}-check')
+    return html.Div([check_mark,
+                     dcc.RangeSlider(min=-100,
+                                     max=100,
+                                     step=5, value=[-100, 0],
+                                     id=element_id,
+                                     marks={-100: '-100%', 0: '0%', 100: '+100%'},
+                                     allowCross=False,
+                                     tooltip={'always_visible': True})],
+                    className="slider-container")
+
+
 def get_div_top_bar(config_defaults):
     div_top_bar = html.Div(className="top-toolbar", children=[
         # TODO: ADD SWITCH FOR ADDING AI_PCT as a dropdown.
@@ -82,49 +97,18 @@ def get_div_top_bar(config_defaults):
         ),
         # dcc.Slider(0, 2, 1, value=1, marks={0: 'a', 1: 'b', 2: 'c'}, id='marker-type1'),
         # html.Span(from_price_txt),
-        html.Div(dcc.RangeSlider(min=config_defaults["price-min"],
-                                 max=config_defaults["price-max"],
-                                 step=0.1, value=[config_defaults['price-from'],
-                                                  config_defaults['price-to']],
-                                 id='price-slider', marks={4.0: '+', 0.5: '-'},
-                                 allowCross=False,
-                                 tooltip={'always_visible': True}), style={"min-width": "10em"}),
-        html.Span(median_price_txt),
-        dcc.Input(
-            id="median-price-pct",
-            type="number",
-            placeholder=median_price_txt,
-            value=config_defaults["median-price-pct"],
-            debounce=True,
-            step=0.01,
-            min=-1,
-            max=1,
-            className="input-ltr"
-        ),
-        html.Span(price_pct_txt),
-        dcc.Input(
-            id="discount-price-pct",
-            type="number",
-            placeholder=price_pct_txt,
-            value=config_defaults["discount-price-pct"],
-            debounce=True,
-            step=0.01,
-            min=-1,
-            max=1,
-            className="input-ltr"
-        ),
-        html.Span(ai_pct_txt),
-        dcc.Input(
-            id="ai_pct",
-            type="number",
-            placeholder=ai_pct_txt,
-            value=config_defaults["ai_pct"],
-            debounce=True,
-            step=0.01,
-            min=-1,
-            max=1,
-            className="input-ltr"
-        ),
+        html.Div([html.Span(price_text), dcc.RangeSlider(min=config_defaults["price-min"],
+                                                         max=config_defaults["price-max"],
+                                                         step=config_defaults['price_step'], value=[config_defaults['price-from'],
+                                                                          config_defaults['price-to']],
+                                                         id='price-slider', marks={config_defaults["price-max"]: '+',
+                                                                                   config_defaults["price-min"]: '-'},
+                                                         allowCross=False,
+                                                         tooltip={'always_visible': True})],
+                 className="slider-container"),
+        get_html_range_range_pct(median_price_txt, 'price-median-pct-slider'),
+        get_html_range_range_pct(price_pct_txt, 'price-discount-pct-slider'),
+        get_html_range_range_pct(ai_pct_txt, 'ai-price-pct-slider'),
         dcc.Checklist(options=[{'label': 'כולל תיווך', 'value': 'Y'}], value=['Y'], inline=True,
                       id='agency-check'),
         dcc.Checklist(options=[{'label': 'חובה חניה', 'value': 'Y'}], value=[], inline=True,
@@ -277,7 +261,7 @@ def get_interactive_table(df):
                            # "rooms": dict(id='rooms', name='R', type='numeric'),
                            # "parking": dict(id='parking', name='Parking', type='numeric'),
                            pct_cols[0]: dict(id=pct_cols[0], name='%D', type='numeric',
-                                                 format=FormatTemplate.percentage(0)),
+                                             format=FormatTemplate.percentage(0)),
                            pct_cols[2]: dict(id=pct_cols[2], name='AI', type='numeric',
                                              format=FormatTemplate.percentage(0)),
                            pct_cols[1]: dict(id=pct_cols[1], name='#M', type='numeric',

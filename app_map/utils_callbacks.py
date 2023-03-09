@@ -6,17 +6,24 @@ import time
 from app_map.util_layout import get_interactive_table
 from app_map.utils import get_asset_points, preprocess_to_str_deals, get_geojsons, build_sidebar, get_similar_deals
 
-clear_filter_input_outputs = [Output("price-slider", "value"),
-                              Output("median-price-pct", "value"),
-                              Output("date-added", "value"),
-                              Output("rooms-slider", "value"),
-                              Output("state-asset", "value"),
-                              Input('button-clear', "n_clicks")]
+clear_filter_input_outputs = [
+    Output('button-clear', "n_clicks"),
+    # Output("price-slider", "value"),
+    Output("price-median-pct-slider", "value"),
+    Output("price-discount-pct-slider", "value"),
+    Output("ai-price-pct-slider", "value"),
+    Output("price-median-pct-slider-check", "value"),
+    Output("price-discount-pct-slider-check", "value"),
+    Output("ai-price-pct-slider-check", "value"),
+    Output("date-added", "value"),
+    Output("rooms-slider", "value"),
+    Output("state-asset", "value"),
+    Input('button-clear', "n_clicks")]
 
 
 def clear_filter(n_clicks):
     if n_clicks:
-        return [1, 3.5], None, None, (1, 6), []
+        return 0, [-100, 0], [-100, 0], [-100, 0], [], [], [], None, (1, 6), []
     return dash.no_update
 
 
@@ -72,9 +79,16 @@ show_assets_input_output = [Output("geojson", "data"),
                             Output("datatable-interactivity", "style_data_conditional"),
                             Output("fetched-assets", "children"),
                             Output("button-around", "n_clicks"),
-                            Output("button-return", "n_clicks"),
-                            Input("price-slider", "value"), Input("median-price-pct", "value"),
-                            Input("discount-price-pct", "value"), Input('ai_pct', "value"),
+                            Output("button-return", "n_clicks"), # NOT USED
+                            Input("price-slider", "value"),
+                            Input("price-median-pct-slider", "value"),
+                            Input("price-discount-pct-slider", "value"),
+                            Input("ai-price-pct-slider", "value"),
+                            Input("price-median-pct-slider-check", "value"),
+                            Input("price-discount-pct-slider-check", "value"),
+                            Input("ai-price-pct-slider-check", "value"),
+                            # Input("median-price-pct", "value"),
+                            # Input("discount-price-pct", "value"), Input('ai_pct', "value"),
                             Input("date-added", "value"), Input("date-updated", "value"),
                             Input("rooms-slider", "value"), Input('agency-check', "value"),
                             Input('parking-check', "value"), Input('balconies-check', "value"),
@@ -84,15 +98,13 @@ show_assets_input_output = [Output("geojson", "data"),
                             Input('map', 'bounds'), State('map', 'zoom')]
 
 
-def show_assets(price_range, median_price_pct, discount_price_pct, ai_pct, date_added, date_updated,
+def show_assets(price_range,
+                price_median_pct_range, price_discount_pct_range, price_ai_pct_range,
+                is_price_median_pct_range, is_price_discount_pct_range, is_price_ai_pct_range,
+                date_added, date_updated,
                 rooms_range, with_agency, with_parking, with_balconies, state_asset, n_clicks_around, n_clicks_return,
                 marker_type,
                 map_bounds, map_zoom):
-    # if table_active_cell is not None:
-    #     id_ = table_data[table_active_cell['row']]['id']
-    #     df_f = get_asset_points(df_all, id_=id_)
-    #     deal_points = get_geojsons(df_f, marker_type)
-    #     return deal_points, dash.no_update, dash.no_update, dash.no_update, dash.no_update, None, None
     limit_refresh(map_zoom)
     if n_clicks_around:
         df_f = get_asset_points(df_all, map_bounds=map_bounds, limit=True)
@@ -104,8 +116,12 @@ def show_assets(price_range, median_price_pct, discount_price_pct, ai_pct, date_
         with_agency = True if len(with_agency) else False
         with_parking = True if len(with_parking) else None
         with_balconies = True if len(with_balconies) else None
+        is_price_median_pct_range = len(is_price_median_pct_range) > 0
+        is_price_discount_pct_range = len(is_price_discount_pct_range) > 0
+        is_price_ai_pct_range = len(is_price_ai_pct_range) > 0
         df_f = get_asset_points(df_all, price_from, price_to,
-                                median_price_pct, discount_price_pct, ai_pct,
+                                price_median_pct_range, price_discount_pct_range, price_ai_pct_range,
+                                is_price_median_pct_range, is_price_discount_pct_range, is_price_ai_pct_range,
                                 date_added, date_updated, rooms_range,
                                 with_agency, with_parking, with_balconies, map_bounds=map_bounds,
                                 state_asset=state_asset, limit=True)
@@ -139,12 +155,30 @@ focus_on_asset_input_outputs = [Output("map", "center"),
                                 Input("datatable-interactivity", "active_cell"),
                                 State("datatable-interactivity", "data"),
                                 ]
+
+
 def focus_on_asset(table_active_cell, table_data):
     if table_active_cell is None:
         return dash.no_update
     id_ = table_data[table_active_cell['row']]['id']
     item = get_asset_points(df_all, id_=id_).squeeze()
     return [item['lat'], item['long']], 14
+
+
+disable_range_input_outputs = [Output("price-median-pct-slider", "disabled"),
+                               Output("price-discount-pct-slider", "disabled"),
+                               Output("ai-price-pct-slider", "disabled"),
+                               Input("price-median-pct-slider-check", "value"),
+                               Input("price-discount-pct-slider-check", "value"),
+                               Input("ai-price-pct-slider-check", "value"),
+                               ]
+
+
+def disable_range_sliders(is_price_median_pct_range, is_price_discount_pct_range, is_price_ai_pct_range):
+    is_price_median_pct_range = len(is_price_median_pct_range) == 0
+    is_price_discount_pct_range = len(is_price_discount_pct_range) == 0
+    is_price_ai_pct_range = len(is_price_ai_pct_range) == 0
+    return is_price_median_pct_range, is_price_discount_pct_range, is_price_ai_pct_range
 
 
 def add_callbacks(app, df, config):
@@ -155,3 +189,4 @@ def add_callbacks(app, df, config):
     app.callback(show_assets_input_output)(show_assets)
     app.callback(toggle_model_input_outputs)(toggle_modal)
     app.callback(focus_on_asset_input_outputs)(focus_on_asset)
+    app.callback(disable_range_input_outputs)(disable_range_sliders)

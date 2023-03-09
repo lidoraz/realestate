@@ -184,3 +184,9 @@ p.rtl {
 .dash-spreadsheet-menu{ /*used to remove toggle columns in table*/
     display: None !important;
 }
+
+.slider-container{
+    min-width: 10em;
+    text-align: center;
+    direction: ltr;
+}

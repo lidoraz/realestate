@@ -75,7 +75,8 @@ def format_number(num):
 
 
 def get_asset_points(df_all, price_from=None, price_to=None,
-                     median_price_pct=None, discount_price_pct=None, ai_pct=None,
+                     price_median_pct_range=None, price_discount_pct_range=None, price_ai_pct_range=None,
+                     is_price_median_pct_range=False, is_price_discount_pct_range=False, is_price_ai_pct_range=False,
                      date_added_days=None, date_updated=None,
                      rooms_range=(None, None), with_agency=True, with_parking=None, with_balconies=None, state_asset=(),
                      map_bounds=None,
@@ -92,15 +93,16 @@ def get_asset_points(df_all, price_from=None, price_to=None,
     rooms_to = rooms_range[1] or 100
     sql_cond = dict(
         sql_rooms_range=f"{rooms_from} <= rooms <= {rooms_to}.5" if rooms_from is not None and rooms_to is not None else "",
-        sql_price_from=f"and {price_from} <= price" if price_from is not None else "",
-        sql_price_to=f"and {price_to} >= price" if price_to is not None else "",
+        sql_price=f"and {price_from} <= price <= {price_to}" if price_from is not None else "",
         sql_is_agency="and is_agency == False" if not with_agency else "",
         sql_is_parking="and parking > 0" if with_parking else "",
         sql_is_balcony="and balconies == True" if with_balconies else "",
         sql_state_asset=sql_state_asset,
-        sql_median_price_pct=f"and group_size > 30 and pct_diff_median <= {median_price_pct}" if median_price_pct is not None else "",
-        sql_discount_pct=f"and -0.90 <= price_pct <= {discount_price_pct}" if discount_price_pct is not None else "",
-        sql_ai_pct=f"and -0.90 <= ai_price_pct <= {ai_pct}" if ai_pct is not None else "",
+        sql_median_price_pct=f"and group_size > 30 and {price_median_pct_range[0] / 100}<=pct_diff_median <= {price_median_pct_range[1] / 100}" if is_price_median_pct_range else "",
+        sql_discount_pct=f"and {price_discount_pct_range[0] / 100} <= price_pct <= {price_discount_pct_range[1] / 100}" if is_price_discount_pct_range else "",
+        # sql_median_price_pct=f"and group_size > 30 and pct_diff_median <= {median_price_pct}" if median_price_pct is not None else "",
+        # sql_discount_pct=f"and -0.90 <= price_pct <= {discount_price_pct}" if discount_price_pct is not None else "",
+        sql_ai_pct=f"and {price_ai_pct_range[0] / 100} <= ai_price_pct <= {price_ai_pct_range[1] / 100}" if is_price_ai_pct_range else "",
         sql_map_bounds=f"and {map_bounds[0][0]} < lat < {map_bounds[1][0]} and {map_bounds[0][1]} < long < {map_bounds[1][1]}" if map_bounds else "",
         sql_date_added=f"and date_added_d <= {date_added_days}" if date_added_days else "",
         sql_date_updated=f"and date_updated_d <= {date_updated}" if date_updated else "")
@@ -187,10 +189,9 @@ from plotly import graph_objects as go
 def plot_deal_vs_sale_sold(other_close_deals, df_tax, deal):
     # When the hist becomes square thats because there a huge anomaly in terms of extreme value
     sale_items = other_close_deals['price']
-    sale_items = sale_items.rename(
-        f'price #{len(sale_items)}')  # .hist(bins=min(70, len(sale_items)), legend=True, alpha=0.8)
+    # .hist(bins=min(70, len(sale_items)), legend=True, alpha=0.8)
     fig = go.Figure()
-    tr_1 = go.Histogram(x=sale_items, name=sale_items.name, opacity=0.75, nbinsx=len(sale_items))
+    tr_1 = go.Histogram(x=sale_items, name=f'Total #{len(sale_items)}', opacity=0.75, nbinsx=len(sale_items))
     fig.add_trace(tr_1)
     if df_tax is not None:
         sold_items = df_tax['price_declared']
