@@ -117,7 +117,7 @@ def build_sidebar(deal):
     maps_url = f"http://maps.google.com/maps?z=12&t=m&q=loc:{deal['lat']}+{deal['long']}&hl=iw"  # ?hl=iw, t=k sattalite
     days_online = (datetime.today() - pd.to_datetime(deal['date_added'])).days
     date_added = pd.to_datetime(deal['date_added'])
-    add_info = _get_parse_item_add_info(deal.name)
+    add_info = _get_parse_item_add_info(deal['id'])
     # add_info = res_get_add_info(deal.name)
     if add_info:
         image_urls = add_info.pop('image_urls')
@@ -163,7 +163,7 @@ def build_sidebar(deal):
 
                  html.A(href=maps_url, children=html.Img(src=icon_maps, style=dict(width=32, height=32)),
                         target="_blank"),
-                 html.A(href=f"https://www.yad2.co.il/item/{deal.name}",
+                 html.A(href=f"https://www.yad2.co.il/item/{deal['id']}",
                         children=html.Img(src=icon_real_estate, style=dict(width=32, height=32)),
                         target="_blank"),
                  ]),
