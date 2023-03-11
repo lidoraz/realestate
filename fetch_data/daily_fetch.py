@@ -5,7 +5,8 @@ import numpy as np
 from catboost import CatBoostRegressor
 from sklearn.model_selection import KFold
 
-from fetch_data.utils import filter_by_dist
+from app_map.utils import app_preprocess_df
+from fetch_data.utils import filter_by_dist, get_price_hist, get_today
 
 
 def preprocess_history(df_hist, today_indexes):
@@ -164,3 +165,17 @@ def add_ai_price(df, type_):
     df = pd.concat([df, res], axis=1)
     print('Finished Calculating AI Price')
     return df
+
+
+def run_daily_job(type_, conn):
+    df_hist = get_price_hist(type_, conn)
+    df_today = get_today(type_, conn)
+    df = process_tables(df_today, df_hist)
+    df = add_distance(df)
+    df = add_ai_price(df, type_)
+    path = f'resources/yad2_{type_}_df.pk'
+    # df = pd.read_pickle(path)
+    df = app_preprocess_df(df)
+
+    df.to_sql(f"dashboard_{type_}", conn, if_exists="replace")
+    df.to_pickle(path)
