@@ -32,4 +32,7 @@ add_callbacks(app, df_all, forsale_config_default)
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True, port=8049)
+    if is_prod:
+        app.run_server(debug=True, host="0.0.0.0")
+    else:
+        app.run_server(debug=True, port=8049)
