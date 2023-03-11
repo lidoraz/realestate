@@ -10,16 +10,18 @@ from fetch_data.utils import filter_by_dist, get_nadlan_trans
 
 def get_df_with_prod(is_prod, filename):
     if is_prod:
+        s3_file = "https://real-estate-public.s3.eu-west-2.amazonaws.com/resources/{filename}"
         path_df = f"resources/{filename}"
         if not os.path.exists(path_df):
             print("Downloading file")
             from smart_open import open
-
-            s3_file = f"https://real-estate-public.s3.eu-west-2.amazonaws.com/resources/{filename}"
             # s3_file_name = "s3://real-estate-public/resources/yad2_rent_df.pk"
-            with open(s3_file, 'rb') as f:
+            with open(s3_file.format(filename="df_nadlan_recent.pk"), 'rb') as f:
+                pd.read_pickle(f).to_pickle(path_df)
+            with open(s3_file.format(filename=filename), 'rb') as f:
                 df_all = pd.read_pickle(f)
                 df_all.to_pickle(path_df)
+            print("Downloaded files")
         else:
             print("loading from FS file")
             df_all = pd.read_pickle(path_df)

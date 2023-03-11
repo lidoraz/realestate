@@ -9,7 +9,7 @@ is_prod = False
 if len(sys.argv) > 1:
     is_prod = sys.argv[1] == "prod"
 
-df_all = get_df_with_prod(False, filename="yad2_forsale_df.pk")
+df_all = get_df_with_prod(is_prod, filename="yad2_forsale_df.pk")
 df_all = app_preprocess_df(df_all)
 df_all.query('-0.89 <price_pct < -0.05').to_csv('df_forsale.csv')
 
