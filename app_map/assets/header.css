@@ -1,44 +1,3 @@
-/*!*.float-container {*!*/
-/*!*    border: 3px solid #fff;*!*/
-/*!*    padding: 20px;*!*/
-/*!*}*!*/
-
-/*!*.float-child {*!*/
-/*!*    width: 50%;*!*/
-/*!*    float: left;*!*/
-/*!*    padding: 20px;*!*/
-/*!*    border: 2px solid red;*!*/
-/*!*}*!*/
-/*.flex-container {*/
-/*    width: 100%;*/
-/*    overflow:hidden;*/
-/*    position: relative;*/
-/*    !*display: flex;*!*/
-/*}*/
-
-/*.left-div {*/
-/*    margin: 0;*/
-/*    width: 60%;*/
-/*    height: 100%;*/
-/*    float: left;*/
-/*    !*flex: 1;*!*/
-/*    !*border: 2px solid yellow;*!*/
-/*}*/
-
-/*!*.right-div {*!*/
-/*!*    !*display:none;*!*!*/
-/*!*    height: 500px;*!*/
-/*!*    width: 50%;*!*/
-/*!*    position: absolute;*!*/
-/*!*    right:0;*!*/
-/*!*    float:right;*!*/
-/*!*    z-index: 1000;*!*/
-/*!*    opacity: 70%;*!*/
-/*!*    !*margin-left: 100px;*!*!*/
-/*!*    !*flex: 1;*!*!*/
-/*!*    !*border: 2px solid red;*!*!*/
-/*!*}*!*/
-
 .leaflet-left.left-0 {
     right: 0 !important;
 }
@@ -53,7 +12,7 @@
     position: relative;
     z-index: 999;
     width: 100%;
-    height: 8vh;
+    height: 8.5vh;
     font-size:smaller;
     top: 0;
     right: 0;
@@ -74,7 +33,7 @@ p.rtl {
     direction: ltr;
     unicode-bidi: bidi-override;
     text-align: right;
-    width: 5em;
+    width: 3em;
 }
 
 .text-ltr {
@@ -90,8 +49,8 @@ p.rtl {
 }
 
 /*https://stackoverflow.com/questions/36469631/how-to-get-leaflet-for-r-use-100-of-shiny-dashboard-height?rq=1*/
-#map {
-    height: calc(100vh - 8vh) !important;
+#big-map {
+    height: calc(100vh - 9vh) !important;
 }
 
 .price-diff-table td, .price-diff-table th {
@@ -145,6 +104,7 @@ p.rtl {
 
 .grid-container {
     margin: auto;
+    /*display:flex;*/
     gap:10px;
     /*padding: 10px;*/
     /*display: grid;*/
@@ -161,7 +121,7 @@ p.rtl {
 }
 
 .right-container{
-    margin-left: 22%;
+    /*margin-left: 22%;*/
 
     /*float: left;*/
     /*width: 85%;*/
@@ -171,12 +131,12 @@ p.rtl {
     /*border: black 1px solid;*/
 
     /*display:grid;*/
-    font-size: small;
+    /*font-size: small;*/
     font-weight: bold;
     padding:2px
 }
 .marker-div-span{
-    text-shadow: 0 0 1px black, 0 0 1px black, 0 0 1px black, 0 0 1px black;
+    /*text-shadow: 0 0 1px black, 0 0 1px black, 0 0 1px black, 0 0 1px black;*/
     padding:3px;
     color: white;
     border-radius: 25px;
@@ -190,4 +150,21 @@ p.rtl {
     min-width: 10em;
     text-align: center;
     direction: ltr;
+}
+
+.rounded-checkbox {
+  width:14px;
+  height: 14px;
+  border-radius: 50%;
+  vertical-align: middle;
+  border: 1px solid black;
+  appearance: none;
+  -webkit-appearance: none;
+  outline: none;
+  cursor: pointer;
+}
+.rounded-checkbox:checked {
+  appearance: auto;
+  clip-path: circle(50% at 50% 50%);
+  background-color: blue;
 }

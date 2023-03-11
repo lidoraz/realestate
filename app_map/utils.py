@@ -1,5 +1,8 @@
 import os
-from app_map.marker import get_marker_tooltip, icon_maps, icon_real_estate
+import pandas as pd
+from datetime import datetime
+import numpy as np
+from app_map.marker import get_marker_tooltip, icon_maps, icon_real_estate, get_color
 from app_map.util_layout import *
 from scrape_yad2.utils import _get_parse_item_add_info
 from fetch_data.utils import filter_by_dist, get_nadlan_trans
@@ -31,6 +34,7 @@ def app_preprocess_df(df_all):
     df_all['ai_price_pct'] = df_all['ai_price'].replace(0, np.nan)
 
     df_all['ai_price_pct'] = df_all['price'] / df_all['ai_price_pct'] - 1
+    df_all['square_meters'] = df_all['square_meter_build'].replace(0, np.nan).combine_first(df_all['square_meters'])
     df_all['avg_price_m'] = df_all['price'] / df_all['square_meters']
     df_all['date_added'] = pd.to_datetime(df_all['date_added'])
     df_all['date_added_d'] = (datetime.today() - df_all['date_added']).dt.days
@@ -52,8 +56,15 @@ def preprocess_to_str_deals(df):
     return df
 
 
+meta_data_cols = ['price', 'price_s', 'asset_status', 'floor', 'square_meters', 'rooms_s', 'price_pct', 'ai_price_pct',
+                  'pct_diff_median']
+
+
 def get_geojsons(df, marker_metric):
-    deal_points = [dict(deal_id=idx, lat=d['lat'], lon=d['long'], metadata=d)
+    deal_points = [dict(deal_id=idx, lat=d['lat'], lon=d['long'],
+                        metadata=d,
+                        # metadata={k:v for k:v in d if k in }
+                        )
                    for
                    idx, d in df.iterrows()]
     deal_points = get_marker_tooltip(deal_points, marker_metric)
@@ -131,21 +142,44 @@ def build_sidebar(deal):
         image_urls = []
         info_text = deal['info_text']
         add_info_text = None
+    df_price_hist = None
+    if deal['price_pct'] is not None:
+        df_hist = pd.DataFrame([deal['dt_hist'], [f"{x:0,.0f}" for x in deal['price_hist']]])
+        df_price_hist = html.Table([html.Tr([html.Td(v) for v in row.values]) for i, row in df_hist.iterrows()],
+                                   className="price-diff-table")
+    carousel = None
+    if len(image_urls):
+        carousel = dbc.Carousel(
+            items=[{"key": f"{idx + 1}", "src": url, "href": "https://google.com", "img_style": {"max-height": "200px"}}
+                   for idx, url in
+                   enumerate(image_urls)],
+            controls=True,
+            indicators=True,
+            interval=2000,
+            ride="carousel",
+            style={"width": "300px"}
+        )
 
-    pct = deal['price_pct']
-    str_price_pct = html.Span(f" ({pct:.2%})" if pct != 0 else "",
-                              style={"color": "green" if pct < 0 else "red"})
-    df_hist = pd.DataFrame([deal['dt_hist'], deal['price_hist']]) if deal['price_pct'] else None
-    df_price_hist = html.Table([html.Tr([html.Td(v) for v in row.values]) for i, row in df_hist.iterrows()],
-                               className="price-diff-table") if df_hist is not None else ""
+    # txt_html = html.Div([dbc.Row(
+    #     [html.Span(f"{deal['price']:,.0f}₪", style={"font-size": "1.5vw"}),
+    #      html.Span(str_price_pct, className="text-ltr")]
+    # ),
+    #     dbc.Row([dbc.Col([html.Span(f"מחיר הנכס מהחציון באיזור: "),
+    #                       html.Span(f"{deal['pct_diff_median']:0.2%}", className="text-ltr")])])
+    # ])
+    def get_pct_style(v):
+        return {"color": get_color(v), "font-size": "0.75em", "padding": "5px"}
+
+    title_html = html.Div([html.Span(f"{deal['price']:,.0f}₪"),
+                           html.Span(f"{deal['price_pct']:.1%}", className="text-ltr",
+                                     style=get_pct_style(deal['price_pct']))])
     txt_html = html.Div(
-        [html.Div([html.Span(f"{deal['price']:,.0f}₪", style={"font-size": "1.5vw"}),
-                   html.Span(str_price_pct, className="text-ltr")]),
-         html.Span(f"מחיר הנכס מהחציון באיזור: "),
-         html.Span(f"{deal['pct_diff_median']:0.2%}", className="text-ltr"),
+        [html.Span(f"מחיר הנכס מהחציון באיזור: "),
+         html.Span(f"{deal['pct_diff_median']:.1%}", className="text-ltr",
+                   style=get_pct_style(deal['price_pct'])),
          html.P([html.Span(f"מחיר הנכס ממודל AI : "),
-                 html.Span(f"{deal['ai_price']:,.0f} (±{deal['ai_std_pct']    :.2%})", className="text-ltr"),
-                 html.Span(f"{deal['ai_price_pct']:.2%}")
+                 html.Span(f"{deal['ai_price']:,.0f} (±{deal['ai_std_pct']:.1%})", className="text-ltr"),
+                 html.Span(f"{deal['ai_price_pct']:.1%}", style=get_pct_style(deal['price_pct']))
                  ]),
 
          html.H6(f"הועלה בתאריך {date_added.date()}, (לפני {days_online / 7:0.1f} שבועות)"),
@@ -170,17 +204,13 @@ def build_sidebar(deal):
                         children=html.Img(src=icon_real_estate, style=dict(width=32, height=32)),
                         target="_blank"),
                  ]),
-         # width="40%", height="40%")
-         html.Div(children=[
-             html.A(html.Img(src=src, style={"max-height": "100px", "padding": "1px"}), href=src, target="_blank") for
-             src in image_urls],
-             className="asset-images"),
+         html.Div(children=[carousel], className="asset-images"),
          html.Span(info_text, className='sidebar-info-text'),
          # html.Br(),
          html.Table(children=add_info_text, style={"font-size": "0.8vw"}),
          # html.P("\n".join([f"{k}: {v}" for k, v in res_get_add_info(deal.name).items()])),
          ])
-    return txt_html
+    return title_html, txt_html
 
 
 from plotly import graph_objects as go

@@ -70,7 +70,7 @@ def add_distance(df, dist_km=1):
         tqdm.pandas()
         out_mp = df.progress_apply(get_metrics, axis=1)
     res = pd.DataFrame(out_mp.tolist(), columns=['pct_diff_median', 'group_size'], index=out_mp.index)
-    df = df.join(res)
+    df = df.join(res, how="left")
     print('Finished Calculated Distance')
     return df
 

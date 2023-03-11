@@ -15,13 +15,13 @@ df_all.query('-0.89 <price_pct < -0.05').to_csv('df_forsale.csv')
 
 app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
 
-forsale_config_default = {"price-from": 500_000, "price-to": 3_000_000, "median-price-pct": -0.2,
-                          "price-min": 500_000, "price-max": 10_000_000,
+forsale_config_default = {"price-from": 500, "price-to": 3_000, "median-price-pct": -0.2,
+                          "price-min": 500, "price-max": 10_000,
                           "switch-median": True,
                           "discount-price-pct": None,
                           "ai_pct": None,
-                          "price_step": 50_000,
-                          "price_mul": 1,  # 1e6,
+                          "price_step": 50,
+                          "price_mul": 1e3,  # 1e6,
                           "with_nadlan": True
                           }
 

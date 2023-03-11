@@ -2,8 +2,7 @@ import pandas as pd
 from dash import html, Output, Input, State, ctx
 import dash
 import time
-
-from app_map.util_layout import get_interactive_table
+from app_map.util_layout import get_interactive_table, CLUSTER_MAX_ZOOM
 from app_map.utils import get_asset_points, preprocess_to_str_deals, get_geojsons, build_sidebar, get_similar_deals
 
 clear_filter_input_outputs = [
@@ -79,7 +78,7 @@ show_assets_input_output = [Output("geojson", "data"),
                             Output("datatable-interactivity", "style_data_conditional"),
                             Output("fetched-assets", "children"),
                             Output("button-around", "n_clicks"),
-                            Output("button-return", "n_clicks"), # NOT USED
+                            Output("button-return", "n_clicks"),  # NOT USED
                             Input("price-slider", "value"),
                             Input("price-median-pct-slider", "value"),
                             Input("price-discount-pct-slider", "value"),
@@ -95,7 +94,8 @@ show_assets_input_output = [Output("geojson", "data"),
                             Input('state-asset', "value"),
                             Input("button-around", "n_clicks"), Input("button-return", "n_clicks"),
                             Input('marker-type', 'value'),
-                            Input('map', 'bounds'), State('map', 'zoom')]
+                            Input('big-map', 'bounds'), State('big-map', 'zoom'),
+                            State("datatable-interactivity", "active_cell")]
 
 
 def show_assets(price_range,
@@ -104,8 +104,10 @@ def show_assets(price_range,
                 date_added, date_updated,
                 rooms_range, with_agency, with_parking, with_balconies, state_asset, n_clicks_around, n_clicks_return,
                 marker_type,
-                map_bounds, map_zoom):
+                map_bounds, map_zoom, active_cell=None):
     limit_refresh(map_zoom)
+    if active_cell:
+        return dash.no_update
     if n_clicks_around:
         df_f = get_asset_points(df_all, map_bounds=map_bounds, limit=True)
     else:
@@ -131,38 +133,56 @@ def show_assets(price_range,
     return deal_points, columns, data, style_data_conditional, len(df_f), None, None
 
 
-toggle_model_input_outputs = [Output("modal", "is_open"), Output("geojson", "click_feature"),
-                              Output("marker", "children"), Output("histogram", "figure"),
-                              Input("geojson", "click_feature"), Input("close", "n_clicks"),
-                              State("modal", "is_open")]
+toggle_model_input_outputs = [Output("geojson", "click_feature"),  # output none to reset button for re-click
+                              Output("modal", "is_open"),
+                              Output("modal-title", "children"),
+                              Output("marker", "children"),
+                              Output("histogram", "figure"),
+                              Input("geojson", "click_feature")]
 
 
-def toggle_modal(feature, n2, is_open):
-    print(f'toggle_modal', n2, is_open)
-    if feature or n2:
+def toggle_modal(feature):
+    if feature:
         props = feature['properties']
         if 'deal_id' in props:
             deal_id = feature['properties']['deal_id']
             deal = df_all.loc[deal_id]
-            str_html = build_sidebar(deal)
+            title_modal, str_html = build_sidebar(deal)
             fig = get_similar_deals(df_all, deal, with_nadlan=config_defaults['with_nadlan'])
-            return not is_open, None, str_html, fig
-    return is_open, None, None, {}
+            return None, True, title_modal, str_html, fig
+    return dash.no_update
 
 
-focus_on_asset_input_outputs = [Output("map", "center"),
-                                Output("map", "zoom"),
+focus_on_asset_input_outputs = [Output("big-map", "center"),
+                                Output("big-map", "zoom"),
+                                Output("map-marker", "opacity"),
+                                Output("map-marker", "position"),
                                 Input("datatable-interactivity", "active_cell"),
                                 State("datatable-interactivity", "data"),
                                 ]
 
 
+# dl.Marker(position=[31.7, 32.7], opacity=0, id='map-marker')
 def focus_on_asset(table_active_cell, table_data):
     if table_active_cell is None:
         return dash.no_update
     id_ = table_data[table_active_cell['row']]['id']
     item = get_asset_points(df_all, id_=id_).squeeze()
-    return [item['lat'], item['long']], 14
+    position = [item['lat'], item['long']]
+    return position, CLUSTER_MAX_ZOOM + 1, 0.75, position
+
+
+show_table_input_output = [Output("table-toggle", "n_clicks"),
+                           Output("table-modal", "is_open"),
+                           Input("table-toggle", "n_clicks"),
+                           State("table-modal", "is_open")
+                           ]
+
+
+def show_table_modal(n_clicks, is_open):
+    if n_clicks:
+        return 0, not is_open
+    return dash.no_update
 
 
 disable_range_input_outputs = [Output("price-median-pct-slider", "disabled"),
@@ -190,3 +210,4 @@ def add_callbacks(app, df, config):
     app.callback(toggle_model_input_outputs)(toggle_modal)
     app.callback(focus_on_asset_input_outputs)(focus_on_asset)
     app.callback(disable_range_input_outputs)(disable_range_sliders)
+    app.callback(show_table_input_output)(show_table_modal)

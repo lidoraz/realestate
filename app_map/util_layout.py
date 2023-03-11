@@ -1,19 +1,9 @@
-import time
-import dash
 import dash_bootstrap_components as dbc
 from dash import dcc
 from dash.dash_table import DataTable, FormatTemplate
 import dash_leaflet as dl
-from plotly import graph_objects as go
-from dash import html, Output, Input, State, ctx
-import numpy as np
-from datetime import datetime
-import pandas as pd
-
+from dash import html
 from app_map.marker import POINT_TO_LAYER_FUN
-
-# from app_map.utils import *
-
 
 price_text = "מחיר"
 date_added_txt = 'הועלה עד'
@@ -25,6 +15,8 @@ price_pct_txt = '% שינוי מחיר'
 rooms_marks = {r: str(r) for r in range(7)}
 rooms_marks[6] = '6+'
 
+CLUSTER_MAX_ZOOM = 15
+
 
 # https://stackoverflow.com/questions/34775308/leaflet-how-to-add-a-text-label-to-a-custom-marker-icon
 # https://community.plotly.com/t/dash-leaflet-custom-icon-for-each-marker-on-data-from-geojson/54158/10
@@ -33,44 +25,46 @@ rooms_marks[6] = '6+'
 def get_layout(default_config):
     layout = html.Div(children=[
         html.Div(className="top-container", children=get_div_top_bar(default_config)),
-        html.Div(className="grid-container", children=[
-            html.Div(className="left-container", children=[html.Div(id='table-container', children=DataTable(
-                id='datatable-interactivity',
-                columns=None,
-                data=None,
-                editable=False,
-                filter_action="native",
-                sort_action="native",
-                sort_mode="multi",
-                column_selectable="single",
-                row_selectable=False,  # 'single',  # "multi",
-                row_deletable=False,
-                # active_cell=False,
-                selected_columns=[],
-                selected_rows=[],
-                page_action="native",
-                page_current=0,
-                page_size=15,
-                hidden_columns=["id"],
-                style_cell={
-                    # 'overflow': 'hidden',
-                    'textOverflow': 'ellipsis',
-                    'minWidth': '30px', 'width': '180px', 'maxWidth': '180px',
-                    # 'maxWidth': 0
-                },
-
-                style_data_conditional=None  # cond_styles
-            ))]),
-            html.Div(className="right-container", children=[div_left_map]),
-        ]),
-
+        html.Div(className="grid-container", children=get_main_map()),
+        html.Div(className="table-container", children=[div_left_off_canvas]),
         html.Div(className="modal-container", children=[div_offcanvas])
     ])
     return layout
 
 
+def get_table_container():
+    return html.Div(className="left-container", children=[DataTable(
+        id='datatable-interactivity',
+        columns=None,
+        data=None,
+        editable=False,
+        filter_action="native",
+        sort_action="native",
+        sort_mode="multi",
+        column_selectable="single",
+        row_selectable=False,  # 'single',  # "multi",
+        row_deletable=False,
+        # active_cell=False,
+        selected_columns=[],
+        selected_rows=[],
+        page_action="native",
+        page_current=0,
+        page_size=15,
+        # hidden_columns=["id"],
+        style_cell={
+            # 'overflow': 'hidden',
+            'textOverflow': 'ellipsis',
+            'minWidth': '30px', 'width': '180px', 'maxWidth': '180px',
+            # 'maxWidth': 0
+        },
+
+        style_data_conditional=None  # cond_styles
+    )])
+
+
 def get_html_range_range_pct(text, element_id):
     check_mark = dcc.Checklist(options=[{'value': 'Y', 'label': text}], value=['Y'], inline=True,
+                               inputClassName="rounded-checkbox",
                                id=f'{element_id}-check')
     return html.Div([check_mark,
                      dcc.RangeSlider(min=-100,
@@ -79,14 +73,15 @@ def get_html_range_range_pct(text, element_id):
                                      id=element_id,
                                      marks={-100: '-100%', 0: '0%', 100: '+100%'},
                                      allowCross=False,
-                                     tooltip={'always_visible': True})],
+                                     tooltip={'always_visible': True, 'placement': 'bottom'})],
                     className="slider-container")
 
 
 def get_div_top_bar(config_defaults):
     div_top_bar = html.Div(className="top-toolbar", children=[
+        # dbc.Button("RE"),
         # TODO: ADD SWITCH FOR ADDING AI_PCT as a dropdown.
-        dcc.RadioItems(
+        dbc.RadioItems(
             options=[
                 {'label': 'M', 'value': 'pct_diff_median'},
                 {'label': '%', 'value': 'price_pct'},
@@ -110,12 +105,17 @@ def get_div_top_bar(config_defaults):
         get_html_range_range_pct(median_price_txt, 'price-median-pct-slider'),
         get_html_range_range_pct(price_pct_txt, 'price-discount-pct-slider'),
         get_html_range_range_pct(ai_pct_txt, 'ai-price-pct-slider'),
-        dcc.Checklist(options=[{'label': 'כולל תיווך', 'value': 'Y'}], value=['Y'], inline=True,
+        dcc.Checklist(options=[{'label': 'תיווך', 'value': 'Y'}], value=['Y'], inline=True,
+                      inputClassName="rounded-checkbox",
                       id='agency-check'),
-        dcc.Checklist(options=[{'label': 'חובה חניה', 'value': 'Y'}], value=[], inline=True,
+        dcc.Checklist(options=[{'label': 'חניה', 'value': 'Y'}], value=[], inline=True,
+                      inputClassName="rounded-checkbox",
                       id='parking-check'),
-        dcc.Checklist(options=[{'label': 'חובה מרפסת', 'value': 'Y'}], value=[], inline=True,
+        dcc.Checklist(options=[{'label': 'מרפסת', 'value': 'Y'}], value=[], inline=True,
+                      inputClassName="rounded-checkbox",
                       id='balconies-check'),
+        html.Div(dcc.RangeSlider(1, 6, 1, value=[3, 4], marks=rooms_marks, id='rooms-slider'),
+                 style={"min-width": "10em"}),
         dcc.Dropdown(
             ['משופץ', 'במצב שמור', 'חדש (גרו בנכס)', 'חדש מקבלן (לא גרו בנכס)', 'דרוש שיפוץ'],
             [],
@@ -129,7 +129,7 @@ def get_div_top_bar(config_defaults):
             id="date-added",
             type="number",
             placeholder=date_added_txt,
-            value=100,
+            value=360,
             debounce=True,
             className="input-ltr"
         ),
@@ -146,44 +146,46 @@ def get_div_top_bar(config_defaults):
         # dbc.Button(children="AAAAAA"),
         dbc.Button("איזור", id="button-around"),
         dbc.Button("סנן", id='button-return'),
-
         dbc.Button(children="נקה", id="button-clear"),
-        # html.Span(n_rooms_txt),
-        html.Div(dcc.RangeSlider(1, 6, 1, value=[3, 4], marks=rooms_marks, id='rooms-slider'),
-                 style={"min-width": "10em"}),
-        dbc.Button(html.Span("0", id="fetched-assets")),
+        dbc.Button(html.Span("0", id="fetched-assets"), color="secondary"),
+        dbc.Button("TBL", id="table-toggle", color="success"),
     ])
     return div_top_bar
 
 
 # Leaflet-style URL
 # https://leaflet-extras.github.io/leaflet-providers/preview/
-div_left_map = html.Div(className="left-div", children=[
+# more Here:
+# https://github.com/geopandas/xyzservices/blob/main/provider_sources/leaflet-providers-parsed.json
 
-    dl.Map(children=[dl.TileLayer(url="https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png"),
-                     dl.GeoJSON(data=None, id="geojson", zoomToBounds=False, cluster=True,
-                                superClusterOptions=dict(maxZoom=15),  # radius=50,
-                                options=dict(pointToLayer=POINT_TO_LAYER_FUN),
-                                ),
-                     ],
-           zoom=3, id='map', zoomControl=True,
-           bounds=[[31.7, 32.7], [32.5, 37.3]]
-           ),
+def get_main_map():
+    return dl.Map(children=[dl.TileLayer(url="https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png"),
+                            dl.GeoJSON(data=None, id="geojson", zoomToBounds=False, cluster=True,
+                                       superClusterOptions=dict(maxZoom=CLUSTER_MAX_ZOOM),  # radius=50,
+                                       options=dict(pointToLayer=POINT_TO_LAYER_FUN),
+                                       ),
+                            dl.Marker(position=[31.7, 32.7], opacity=0, id='map-marker')
+                            ],
+                  zoom=3, id='big-map', zoomControl=True,
+                  bounds=[[31.7, 32.7], [32.5, 37.3]]
+                  )
 
-])
+
+div_left_off_canvas = dbc.Offcanvas(
+    get_table_container(),
+    id="table-modal",
+    scrollable=True,
+    title="Scrollable Offcanvas",
+    backdrop=False,
+    is_open=False
+)
 
 div_offcanvas = html.Div([dbc.Offcanvas(
-    [
-        # dbc.ModalHeader(dbc.ModalTitle("Header")),
-        dbc.ModalBody(children=[html.Div(children=[html.Div(id='country'), html.Div(id='marker'),
-                                                   dcc.Graph(id='histogram', figure={},
-                                                             config={'displayModeBar': False,
-                                                                     'scrollZoom': False}),
-                                                   html.Div(id='Country info pane')])]),
-        dbc.ModalFooter(
-            dbc.Button("Close", id="close", className="ms-auto", n_clicks=0)
-        ),
-    ],
+    children=[dbc.ModalTitle(id="modal-title"), html.Div(id='country'), html.Div(id='marker'),
+              dcc.Graph(id='histogram', figure={},
+                        config={'displayModeBar': False,
+                                'scrollZoom': False}),
+              html.Div(id='Country info pane')],
     id="modal",
     placement="end",
     is_open=False,
@@ -262,7 +264,7 @@ def get_interactive_table(df):
                           symbol=Symbol.yes,
                           symbol_prefix=u'₪ ')
     columns_output_comb = {"price": dict(id='price', name='Price', type='numeric', format=price_format),
-                           # "rooms": dict(id='rooms', name='R', type='numeric'),
+                           "rooms": dict(id='rooms', name='R', type='numeric'),
                            # "parking": dict(id='parking', name='Parking', type='numeric'),
                            pct_cols[0]: dict(id=pct_cols[0], name='%D', type='numeric',
                                              format=FormatTemplate.percentage(0)),
@@ -270,6 +272,7 @@ def get_interactive_table(df):
                                              format=FormatTemplate.percentage(0)),
                            pct_cols[1]: dict(id=pct_cols[1], name='#M', type='numeric',
                                              format=FormatTemplate.percentage(0)),
+                           # "avg_price_m": dict(id='price', name='Price', type='numeric', format=price_format),
                            "id": dict(id="id", name='id'),
                            "city": dict(id='city', name='city')}
     cond_styles, legend = _discrete_background_color_bins(df, columns=pct_cols, reverse=True)

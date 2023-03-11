@@ -58,25 +58,6 @@ function(feature, latlng){
 # }
 # """)
 #
-# TODO: ADDED SOPHISTICATED ICON HERE with 3 colors, but it does fit too good,
-js_draw_icon3_div = assign("""
-function(feature, latlng){
-    console.log("1");
-    // console.log(feature.properties.icon);
-    const x = L.divIcon({
-        className: 'marker-div-icon',
-        html: `<img class="marker-div-image" src="${feature.properties.icon}"/>
-        <div class="marker-div">
-        <span class="marker-div-span" style="background-color: ${feature.properties._c1}">${feature.properties._t1}</span>
-        <span class="marker-div-span" style="background-color: ${feature.properties._c2}">${feature.properties._t2}</span>
-        <span class="marker-div-span" style="background-color: ${feature.properties._c3}">${feature.properties._t3}</span>
-        </div>`
-    })
-    console.log("2");
-    return L.marker(latlng, {icon: x});
-}
-""")
-
 # js_draw_custom = assign("""
 # function(feature, latlng){
 #     console.log("1");
@@ -96,16 +77,14 @@ function(feature, latlng){
 
 js_draw_custom = assign("""
 function(feature, latlng){
-    console.log("1");
-    // console.log(feature.properties.icon);
     const x = L.divIcon({
         className: 'marker-div-icon',
         html: `
         <div class="marker-div">
         <span class="marker-div-span" style="background-color: ${feature.properties._marker_color}">${feature.properties._marker_text}</span>
+        <span>${feature.properties._price_s}</span>
         </div>`
     })
-    console.log("2");
     return L.marker(latlng, {icon: x});
 }
 """)
@@ -129,7 +108,7 @@ def create_tooltip(deal):
     style_color_pct = f"""style="color:{gen_color(m['price_pct'])}" """
     # print(style_color_pct)
     html_tp = f"""
-    <table class="">
+    <table class="">    
     <tr><td class="text-ltr">{m['price_s']}</td>      <td class="text-rtl">מחיר</td>   </tr>
     <tr><td class="text-ltr"></td> <td class="text-rtl" colspan="2"><b>{m['asset_status']}</b></td>  </tr>
     <tr><td class="text-ltr">{m['rooms_s']}</td>          <td class="text-rtl">חדרים</td>  </tr>
@@ -145,8 +124,11 @@ def create_tooltip(deal):
 from colour import Color
 
 max_colors = 5
-g_colors = list(Color("green").range_to('lightgray', max_colors))
-r_colors = list(Color("red").range_to('lightgray', max_colors))[::-1]
+col1 = "green"
+col2 = "red"
+col3 = "darkgray"  # Charcoal
+g_colors = list(Color(col1).range_to(col3, max_colors))
+r_colors = list(Color(col2).range_to(col3, max_colors))[::-1]
 colors = (g_colors + r_colors[1:])[::-1]
 print("len(colors)", len(colors))
 # https://stackoverflow.com/questions/929103/convert-a-number-range-to-another-range-maintaining-ratio
@@ -155,46 +137,29 @@ new_range = ((len(colors) - 1) - 0)
 
 
 def get_color(x):
-    x = x * 2
+    x = x * 2.5
     x = max(min(x, 1), -1)
     idx = int((((x - (-1)) * new_range) / old_range) + 0)
-    # x = max(min(x, 1), -1)
-    # idx = int(x * half_idx + half_idx)
     return colors[idx].hex
-
-
-def generate_icon(deal, _):
-    m = deal['metadata']
-    return dict(  # icon=get_icon(deal, icon_metric),
-        # icon_text=m['last_price_s'],
-        _t1=m['price_pct_s'],
-        _t2=m['pct_diff_median_s'],
-        _t3=m['ai_price_pct_s'],
-        _c1=get_color(m['price_pct']),
-        _c2=get_color(m['pct_diff_median']),
-        _c3=get_color(m['ai_price_pct'])
-    )
 
 
 def generate_icon_custom(deal, marker_metric):
     p = deal['metadata'][marker_metric]
     if np.isnan(p):
-        p_text = "?"
-        color = "Black"
+        p_text = "."
+        color = "gray"
     else:
         prefix = '+' if p > 0 else '-' if p < 0 else ''
-        p_text = f"{abs(p):.0%}" if p != 0 else ""
+        p_text = f"{abs(p):.0%}" if p != 0 else "."
         p_text = f"{prefix}{p_text}"
-        color = get_color(p) if p != 0 else "#00000000"
-    return dict(_marker_text=p_text, _marker_color=color)
+        color = get_color(p) if abs(p) > 0.003 else "gray"  # "#00000000"
+    return dict(_marker_text=p_text, _marker_color=color, _price_s=deal['metadata']['price_s'])
 
 
 marker_tooltip = "custom"
 
 if marker_tooltip == 'simple':
     POINT_TO_LAYER_FUN = js_draw_icon
-elif marker_tooltip == 'complex':
-    POINT_TO_LAYER_FUN = js_draw_icon3_div
 elif marker_tooltip == "custom":
     POINT_TO_LAYER_FUN = js_draw_custom
 else:
@@ -202,12 +167,11 @@ else:
 
 
 def get_marker_tooltip(deal_points, marker_metric):
-    if marker_tooltip in ('complex', "custom"):
-        icon_details = generate_icon_custom if marker_tooltip == "custom" else generate_icon
+    if marker_tooltip in "custom":
         deal_points = dlx.dicts_to_geojson([{**deal, **dict(tooltip=create_tooltip(deal),
                                                             icon=get_icon(deal, marker_metric),
                                                             icon_text=deal['metadata']['price_s'],
-                                                            **icon_details(deal, marker_metric)
+                                                            **generate_icon_custom(deal, marker_metric)
                                                             )}
                                             for deal in deal_points])
     elif marker_tooltip == 'simple':

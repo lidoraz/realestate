@@ -33,8 +33,8 @@ import json
 # print(d_json)
 
 
-# gdf = gpd.read_file("../notebooks/dataframe.geojson")
-gdf = gpd.read_file("../../notebooks/gdf_gush.geojson")
+gdf = gpd.read_file("../../notebooks/dataframe.geojson")
+# gdf = gpd.read_file("../../notebooks/gdf_gush.geojson")
 # df = pd.read_csv("../notebooks/city_poly.csv")
 from shapely import wkt
 
@@ -46,8 +46,8 @@ from shapely import wkt
 from shapely import wkt
 
 # df['geometry'] = df['geometry'].apply(wkt.loads)
-gdf['tooltip'] = gdf['COUNTY_NAM'].astype(str) + '</br>' + gdf['GUSH_NUM'].astype(str)
-# gdf['tooltip'] = gdf['city'].astype(str) + '\n' + gdf['gush_cnt'].astype(str)
+# gdf['tooltip'] = gdf['COUNTY_NAM'].astype(str) + '</br>' + gdf['GUSH_NUM'].astype(str)
+gdf['tooltip'] = gdf['city'].astype(str) + '\n' + gdf['gush_cnt'].astype(str)
 
 
 
