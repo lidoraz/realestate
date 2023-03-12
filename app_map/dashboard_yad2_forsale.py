@@ -13,7 +13,7 @@ df_all = get_df_with_prod(is_prod, filename="yad2_forsale_df.pk")
 df_all = app_preprocess_df(df_all)
 df_all.query('-0.89 <price_pct < -0.05').to_csv('df_forsale.csv')
 
-app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP], title="Forsale")
+app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP], title="Sale")
 
 forsale_config_default = {"price-from": 500, "price-to": 3_000, "median-price-pct": -0.2,
                           "price-min": 500, "price-max": 10_000,
