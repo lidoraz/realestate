@@ -1,4 +1,6 @@
 import os
+import time
+
 import pandas as pd
 from datetime import datetime
 import numpy as np
@@ -63,12 +65,12 @@ meta_data_cols = ['price', 'price_s', 'asset_status', 'floor', 'square_meters', 
 
 
 def get_geojsons(df, marker_metric):
-    deal_points = [dict(deal_id=idx, lat=d['lat'], lon=d['long'],
+    deal_points = [dict(deal_id=d['id'], lat=d['lat'], lon=d['long'],
                         metadata=d,
                         # metadata={k:v for k:v in d if k in }
                         )
                    for
-                   idx, d in df.iterrows()]
+                   _, d in df.iterrows()]
     deal_points = get_marker_tooltip(deal_points, marker_metric)
     return deal_points
 
@@ -129,6 +131,61 @@ def get_asset_points(df_all, price_from=None, price_to=None,
     return df_f
 
 
+def get_asset_points_sql(tbl, price_from=None, price_to=None,
+                         price_median_pct_range=None, price_discount_pct_range=None, price_ai_pct_range=None,
+                         is_price_median_pct_range=False, is_price_discount_pct_range=False,
+                         is_price_ai_pct_range=False,
+                         date_added_days=None, date_updated=None,
+                         rooms_range=(None, None), with_agency=True, with_parking=None, with_balconies=None,
+                         state_asset=(),
+                         map_bounds=None,
+                         limit=True, id_=None):
+    t0 = time.time()
+    tbl = "dashboard_forsale"
+    q = f"SELECT * FROM {tbl} WHERE 1=1 "
+    if id_ is not None:
+        q += f" AND id = '{id_}'"
+    else:
+        if len(state_asset) > 0:
+            states = ','.join([f"'{x}'" for x in state_asset])
+            sql_state_asset = f' and asset_status in ({states})'
+        else:
+            sql_state_asset = ""
+        rooms_from = rooms_range[0] or 1
+        rooms_to = rooms_range[1] or 100
+        sql_cond = dict(
+            sql_rooms_range=f"AND {rooms_from} <= rooms AND rooms  <= {rooms_to}.5" if rooms_from is not None and rooms_to is not None else "",
+            sql_price=f"and {price_from} <= price AND price <= {price_to}" if price_from is not None else "",
+            sql_is_agency="and is_agency = False" if not with_agency else "",
+            sql_is_parking="and parking > 0" if with_parking else "",
+            sql_is_balcony="and balconies = True" if with_balconies else "",
+            sql_state_asset=sql_state_asset,
+            sql_median_price_pct=f"and group_size > 30 and {price_median_pct_range[0] / 100}<= pct_diff_median AND pct_diff_median <= {price_median_pct_range[1] / 100}" if is_price_median_pct_range else "",
+            sql_discount_pct=f"and {price_discount_pct_range[0] / 100} <= price_pct AND price_pct <= {price_discount_pct_range[1] / 100}" if is_price_discount_pct_range else "",
+            # sql_median_price_pct=f"and group_size > 30 and pct_diff_median <= {median_price_pct}" if median_price_pct is not None else "",
+            # sql_discount_pct=f"and -0.90 <= price_pct <= {discount_price_pct}" if discount_price_pct is not None else "",
+            sql_ai_pct=f"and {price_ai_pct_range[0] / 100} <= ai_price_pct AND ai_price_pct <= {price_ai_pct_range[1] / 100}" if is_price_ai_pct_range else "",
+            sql_map_bounds=f"and {map_bounds[0][0]} < lat AND lat < {map_bounds[1][0]} and {map_bounds[0][1]} < long AND long < {map_bounds[1][1]}" if map_bounds else "",
+            sql_date_added=f"and date_added_d <= {date_added_days}" if date_added_days else "",
+            sql_date_updated=f"and date_updated_d <= {date_updated}" if date_updated else ""
+        )
+        q += ' '.join(list(sql_cond.values()))
+    print(q)
+    # df_f = df_all.query(q)
+    if limit:
+        q += " LIMIT 1000"
+        # df_f = df_f[:1_000]
+
+    from sqlalchemy import create_engine
+    c = dict(user=os.getenv('PGUSER'), passwd=os.getenv('PGPASSWORD'), host=os.getenv('PGHOST'), db="vsdatabase",
+             port=5432)
+    eng = create_engine(f"postgresql://{c['user']}:{c['passwd']}@{c['host']}:{c['port']}/{c['db']}")
+    with eng.connect() as conn:
+        df = pd.read_sql(q, conn)
+    print(f"{datetime.now()} Triggerd, Fetched: {len(df)} rows ({time.time() - t0:0.2f} sec)")
+    return df
+
+
 def build_sidebar(deal):
     maps_url = f"http://maps.google.com/maps?z=12&t=m&q=loc:{deal['lat']}+{deal['long']}&hl=iw"  # ?hl=iw, t=k sattalite
     days_online = (datetime.today() - pd.to_datetime(deal['date_added'])).days
@@ -145,7 +202,7 @@ def build_sidebar(deal):
         info_text = deal['info_text']
         add_info_text = None
     df_price_hist = None
-    if deal['price_pct'] is not None:
+    if isinstance(deal['price_hist'], list) and len(deal['price_hist']):
         df_hist = pd.DataFrame([deal['dt_hist'], [f"{x:0,.0f}" for x in deal['price_hist']]])
         df_price_hist = html.Table([html.Tr([html.Td(v) for v in row.values]) for i, row in df_hist.iterrows()],
                                    className="price-diff-table")

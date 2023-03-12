@@ -91,7 +91,7 @@ function(feature, latlng){
 
 
 def gen_color(x):
-    if x == np.NaN:
+    if x == np.NaN or x is None:
         return 'black'
     if x > 0.02:
         return 'red'
@@ -137,6 +137,8 @@ new_range = ((len(colors) - 1) - 0)
 
 
 def get_color(x):
+    if np.isnan(x):
+        return col3
     x = x * 2.5
     x = max(min(x, 1), -1)
     idx = int((((x - (-1)) * new_range) / old_range) + 0)

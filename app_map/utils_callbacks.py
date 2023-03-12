@@ -3,7 +3,8 @@ from dash import html, Output, Input, State, ctx
 import dash
 import time
 from app_map.util_layout import get_interactive_table, CLUSTER_MAX_ZOOM
-from app_map.utils import get_asset_points, preprocess_to_str_deals, get_geojsons, build_sidebar, get_similar_deals
+from app_map.utils import get_asset_points, preprocess_to_str_deals, get_geojsons, build_sidebar, get_similar_deals, \
+    get_asset_points_sql
 
 clear_filter_input_outputs = [
     Output('button-clear', "n_clicks"),
@@ -72,6 +73,29 @@ def limit_refresh(map_zoom):
     # sleep_bounds()
 
 
+def should_limit_refresh_clock(min_wait_sec=2):
+    is_by_clock_only = len(
+        [x for x in dash.callback_context.triggered if x['prop_id'] != 'interval-component.n_intervals']) == 0
+    is_by_map_bounds = len([x for x in dash.callback_context.triggered if x['prop_id'] == 'big-map.bounds'])
+    print(f"is_by_clock_only={is_by_clock_only}, is_by_map_bounds={is_by_map_bounds}")
+    print(dash.callback_context.triggered)
+    # check if time has passed
+    # if triggered by bounds, ignore it, and do the task only after 3 seconds..
+    if is_by_map_bounds:
+        # print("is_by_map_bounds")
+        ctx_t['triggered_by_bonds'] = True
+        ctx_t['time_moved'] = time.time()
+        return True
+    is_time_passed = ctx_t['triggered_by_bonds'] and time.time() - ctx_t['time_moved'] > min_wait_sec
+    if is_time_passed:
+        # print("triggered_by_bonds")
+        ctx_t['triggered_by_bonds'] = False
+    if not is_time_passed and is_by_clock_only:
+        # print('is_by_clock_only')
+        return True
+    return False
+
+
 show_assets_input_output = [Output("geojson", "data"),
                             Output("datatable-interactivity", "columns"),
                             Output("datatable-interactivity", "data"),
@@ -95,21 +119,40 @@ show_assets_input_output = [Output("geojson", "data"),
                             Input("button-around", "n_clicks"), Input("button-return", "n_clicks"),
                             Input('marker-type', 'value'),
                             Input('big-map', 'bounds'), State('big-map', 'zoom'),
-                            State("datatable-interactivity", "active_cell")]
+                            Input('interval-component', 'n_intervals'),
+                            State("datatable-interactivity", "active_cell"), State("fetched-assets", "children")]
+
+ctx_t = {"prev_bounds": None, "triggered_by_bonds": False, "last_served": .0, "locals": dict()}
+# ctx_tt = {"last_updated": 0}
+show_assets_cache = dash.no_update
+df_all = None
 
 
-def show_assets(price_range,
-                price_median_pct_range, price_discount_pct_range, price_ai_pct_range,
-                is_price_median_pct_range, is_price_discount_pct_range, is_price_ai_pct_range,
-                date_added, date_updated,
-                rooms_range, with_agency, with_parking, with_balconies, state_asset, n_clicks_around, n_clicks_return,
-                marker_type,
-                map_bounds, map_zoom, active_cell=None):
-    limit_refresh(map_zoom)
+# TODO: Do something different - limit q to every 5 seconds, such that it will update only every 5 sec no matter what.
+
+def show_assets(
+        price_range,
+        price_median_pct_range, price_discount_pct_range, price_ai_pct_range,
+        is_price_median_pct_range, is_price_discount_pct_range, is_price_ai_pct_range,
+        date_added, date_updated,
+        rooms_range, with_agency, with_parking, with_balconies, state_asset, n_clicks_around, n_clicks_return,
+        marker_type,
+        map_bounds, map_zoom, clock,
+        active_cell=None, n_points=0):
     if active_cell:
-        return dash.no_update
+        # return
+        raise dash.exceptions.PreventUpdate
+    # if should_limit_refresh_clock(1.5):
+    #     # if int(n_points) == 0:
+    #     #     return show_assets_cache
+    #     # else:
+    #     print("NO UPDATE")
+    #     raise dash.exceptions.PreventUpdate
+    # TRIGGERED: CHECK TIME:
+    # limit_refresh(map_zoom)
+    is_changed = False
     if n_clicks_around:
-        df_f = get_asset_points(df_all, map_bounds=map_bounds, limit=True)
+        df_f = get_asset_points_sql(df_all, map_bounds=map_bounds, limit=True)
     else:
         price_from = price_range[0] * config_defaults["price_mul"] if price_range[0] is not None else None
         price_to = price_range[1] * config_defaults["price_mul"] if price_range[1] is not None else None
@@ -121,16 +164,38 @@ def show_assets(price_range,
         is_price_median_pct_range = len(is_price_median_pct_range) > 0
         is_price_discount_pct_range = len(is_price_discount_pct_range) > 0
         is_price_ai_pct_range = len(is_price_ai_pct_range) > 0
-        df_f = get_asset_points(df_all, price_from, price_to,
-                                price_median_pct_range, price_discount_pct_range, price_ai_pct_range,
-                                is_price_median_pct_range, is_price_discount_pct_range, is_price_ai_pct_range,
-                                date_added, date_updated, rooms_range,
-                                with_agency, with_parking, with_balconies, map_bounds=map_bounds,
-                                state_asset=state_asset, limit=True)
+        is_changed = is_changed_set_lazy_serve(None, price_from, price_to,
+                                               price_median_pct_range, price_discount_pct_range, price_ai_pct_range,
+                                               is_price_median_pct_range, is_price_discount_pct_range,
+                                               is_price_ai_pct_range,
+                                               date_added, date_updated, rooms_range,
+                                               with_agency, with_parking, with_balconies, map_bounds=map_bounds,
+                                               state_asset=state_asset, limit=True)
+    # if not is_changed:
+    #     return dash.no_update
+    if not is_changed or df_all is None:
+        return dash.no_update
     # Can keep a list of points, if after fetch there was no new, no need to build new points, just keep them to save resources
-    deal_points = get_geojsons(df_f, marker_type)
-    columns, data, style_data_conditional = get_interactive_table(df_f)
-    return deal_points, columns, data, style_data_conditional, len(df_f), None, None
+    deal_points = get_geojsons(df_all, marker_type)
+    columns, data, style_data_conditional = get_interactive_table(df_all)
+    # show_assets_cache = deal_points, columns, data, style_data_conditional, len(df_all), None, None
+    print("DONE")
+    return deal_points, columns, data, style_data_conditional, len(df_all), None, None
+
+
+def is_changed_set_lazy_serve(*args, **kwargs):
+    _locals = {k: v for k, v in locals().items()}
+    is_changed = _locals != ctx_t['locals']
+    if is_changed and time.time() - ctx_t['last_served'] > 5:
+        print("GETTING FROM DB", time.time() - ctx_t['last_served'])
+        print(_locals)
+        print(ctx_t['locals'])
+        ctx_t['last_served'] = time.time()
+        ctx_t['locals'] = _locals
+        df = get_asset_points_sql(*args, **kwargs)
+        global df_all
+        df_all = df
+    return is_changed
 
 
 toggle_model_input_outputs = [Output("geojson", "click_feature"),  # output none to reset button for re-click
@@ -146,7 +211,8 @@ def toggle_modal(feature):
         props = feature['properties']
         if 'deal_id' in props:
             deal_id = feature['properties']['deal_id']
-            deal = df_all.loc[deal_id]
+            # deal = get_asset_points_sql(df_all, id_=deal_id).squeeze()
+            deal = df_all.query(f"id == '{deal_id}'").squeeze()
             title_modal, str_html = build_sidebar(deal)
             fig = get_similar_deals(df_all, deal, with_nadlan=config_defaults['with_nadlan'])
             return None, True, title_modal, str_html, fig
@@ -167,7 +233,7 @@ def focus_on_asset(table_active_cell, table_data):
     if table_active_cell is None:
         return dash.no_update
     id_ = table_data[table_active_cell['row']]['id']
-    item = get_asset_points(df_all, id_=id_).squeeze()
+    item = get_asset_points_sql(df_all, id_=id_).squeeze()
     position = [item['lat'], item['long']]
     return position, CLUSTER_MAX_ZOOM + 1, 0.75, position
 
@@ -203,7 +269,7 @@ def disable_range_sliders(is_price_median_pct_range, is_price_discount_pct_range
 
 def add_callbacks(app, df, config):
     global df_all, config_defaults
-    df_all = df
+    # df_all = df
     config_defaults = config
     app.callback(clear_filter_input_outputs)(clear_filter)
     app.callback(show_assets_input_output)(show_assets)

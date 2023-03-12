@@ -9,9 +9,9 @@ is_prod = False
 if len(sys.argv) > 1:
     is_prod = sys.argv[1] == "prod"
 
-df_all = get_df_with_prod(is_prod, filename="yad2_forsale_df.pk")
-df_all = app_preprocess_df(df_all)
-df_all.query('-0.89 <price_pct < -0.05').to_csv('df_forsale.csv')
+# df_all = get_df_with_prod(is_prod, filename="yad2_forsale_df.pk")
+# df_all = app_preprocess_df(df_all)
+# df_all.query('-0.89 <price_pct < -0.05').to_csv('df_forsale.csv')
 
 app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
 
@@ -26,7 +26,7 @@ forsale_config_default = {"price-from": 500, "price-to": 3_000, "median-price-pc
                           }
 
 app.layout = get_layout(forsale_config_default)
-add_callbacks(app, df_all, forsale_config_default)
+add_callbacks(app, None, forsale_config_default)
 
 # https://python.plainenglish.io/how-to-create-a-model-window-in-dash-4ab1c8e234d3
 

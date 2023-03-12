@@ -27,7 +27,12 @@ def get_layout(default_config):
         html.Div(className="top-container", children=get_div_top_bar(default_config)),
         html.Div(className="grid-container", children=get_main_map()),
         html.Div(className="table-container", children=[div_left_off_canvas]),
-        html.Div(className="modal-container", children=[div_offcanvas])
+        html.Div(className="modal-container", children=[div_offcanvas]),
+        dcc.Interval(
+            id='interval-component',
+            interval=1* 1000,  # in milliseconds
+            n_intervals=0
+        )
     ])
     return layout
 
@@ -63,7 +68,7 @@ def get_table_container():
 
 
 def get_html_range_range_pct(text, element_id):
-    check_mark = dcc.Checklist(options=[{'value': 'Y', 'label': text}], value=['Y'], inline=True,
+    check_mark = dbc.Checklist(options=[{'value': 'Y', 'label': text}], value=['Y'], inline=True,
                                inputClassName="rounded-checkbox",
                                id=f'{element_id}-check')
     return html.Div([check_mark,
