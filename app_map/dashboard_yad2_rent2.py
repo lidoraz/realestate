@@ -23,7 +23,7 @@ df_all = get_df_with_prod(is_prod, filename="yad2_rent_df.pk")
 df_all = app_preprocess_df(df_all)
 
 df_all.query('-0.89 <price_pct < -0.05').to_csv('df_rent.csv')
-app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
+app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP], title="Forsale")
 
 app.layout = get_layout(rent_config_default)
 add_callbacks(app, df_all, rent_config_default)

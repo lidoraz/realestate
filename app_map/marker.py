@@ -130,7 +130,7 @@ col3 = "darkgray"  # Charcoal
 g_colors = list(Color(col1).range_to(col3, max_colors))
 r_colors = list(Color(col2).range_to(col3, max_colors))[::-1]
 colors = (g_colors + r_colors[1:])[::-1]
-print("len(colors)", len(colors))
+# print("len(colors)", len(colors))
 # https://stackoverflow.com/questions/929103/convert-a-number-range-to-another-range-maintaining-ratio
 old_range = (1 - (-1))
 new_range = ((len(colors) - 1) - 0)

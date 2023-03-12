@@ -1,4 +1,6 @@
 import os
+import time
+
 import pandas as pd
 from datetime import datetime
 import numpy as np
@@ -12,8 +14,13 @@ def get_df_with_prod(is_prod, filename):
     if is_prod:
         s3_file = "https://real-estate-public.s3.eu-west-2.amazonaws.com/resources/{filename}"
         path_df = f"resources/{filename}"
-        if not os.path.exists(path_df):
-            print("Downloading file")
+        should_update = False
+        if os.path.exists(path_df):
+            time_modified = os.path.getmtime(path_df)
+            if (time.time() - time_modified) > (3600 * 24):
+                should_update = True
+        if not os.path.exists(path_df) or should_update:
+            print(f"{datetime.now()}, Downloading file")
             from smart_open import open
             # s3_file_name = "s3://real-estate-public/resources/yad2_rent_df.pk"
             with open(s3_file.format(filename="df_nadlan_recent.pk"), 'rb') as f:
@@ -21,9 +28,9 @@ def get_df_with_prod(is_prod, filename):
             with open(s3_file.format(filename=filename), 'rb') as f:
                 df_all = pd.read_pickle(f)
                 df_all.to_pickle(path_df)
-            print("Downloaded files")
+            print(f"{datetime.now()}, Downloaded files")
         else:
-            print("loading from FS file")
+            print(f"{datetime.now()} loading from FS file")
             df_all = pd.read_pickle(path_df)
     else:
         print("Not PROD using local read from resources")
@@ -58,17 +65,14 @@ def preprocess_to_str_deals(df):
     return df
 
 
-meta_data_cols = ['price', 'price_s', 'asset_status', 'floor', 'square_meters', 'rooms_s', 'price_pct', 'ai_price_pct',
-                  'pct_diff_median']
+meta_data_cols = ['lat', 'long', 'price', 'price_s', 'asset_status', 'floor', 'square_meters', 'rooms_s', 'price_pct',
+                  'ai_price_pct',
+                  'pct_diff_median', 'pct_diff_median_s', 'price_pct_s']
 
 
 def get_geojsons(df, marker_metric):
-    deal_points = [dict(deal_id=idx, lat=d['lat'], lon=d['long'],
-                        metadata=d,
-                        # metadata={k:v for k:v in d if k in }
-                        )
-                   for
-                   idx, d in df.iterrows()]
+    dff = df[meta_data_cols]
+    deal_points = [dict(deal_id=idx, lat=d['lat'], lon=d['long'], metadata=d) for idx, d in dff.iterrows()]
     deal_points = get_marker_tooltip(deal_points, marker_metric)
     return deal_points
 
@@ -87,21 +91,28 @@ def format_number(num):
     return '{}{}'.format('{:f}'.format(num).rstrip('0').rstrip('.'), ['', 'K', 'M', 'B', 'T'][magnitude])
 
 
+def _multi_str_filter(multi_choice, col_name):
+    sql_state_asset = ""
+    if len(multi_choice) > 0:
+        states = ','.join(["'{}'".format(x.replace("'", "\\'")) for x in multi_choice])
+        sql_state_asset = f' and {col_name} in ({states})'
+    return sql_state_asset
+
+
 def get_asset_points(df_all, price_from=None, price_to=None,
                      price_median_pct_range=None, price_discount_pct_range=None, price_ai_pct_range=None,
                      is_price_median_pct_range=False, is_price_discount_pct_range=False, is_price_ai_pct_range=False,
                      date_added_days=None, date_updated=None,
-                     rooms_range=(None, None), with_agency=True, with_parking=None, with_balconies=None, state_asset=(),
+                     rooms_range=(None, None), with_agency=True, with_parking=None, with_balconies=None,
+                     asset_status=(),
+                     asset_type=(),
                      map_bounds=None,
                      limit=True, id_=None):
     if id_ is not None:
         df_f = df_all.query(f'id == "{id_}"')
         return df_f
-    if len(state_asset) > 0:
-        states = ','.join([f"'{x}'" for x in state_asset])
-        sql_state_asset = f' and asset_status in ({states})'
-    else:
-        sql_state_asset = ""
+    sql_asset_status = _multi_str_filter(asset_status, "asset_status")
+    sql_asset_type = _multi_str_filter(asset_type, "asset_type")
     rooms_from = rooms_range[0] or 1
     rooms_to = rooms_range[1] or 100
     sql_cond = dict(
@@ -110,7 +121,8 @@ def get_asset_points(df_all, price_from=None, price_to=None,
         sql_is_agency="and is_agency == False" if not with_agency else "",
         sql_is_parking="and parking > 0" if with_parking else "",
         sql_is_balcony="and balconies == True" if with_balconies else "",
-        sql_state_asset=sql_state_asset,
+        sql_asset_status=sql_asset_status,
+        sql_asset_type=sql_asset_type,
         sql_median_price_pct=f"and group_size > 30 and {price_median_pct_range[0] / 100}<=pct_diff_median <= {price_median_pct_range[1] / 100}" if is_price_median_pct_range else "",
         sql_discount_pct=f"and {price_discount_pct_range[0] / 100} <= price_pct <= {price_discount_pct_range[1] / 100}" if is_price_discount_pct_range else "",
         # sql_median_price_pct=f"and group_size > 30 and pct_diff_median <= {median_price_pct}" if median_price_pct is not None else "",
@@ -145,7 +157,7 @@ def build_sidebar(deal):
         info_text = deal['info_text']
         add_info_text = None
     df_price_hist = None
-    if deal['price_pct'] is not None:
+    if isinstance(deal['price_hist'], list):
         df_hist = pd.DataFrame([deal['dt_hist'], [f"{x:0,.0f}" for x in deal['price_hist']]])
         df_price_hist = html.Table([html.Tr([html.Td(v) for v in row.values]) for i, row in df_hist.iterrows()],
                                    className="price-diff-table")
@@ -170,19 +182,21 @@ def build_sidebar(deal):
     #                       html.Span(f"{deal['pct_diff_median']:0.2%}", className="text-ltr")])])
     # ])
     def get_pct_style(v):
-        return {"color": get_color(v), "font-size": "0.75em", "padding": "5px"}
+        if np.isnan(v):
+            v = 0
+        return {"background-color": get_color(v)}
+
+    def get_html_span_pct(pct):
+        return html.Span(f"{pct:.1%}", style=get_pct_style(pct), className="span-color-pct text-ltr")
 
     title_html = html.Div([html.Span(f"{deal['price']:,.0f}₪"),
-                           html.Span(f"{deal['price_pct']:.1%}", className="text-ltr",
-                                     style=get_pct_style(deal['price_pct']))])
+                           get_html_span_pct(deal['price_pct'])])
     txt_html = html.Div(
         [html.Span(f"מחיר הנכס מהחציון באיזור: "),
-         html.Span(f"{deal['pct_diff_median']:.1%}", className="text-ltr",
-                   style=get_pct_style(deal['price_pct'])),
+         get_html_span_pct(deal['pct_diff_median']),
          html.P([html.Span(f"מחיר הנכס ממודל AI : "),
                  html.Span(f"{deal['ai_price']:,.0f} (±{deal['ai_std_pct']:.1%})", className="text-ltr"),
-                 html.Span(f"{deal['ai_price_pct']:.1%}", style=get_pct_style(deal['price_pct']))
-                 ]),
+                 get_html_span_pct(deal['ai_price_pct'])]),
 
          html.H6(f"הועלה בתאריך {date_added.date()}, (לפני {days_online / 7:0.1f} שבועות)"),
          html.Span(f"מתי עודכן: {deal['date_updated']}"),
