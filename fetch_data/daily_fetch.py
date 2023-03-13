@@ -6,7 +6,7 @@ from catboost import CatBoostRegressor
 from sklearn.model_selection import KFold
 
 from app_map.utils import app_preprocess_df
-from fetch_data.utils import filter_by_dist, get_price_hist, get_today
+from fetch_data.utils import filter_by_dist, get_price_hist, get_today, get_nadlan
 
 
 def preprocess_history(df_hist, today_indexes):
@@ -167,15 +167,42 @@ def add_ai_price(df, type_):
     return df
 
 
-def run_daily_job(type_, conn):
-    df_hist = get_price_hist(type_, conn)
-    df_today = get_today(type_, conn)
+def run_daily_job(type_, eng):
+    with eng.connect() as conn:
+        df_hist = get_price_hist(type_, conn)
+        df_today = get_today(type_, conn)
     df = process_tables(df_today, df_hist)
     df = add_distance(df)
     df = add_ai_price(df, type_)
-    path = f'resources/yad2_{type_}_df.pk'
-    # df = pd.read_pickle(path)
-    df = app_preprocess_df(df)
+    # df = app_preprocess_df(df)
+    # df = df.loc[:, ~df.columns.duplicated()].copy()
+    # df = df.drop(columns=["img_url", "image_urls"])
+    return df
 
-    df.to_sql(f"dashboard_{type_}", conn, if_exists="replace")
-    df.to_pickle(path)
+
+def pub_object(path):
+    import boto3
+    session = boto3.Session()
+    s3 = session.resource('s3')
+    buck = s3.Bucket('real-estate-public')
+    buck.upload_file(path, path)
+
+
+def save_to_db(df, type_, eng, with_nadlan):
+    for t in range(5):
+        try:
+            with eng.connect() as conn:
+                print(f"Pushing to daily {type_} to db")
+                df.to_sql(f"dashboard_{type_}", conn, if_exists="replace")
+                if with_nadlan:
+                    run_nadlan_daily(conn, 210)
+                break
+        except Exception as e:
+            print("failed to insert", t)
+
+
+def run_nadlan_daily(conn, day_backs, path_nadlan):
+    print("Getting nadlan daily")
+    df = get_nadlan(conn, day_backs)
+    # df.to_sql(f"dashboard_nadlan_recent", conn, if_exists="replace")
+    df.to_pickle(path_nadlan)
