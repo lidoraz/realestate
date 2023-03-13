@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from datetime import datetime
-
 from scrape_yad2.config import sql_today_dtypes, sql_items_dtypes
 
 DF_NADLAN_RECENT_PK = "../resources/df_nadlan_recent.pk"
@@ -48,7 +47,7 @@ def get_today(type, conn):
     today_tbl = get_tbl(type, "today_tbl")
     item_tbl = get_tbl(type, "item_tbl")
     tbl_today_cols = [f'a.{c}' for c in sql_today_dtypes.keys()]
-    tbl_items_cols = [f'b.{c}' for c in sql_items_dtypes.keys() if c not in ('id', 'square_meters')]
+    tbl_items_cols = [f'b.{c}' for c in sql_items_dtypes.keys() if c not in ('id', 'square_meters', 'processing_date')]
     q = f"""
     SELECT {','.join(tbl_today_cols)}, {','.join(tbl_items_cols)} FROM {today_tbl} a inner join {item_tbl} b on a.id = b.id
     """ # 56691

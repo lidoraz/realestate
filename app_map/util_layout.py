@@ -17,6 +17,11 @@ rooms_marks[6] = '6+'
 
 CLUSTER_MAX_ZOOM = 15
 
+asset_status_cols = ['משופץ', 'במצב שמור', 'חדש (גרו בנכס)', 'חדש מקבלן (לא גרו בנכס)',
+                     'דרוש שיפוץ']
+asset_type_cols = ['דירה', 'יחידת דיור', 'דירת גן', 'סאבלט', 'דו משפחתי', 'מרתף/פרטר', 'גג/פנטהאוז', "בית פרטי/קוטג'",
+                   'סטודיו/לופט', 'דופלקס', 'דירת נופש', 'משק חקלאי/נחלה', 'טריפלקס', 'החלפת דירות']
+
 
 # https://stackoverflow.com/questions/34775308/leaflet-how-to-add-a-text-label-to-a-custom-marker-icon
 # https://community.plotly.com/t/dash-leaflet-custom-icon-for-each-marker-on-data-from-geojson/54158/10
@@ -62,8 +67,9 @@ def get_table_container():
     )])
 
 
-def get_html_range_range_pct(text, element_id):
-    check_mark = dcc.Checklist(options=[{'value': 'Y', 'label': text}], value=['Y'], inline=True,
+def get_html_range_range_pct(text, element_id, checked=False):
+    value = [] if not checked else ["Y"]
+    check_mark = dcc.Checklist(options=[{'value': 'Y', 'label': text}], value=value, inline=True,
                                inputClassName="rounded-checkbox",
                                id=f'{element_id}-check')
     return html.Div([check_mark,
@@ -79,19 +85,7 @@ def get_html_range_range_pct(text, element_id):
 
 def get_div_top_bar(config_defaults):
     div_top_bar = html.Div(className="top-toolbar", children=[
-        html.Div([html.Span(price_text), dcc.RangeSlider(min=config_defaults["price-min"],
-                                                         max=config_defaults["price-max"],
-                                                         step=config_defaults['price_step'],
-                                                         value=[config_defaults['price-from'],
-                                                                config_defaults['price-to']],
-                                                         id='price-slider', marks={config_defaults["price-max"]: '10M+',
-                                                                                   config_defaults["price-min"]: '-'},
-                                                         allowCross=False,
-                                                         tooltip={'always_visible': True})],
-                 className="slider-container"),
-        get_html_range_range_pct(median_price_txt, 'price-median-pct-slider'),
-        get_html_range_range_pct(price_pct_txt, 'price-discount-pct-slider'),
-        get_html_range_range_pct(ai_pct_txt, 'ai-price-pct-slider'),
+        dbc.Button(html.Span("0", id="fetched-assets"), color="secondary", disabled=True),
         html.Div([dcc.Checklist(options=[{'label': 'עם תיווך', 'value': 'Y'}], value=['Y'], inline=True,
                                 inputClassName="rounded-checkbox",
                                 id='agency-check'),
@@ -100,13 +94,27 @@ def get_div_top_bar(config_defaults):
                                 id='parking-check'),
                   dcc.Checklist(options=[{'label': 'מרפסת', 'value': 'Y'}], value=[], inline=True,
                                 inputClassName="rounded-checkbox",
-                                id='balconies-check')], style={"width": "70px"}),
+                                id='balconies-check')], className="dash-dropdown"),
 
+        html.Div([html.Span(price_text), dcc.RangeSlider(min=config_defaults["price-min"],
+                                                         max=config_defaults["price-max"],
+                                                         step=config_defaults['price_step'],
+                                                         value=[config_defaults['price-from'],
+                                                                config_defaults['price-to']],
+                                                         id='price-slider', marks={config_defaults["price-max"]: '+',
+                                                                                   config_defaults["price-min"]: '-'},
+                                                         allowCross=False,
+                                                         tooltip={'always_visible': True})],
+                 className="slider-container"),
+        html.Div(className="vertical"),
+        get_html_range_range_pct(median_price_txt, 'price-median-pct-slider'),
+        get_html_range_range_pct(price_pct_txt, 'price-discount-pct-slider'),
+        get_html_range_range_pct(ai_pct_txt, 'ai-price-pct-slider', True),
         html.Div([html.Span(n_rooms_txt),
                   html.Div(dcc.RangeSlider(1, 6, 1, value=[3, 4], marks=rooms_marks, id='rooms-slider'))],
                  className="slider-container"),
         dcc.Dropdown(
-            ['משופץ', 'במצב שמור', 'חדש (גרו בנכס)', 'חדש מקבלן (לא גרו בנכס)', 'דרוש שיפוץ'],
+            asset_status_cols,
             [],
             placeholder="מצב הנכס",
             multi=True,
@@ -114,14 +122,17 @@ def get_div_top_bar(config_defaults):
             id='status-asset',
             className="asset-dropdown"),
         dcc.Dropdown(
-            ['דירה', 'יחידת דיור', 'דירת גן', 'סאבלט', 'דו משפחתי', 'מרתף/פרטר', 'גג/פנטהאוז', "בית פרטי/קוטג'",
-             'סטודיו/לופט', 'דופלקס', 'דירת נופש', 'משק חקלאי/נחלה', 'טריפלקס', 'החלפת דירות'],
+            asset_type_cols,
             [],
             placeholder="סוג",
             multi=True,
             searchable=False,
             id='asset-type',
             className="asset-dropdown"),
+        # dbc.DropdownMenu([dcc.Checklist(className="labels-multiselect", id="status-asset",
+        #                                 options=asset_status_cols, value=[]), dbc.Button("X")], label="מצב"),
+        # dbc.DropdownMenu([dcc.Checklist(className="labels-multiselect", id="asset-type",
+        #                                 options=asset_type_cols, value=[]), dbc.Button("X")], label="סוג"),
         dbc.DropdownMenu([
             dbc.DropdownMenuItem(dbc.RadioItems(
                 options=[
@@ -155,12 +166,11 @@ def get_div_top_bar(config_defaults):
                                                inputClassName="rounded-checkbox",
                                                id='cluster-check'), header=False),
         ],
-            label="Menu"),
+            label="עוד"),
         dbc.Button("איזור", id="button-around"),
-        # dbc.Button("סנן", id='button-return'),
         dbc.Button("נקה", id="button-clear"),
+        # dbc.Button("סנן", id='button-return'),
         dbc.Button("TBL", id="table-toggle", color="success"),
-        dbc.Button(html.Span("0", id="fetched-assets"), color="secondary", disabled=True),
     ])
     return div_top_bar
 

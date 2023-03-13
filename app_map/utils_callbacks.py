@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 from dash import html, Output, Input, State, ctx
 import dash
@@ -57,7 +58,7 @@ context = dict(map_zoom=300, zoom_ts=time.time())
 
 
 def limit_refresh(map_zoom):
-    is_triggered_by_map_bounds = len(ctx.triggered_prop_ids) == 1 and list(ctx.triggered_prop_ids)[0] == "map.bounds"
+    is_triggered_by_map_bounds = len(ctx.triggered_prop_ids) == 1 and list(ctx.triggered_prop_ids)[0] == "big-map.bounds"
     if map_zoom != context['map_zoom'] and is_triggered_by_map_bounds:
         context['map_zoom'] = map_zoom
         past_ts = context['zoom_ts']
@@ -110,11 +111,14 @@ def show_assets(price_range,
     if n_clicks_around:
         df_f = get_asset_points(df_all, map_bounds=map_bounds, limit=True)
     else:
-        price_from = price_range[0] * config_defaults["price_mul"] if price_range[0] < config_defaults['price-max'] else config_defaults['price-max']
-        price_to = price_range[1] * config_defaults["price_mul"] if price_range[1] < config_defaults['price-max'] else 1e17
+        # special case - max over 10M
+        if price_range[0] == config_defaults['price-max'] and price_range[0] == price_range[1]:
+            price_from = config_defaults['price-max'] * config_defaults["price_mul"]
+            price_to = np.inf
+        else:
+            price_from = price_range[0] * config_defaults["price_mul"]
+            price_to = price_range[1] * config_defaults["price_mul"]
 
-        # if price_to == 3.5:
-        #     price_to = 1e30
         with_agency = True if len(with_agency) else False
         with_parking = True if len(with_parking) else None
         with_balconies = True if len(with_balconies) else None
@@ -166,7 +170,7 @@ focus_on_asset_input_outputs = [Output("big-map", "center"),
 def focus_on_asset(table_active_cell, table_data):
     if table_active_cell is None:
         return dash.no_update
-    id_ = table_data[table_active_cell['row']]['id']
+    id_ = [x for x in table_data if x['id'] == table_active_cell['row_id']][0]['id']
     item = get_asset_points(df_all, id_=id_).squeeze()
     position = [item['lat'], item['long']]
     return position, CLUSTER_MAX_ZOOM + 1, 0.75, position
@@ -182,6 +186,19 @@ show_table_input_output = [Output("table-toggle", "n_clicks"),
 def show_table_modal(n_clicks, is_open):
     if n_clicks:
         return 0, not is_open
+    return dash.no_update
+
+
+clear_table_selecetd_input_output = [
+    # Output("map-marker", "opacity"),
+    Output("datatable-interactivity", "selected_cells"),
+    Output("datatable-interactivity", "active_cell"),
+    Input("table-modal", "is_open")]
+
+
+def clear_selected_if_closed(is_open):
+    if not is_open:
+        return [], None
     return dash.no_update
 
 
@@ -222,3 +239,4 @@ def add_callbacks(app, df, config):
     app.callback(disable_range_input_outputs)(disable_range_sliders)
     app.callback(show_table_input_output)(show_table_modal)
     app.callback(toggle_cluster_input_outputs)(toggle_cluster)
+    app.callback(clear_table_selecetd_input_output)(clear_selected_if_closed)

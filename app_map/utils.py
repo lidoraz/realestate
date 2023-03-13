@@ -11,30 +11,29 @@ from fetch_data.utils import filter_by_dist, get_nadlan_trans
 
 
 def get_df_with_prod(is_prod, filename):
-    if is_prod:
-        s3_file = "https://real-estate-public.s3.eu-west-2.amazonaws.com/resources/{filename}"
-        path_df = f"resources/{filename}"
-        should_update = False
-        if os.path.exists(path_df):
-            time_modified = os.path.getmtime(path_df)
-            if (time.time() - time_modified) > (3600 * 24):
-                should_update = True
-        if not os.path.exists(path_df) or should_update:
-            print(f"{datetime.now()}, Downloading file")
-            from smart_open import open
-            # s3_file_name = "s3://real-estate-public/resources/yad2_rent_df.pk"
-            with open(s3_file.format(filename="df_nadlan_recent.pk"), 'rb') as f:
-                pd.read_pickle(f).to_pickle(path_df)
-            with open(s3_file.format(filename=filename), 'rb') as f:
-                df_all = pd.read_pickle(f)
-                df_all.to_pickle(path_df)
-            print(f"{datetime.now()}, Downloaded files")
-        else:
-            print(f"{datetime.now()} loading from FS file")
-            df_all = pd.read_pickle(path_df)
+    s3_file = "https://real-estate-public.s3.eu-west-2.amazonaws.com/resources/{filename}"
+    path_df = f"resources/{filename}"
+    if not is_prod:
+        path_df = "../" + path_df
+    should_update = False
+    if os.path.exists(path_df):
+        time_modified = os.path.getmtime(path_df)
+        if (time.time() - time_modified) > (3600 * 24):
+            should_update = True
+    if not os.path.exists(path_df) or should_update:
+        print(f"{datetime.now()}, Downloading file")
+        from smart_open import open
+        # s3_file_name = "s3://real-estate-public/resources/yad2_rent_df.pk"
+        nadlan_path = f"resources/df_nadlan_recent.pk"
+        with open(s3_file.format(filename="df_nadlan_recent.pk"), 'rb') as f:
+            pd.read_pickle(f).to_pickle(nadlan_path)
+        with open(s3_file.format(filename=filename), 'rb') as f:
+            df_all = pd.read_pickle(f)
+            df_all.to_pickle(path_df)
+        print(f"{datetime.now()}, Downloaded files")
     else:
-        print("Not PROD using local read from resources")
-        df_all = pd.read_pickle(f"../resources/{filename}")
+        print(f"{datetime.now()} loading from FS file")
+        df_all = pd.read_pickle(path_df)
     return df_all
 
 
@@ -164,7 +163,7 @@ def build_sidebar(deal):
     carousel = None
     if len(image_urls):
         carousel = dbc.Carousel(
-            items=[{"key": f"{idx + 1}", "src": url, "href": "https://google.com", "img_style": {"max-height": "200px"}}
+            items=[{"key": f"{idx + 1}", "src": url, "href": "https://google.com"}
                    for idx, url in
                    enumerate(image_urls)],
             controls=True,

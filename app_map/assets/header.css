@@ -4,9 +4,9 @@
 
 .top-toolbar {
     margin: auto;
-    padding: 5px 5px 2px 5px; /*top right bot left*/
-    gap: 3px;
-    border-bottom: 1px solid black;
+    padding: 3px 5px 2px 7px; /*top right bot left*/
+    gap: 2px;
+    border-bottom: 1px solid gray;
     background-color: white;
     /*position: absolute;*/
     position: relative;
@@ -21,8 +21,27 @@
     display: flex;
 }
 
+.top-toolbar button {
+    margin: 7px 0 5px;
+}
+
+.vertical {
+    border-left: 1px solid black;
+    /*top: 50%;*/
+    /*vertical-align: center;*/
+    height: 50%;
+    margin-top: 15px;
+}
+
 .asset-images {
+    width: 100%;
+    height: 220px;
+    margin: 5px;
     display: flex;
+}
+
+.asset-images img {
+    max-height: 220px
 }
 
 p.rtl {
@@ -66,11 +85,6 @@ p.rtl {
     height: 28px;
 }
 
-/*{*/
-/*    border-width: 1px;*/
-/*    border-color: black;*/
-/*}*/
-
 .marker-div-image {
     width: 28px;
     height: 28px;
@@ -89,10 +103,11 @@ p.rtl {
 
 }
 
-.asset-dropdown {
-    /*display:flex;*/
-    width: 8em;
-    /*overflow-y: scroll;*/
+/* Problematic, needs fix*/
+.asset-dropdown .Select-control{
+    max-height: 200px;
+    /*!*display: flex;*!*/
+    overflow-y: scroll;
 }
 
 #table-container {
@@ -103,9 +118,9 @@ p.rtl {
 }
 
 .grid-container {
-    margin: auto;
+    /*margin: auto;*/
     /*display:flex;*/
-    gap: 10px;
+    /*gap: 10px;*/
     /*padding: 10px;*/
     /*display: grid;*/
     /*grid-template-columns: 1fr 1fr;*/
@@ -148,7 +163,7 @@ p.rtl {
 }
 
 .slider-container {
-    min-width: 12em;
+    width: 12%;
     text-align: center;
     direction: ltr;
 }
@@ -199,23 +214,39 @@ p.rtl {
     background-color: white;
     border-radius: 5px;
 }
-#marker-type .form-check{
+
+#marker-type .form-check {
     padding-left: 0;
 }
-#marker-type .form-check-inline{
+
+#marker-type .form-check-inline {
     margin-right: 0.5rem;
 }
 
 /*Used for limit multi dropdown*/
-#status-asset .Select-multi-value-wrapper{
-    max-height: 50px;
-    overflow:hidden;
+/*TODO: Fix this element with using multicheck box dropdown menu*/
+/*#status-asset .Select-multi-value-wrapper {*/
+/*    max-height: 50px;*/
+/*    width: 10%;*/
+/*    overflow: scroll;*/
+/*}*/
+
+.dash-dropdown {
+    width: 7%;
 }
-.span-color-pct{
+
+.span-color-pct {
     font-size: 0.75em;
     padding: 5px;
     margin-right: 3px;
     margin-left: 3px;
     color: white;
     border-radius: 10px;
+}
+
+.labels-multiselect{
+    display: grid;
+    direction: rtl;
+    text-align: right;
+    padding: 5%;
 }
