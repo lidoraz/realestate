@@ -81,8 +81,8 @@ function(feature, latlng){
         className: 'marker-div-icon',
         html: `
         <div class="marker-div">
-        <span class="marker-div-span" style="background-color: ${feature.properties._marker_color}">${feature.properties._marker_text}</span>
         <span>${feature.properties._price_s}</span>
+        <span class="marker-div-pct-span" style="background-color: ${feature.properties._marker_color}">${feature.properties._marker_text}</span>
         </div>`
     })
     return L.marker(latlng, {icon: x});

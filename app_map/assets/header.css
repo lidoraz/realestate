@@ -90,21 +90,18 @@ p.rtl {
     height: 28px;
 }
 
-.marker-div-span {
-    background-color: white;
-    color: black;
-    padding: 3px;
-    /*border: 1px solid black;*/
-    position: center;
+.marker-div span {
+    background-color: rgba(255, 255, 255, 0.5);
+    border-radius: 10px;
 }
 
 .sidebar-info-text {
-    font-size: 1vw;
+    font-size: smaller;
 
 }
 
 /* Problematic, needs fix*/
-.asset-dropdown .Select-control{
+.asset-dropdown .Select-control {
     max-height: 200px;
     /*!*display: flex;*!*/
     overflow-y: scroll;
@@ -140,22 +137,6 @@ p.rtl {
 
     /*float: left;*/
     /*width: 85%;*/
-}
-
-.marker-div {
-    /*border: black 1px solid;*/
-
-    /*display:grid;*/
-    /*font-size: small;*/
-    font-weight: bold;
-    padding: 2px
-}
-
-.marker-div-span {
-    /*text-shadow: 0 0 1px black, 0 0 1px black, 0 0 1px black, 0 0 1px black;*/
-    padding: 3px;
-    color: white;
-    border-radius: 25px;
 }
 
 .dash-spreadsheet-menu { /*used to remove toggle columns in table*/
@@ -235,6 +216,23 @@ p.rtl {
     width: 7%;
 }
 
+.marker-div {
+    /*border: black 1px solid;*/
+
+    /*display:grid;*/
+    /*font-size: small;*/
+    /*font-weight: bold;*/
+    padding: 2px
+}
+
+.marker-div-pct-span {
+    /*text-shadow: 0 0 1px black, 0 0 1px black, 0 0 1px black, 0 0 1px black;*/
+    padding: 3px;
+    font-size: x-small;
+    color: white;
+    border-radius: 25px;
+}
+
 .span-color-pct {
     font-size: 0.75em;
     padding: 5px;
@@ -244,7 +242,7 @@ p.rtl {
     border-radius: 10px;
 }
 
-.labels-multiselect{
+.labels-multiselect {
     display: grid;
     direction: rtl;
     text-align: right;

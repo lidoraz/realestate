@@ -57,7 +57,7 @@ def app_preprocess_df(df_all):
 
 
 def preprocess_to_str_deals(df):
-    df['rooms_s'] = df['rooms'].apply(lambda m: f"{m if m % 10 == 0 else round(m)}")
+    df['rooms_s'] = df['rooms'].astype(str)
     df['price_s'] = df['price'].apply(lambda m: f"₪{format_number(m)}")
     df['ai_price_pct_s'] = df['ai_price_pct'].apply(lambda m: f"{m:0.1%}")
     df['pct_diff_median_s'] = df['pct_diff_median'].apply(lambda m: f"{m:0.1%}")
@@ -107,7 +107,7 @@ def get_asset_points(df_all, price_from=None, price_to=None,
                      asset_status=(),
                      asset_type=(),
                      map_bounds=None,
-                     limit=True, id_=None):
+                     limit=True, id_=None, marker_type=None):
     if id_ is not None:
         df_f = df_all.query(f'id == "{id_}"')
         return df_f
@@ -134,8 +134,10 @@ def get_asset_points(df_all, price_from=None, price_to=None,
     q = ' '.join(list(sql_cond.values()))
     print(q)
     df_f = df_all.query(q)
+    if marker_type:
+        df_f = df_f.sort_values(marker_type)
     if limit:
-        df_f = df_f[:1_000]
+        df_f = df_f[:500]
 
     print(f"{datetime.now()} Triggerd, Fetched: {len(df_f)} rows")
     return df_f
@@ -164,37 +166,32 @@ def build_sidebar(deal):
     carousel = None
     if len(image_urls):
         carousel = dbc.Carousel(
-            items=[{"key": f"{idx + 1}", "src": url, "href": "https://google.com"}
+            items=[{"key": f"{idx + 1}", "src": url, "href": "https://google.com",
+                    "img_style": {"box-sizing": "border-box"}}
                    for idx, url in
                    enumerate(image_urls)],
             controls=True,
             indicators=True,
             interval=2000,
             ride="carousel",
-            style={"width": "300px"}
+            style={"width": "350px"}
         )
 
-    # txt_html = html.Div([dbc.Row(
-    #     [html.Span(f"{deal['price']:,.0f}₪", style={"font-size": "1.5vw"}),
-    #      html.Span(str_price_pct, className="text-ltr")]
-    # ),
-    #     dbc.Row([dbc.Col([html.Span(f"מחיר הנכס מהחציון באיזור: "),
-    #                       html.Span(f"{deal['pct_diff_median']:0.2%}", className="text-ltr")])])
-    # ])
-    def get_pct_style(v):
-        if np.isnan(v):
-            v = 0
-        return {"background-color": get_color(v)}
-
-    def get_html_span_pct(pct):
-        return html.Span(f"{pct:.1%}", style=get_pct_style(pct), className="span-color-pct text-ltr")
+    def get_html_span_pct(pct, show_txt=False):
+        if np.isnan(pct):
+            return html.Span()
+        else:
+            text = "שינוי "[::-1] if show_txt else ""
+            return html.Span(f"{pct:.1%}" + text,
+                             style={"background-color": get_color(pct)},
+                             className="span-color-pct text-ltr")
 
     title_html = html.Div([html.Span(f"{deal['price']:,.0f}₪"),
-                           get_html_span_pct(deal['price_pct'])])
+                           get_html_span_pct(deal['price_pct'], True)])
     txt_html = html.Div(
         [html.Span(f"מחיר הנכס מהחציון באיזור: "),
          get_html_span_pct(deal['pct_diff_median']),
-         html.P([html.Span(f"מחיר הנכס ממודל AI : "),
+         html.P([html.Span(f"מחיר הנכס AIממודל"),
                  html.Span(f"{deal['ai_price']:,.0f} (±{deal['ai_std_pct']:.1%})", className="text-ltr"),
                  get_html_span_pct(deal['ai_price_pct'])]),
 
@@ -220,10 +217,10 @@ def build_sidebar(deal):
                         children=html.Img(src=icon_real_estate, style=dict(width=32, height=32)),
                         target="_blank"),
                  ]),
-         html.Div(children=[carousel], className="asset-images"),
+         html.Div(children=[carousel], className="asset-images", style=dict(height=0) if carousel is None else None),
          html.Span(info_text, className='sidebar-info-text'),
          # html.Br(),
-         html.Table(children=add_info_text, style={"font-size": "0.8vw"}),
+         html.Table(children=add_info_text, style={"font-size": "x-small"}),
          # html.P("\n".join([f"{k}: {v}" for k, v in res_get_add_info(deal.name).items()])),
          ])
     return title_html, txt_html

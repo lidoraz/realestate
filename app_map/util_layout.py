@@ -79,6 +79,7 @@ def get_html_range_range_pct(text, element_id, checked=False):
                                      id=element_id,
                                      marks={-100: '-100%', 0: '0%', 100: '+100%'},
                                      allowCross=False,
+                                     disabled=False if checked else True,
                                      tooltip={'always_visible': True, 'placement': 'bottom'})],
                     className="slider-container")
 
