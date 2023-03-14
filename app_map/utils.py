@@ -12,35 +12,36 @@ from fetch_data.utils import filter_by_dist, get_nadlan_trans
 
 def get_df_with_prod(is_prod, filename):
     s3_file = "https://real-estate-public.s3.eu-west-2.amazonaws.com/resources/{filename}"
-    path_df = f"resources/{filename}"
+    pre_path = f"resources/"
     if not is_prod:
-        path_df = "../" + path_df
-    should_update = False
-    if os.path.exists(path_df):
-        time_modified = os.path.getmtime(path_df)
-        if (time.time() - time_modified) > (3600 * 24):
-            should_update = True
-    if not os.path.exists(path_df) or should_update:
+        pre_path = "../" + pre_path
+    path_file = pre_path + filename
+    should_update = True
+    if os.path.exists(path_file):
+        time_modified = os.path.getmtime(path_file)
+        if (time.time() - time_modified) < (3600 * 24):
+            should_update = False
+    if should_update:
         print(f"{datetime.now()}, Downloading file")
         from smart_open import open
         # s3_file_name = "s3://real-estate-public/resources/yad2_rent_df.pk"
-        nadlan_path = f"resources/df_nadlan_recent.pk"
+        nadlan_path = pre_path + "df_nadlan_recent.pk"
         with open(s3_file.format(filename="df_nadlan_recent.pk"), 'rb') as f:
             pd.read_pickle(f).to_pickle(nadlan_path)
         with open(s3_file.format(filename=filename), 'rb') as f:
             df_all = pd.read_pickle(f)
-            df_all.to_pickle(path_df)
+            df_all.to_pickle(path_file)
         print(f"{datetime.now()}, Downloaded files")
     else:
         print(f"{datetime.now()} loading from FS file")
-        df_all = pd.read_pickle(path_df)
+        df_all = pd.read_pickle(path_file)
     return df_all
 
 
 def app_preprocess_df(df_all):
+    df_all['pct_diff_median'] = df_all['price'] / df_all['median_price'] - 1
     df_all['ai_price'] = df_all['ai_price'] * (df_all['ai_std_pct'] < 0.15)  # Take only certain AI predictions
     df_all['ai_price_pct'] = df_all['ai_price'].replace(0, np.nan)
-
     df_all['ai_price_pct'] = df_all['price'] / df_all['ai_price_pct'] - 1
     df_all['square_meters'] = df_all['square_meter_build'].replace(0, np.nan).combine_first(df_all['square_meters'])
     df_all['avg_price_m'] = df_all['price'] / df_all['square_meters']
