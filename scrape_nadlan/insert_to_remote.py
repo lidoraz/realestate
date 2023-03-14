@@ -55,6 +55,9 @@ def insert_to_postgres_db(dt):
     file_lst = filter_files(dt)
 
     df = read_files(file_lst, True)
+    if df is None:
+        print(f"No items found for '{dt}', end!")
+        return
     df = preprocessing(df, drop_duplicates=True, dropna=True)
     df = check_exists(df, nadlan_trans_tbl, eng, 'trans_date')
     _insert_not_safe(df, eng)
@@ -84,7 +87,6 @@ def _insert_not_safe(df, eng):
         # conn.execute(_warp(f"DROP TABLE {tbl_name}"))
         # df_in_db = pd.read_sql(sql.text(f"SELECT * from {tbl_name} limit 10"), conn)
         res = df.to_sql(tbl_name, if_exists="append", index=False, con=conn)
-        conn.commit()
     print(f"Inserted {res} rows from df {len(df)}")
 
 
