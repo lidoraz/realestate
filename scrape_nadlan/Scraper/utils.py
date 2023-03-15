@@ -165,6 +165,7 @@ def copy_csv_files_to_db(like=None):
     df = read_files(all_files, True)
     if df is None:
         print("No OBJECTS found! end..")
+        return -1
     from datetime import datetime
     df['insertionDate'] = df['insertionDate'].fillna(datetime.today())
     db = DB()

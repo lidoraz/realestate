@@ -28,10 +28,35 @@ def get_table(tbl_name, columns_alchemy, metadata_obj, primary_keys=()):
     return nadlan_trans_tbl
 
 
-def get_engine():
+def load_vault():
     path = os.path.expanduser('~')
     path = os.path.join(path, '.ssh', "creds_postgres.json")
     with open(path) as f:
         c = json.load(f)
-    eng = create_engine(f"postgresql://{c['user']}:{c['passwd']}@{c['host']}:{c['port']}/{c['db']}")
+    for k, v in c.items():
+        os.environ[k] = str(v)
+
+
+def get_engine():
+    load_vault()
+    eng = create_engine(
+        f"postgresql://{os.environ['PGUSER']}:{os.environ['PGPASSWORD']}@{os.environ['PGHOST']}:{os.environ['PGPORT']}/{os.environ['PGDATABASE']}")
     return eng
+
+
+def get_telegram_creds():
+    load_vault()
+    bot_id = os.environ.get("TELEGRAM_BOT_ID")
+    channel_id = os.environ.get("TELEGRAM_CHANNEL")
+    assert bot_id
+    assert channel_id
+    return bot_id, channel_id
+
+
+def send_telegram_msg(msg):
+    bot_id, channel_id = get_telegram_creds()
+    import requests
+    url = f"https://api.telegram.org/bot{bot_id}/sendMessage?chat_id={channel_id}&text={msg}&parse_mode=HTML"
+    res = requests.get(url)
+    print(f"Sent with code: {res.status_code}")
+
