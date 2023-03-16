@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import pandas as pd
-
+from datetime import datetime
 plt.style.use('ggplot')
 timeline_size = (14, 5)
 from scrape_nadlan.utils_insert import get_engine
@@ -27,7 +27,6 @@ def get_data_nadlan(eng):
 
 
 def print_recent(df):
-    from datetime import datetime
     print(df.index.min(), df.index.max(), (datetime.now() - df.index.max()).days)
     print(df.groupby(df.index).size()[-5:].sort_index(ascending=False).to_frame())
 
@@ -72,7 +71,8 @@ def plot_timeline_rooms(df):
     plt.close()
 
 
-def plot_timeline_rooms_median_prices(df):
+def plot_timeline_rooms_median_prices(df, n_months_back):
+    df = df[df.index > datetime.now() - pd.to_timedelta(f'{30 * n_months_back}D')]
     df.groupby('n_rooms_').resample('M', convention='end', closed="left")['price_declared'].median().unstack(0)[
         ['3', '4', '5']].plot(figsize=timeline_size)
     # df.resample('M', convention='end', closed="left")['price_declared'].median().plot()
@@ -82,7 +82,8 @@ def plot_timeline_rooms_median_prices(df):
     plt.close()
 
 
-def plot_timeline_rooms_city(df):
+def plot_timeline_rooms_city(df, n_months_back):
+    df = df[df.index > datetime.now() - pd.to_timedelta(f'{30 * n_months_back}D')]
     dff = df.groupby(['city_', 'n_rooms_']).resample('M', convention='end', closed="left")['price_declared'].agg(
         ['mean', 'size', 'std', 'median'])  # .mean() # .T.pct_change().dropna()
     # colors = ['Red', 'Blue', 'Orange', 'Yellow', 'Green', 'Gray', 'Black', 'Lime']
@@ -161,8 +162,8 @@ def run():
     get_n_sales(df)
     get_pct_change(df)
     plot_timeline_rooms(df)
-    plot_timeline_rooms_median_prices(df)
-    plot_timeline_rooms_city(df)
+    plot_timeline_rooms_median_prices(df, n_months_back=24)
+    plot_timeline_rooms_city(df, n_months_back=24)
 
 
 if __name__ == '__main__':

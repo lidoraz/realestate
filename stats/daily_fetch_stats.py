@@ -12,8 +12,12 @@ log_tbl_cols = ['id', 'processing_date', 'date_updated', 'date_added', 'price', 
                 ]
 
 
-def get_heb_type(type_):
+def get_heb_type_past(type_):
     return "שהושכרה" if type_ == "rent" else "שנמכרה"
+
+
+def get_heb_type_present(type_):
+    return "שכירות" if type_ == 'rent' else "מכירה"
 
 
 def fetch_data_log(type_, eng):
@@ -41,26 +45,69 @@ def create_ratio(df, days_back=21, min_samples=200):
     return res
 
 
-def run_for_cities(df, type_, n_cities=9, resample_rule='7D'):
-    sel_cities = df['city'].value_counts().index[:n_cities].to_list()
-    df['city_'] = df['city'].apply(lambda x: x if x in sel_cities else "rest")
+def run_for_cities(df, type_, n_cities=9, resample_rule='7D', use_median=True):
+    sel_cities = ['חיפה', 'ירושלים', 'תל אביב יפו', 'רמת גן', 'אשדוד', 'ראשון לציון', 'ירשולים', 'באר שבע', 'נתניה']
+    # sel_cities = df['city'].value_counts().index[:n_cities].to_list()
+    df['city_'] = df['city'].apply(lambda x: x if x in sel_cities else "שאר הערים")
+    figs = []
     for city, grp in df.groupby('city_'):
-        create_percentiles_per_city(df, city, type_, resample_rule)
+        fig = create_percentiles_per_city_f(df, city, type_, resample_rule, use_median)
+        figs.append(fig)
+    return figs  # create_percentiles_per_city(df, city, type_, resample_rule)
 
 
 def create_percentiles_per_city(df, city, type_, resample_rule):
     # df_f = df_t.query(f"city == '{c}' and active == False and  rooms_text == 3.0")
     df = df.query(f"city_ == '{city}' and active == False")
     x = df.resample(resample_rule, origin='end')['price'].describe()  # agg(['median', 'mean', 'std', 'size'])
-    heb_type = "שכירות" if type_ == 'rent' else "מכירה"
-    title = f"{city} {heb_type} אחוזון {resample_rule[::-1]}"[::-1]
+
+    title = f"{city} {get_heb_type_present(type_)} אחוזון {resample_rule[::-1]}"[::-1]
     fig, ax = plt.subplots(figsize=(20, 10))
     x[['25%', '50%', '75%']].plot(figsize=(8, 4), kind='line', stacked=False, title=title, ax=ax, marker='o')
     # plt.ylim([0, None])
     x.plot(y='count', ax=ax, secondary_y=True, linestyle='-.')
-    plt.savefig(f'plots_daily_{type_}/percentile_{city}.png')
+    plt.savefig(f'stats/plots_daily_{type_}/percentile_{city}.png')
     # plt.show()
     plt.close()
+
+
+def create_percentiles_per_city_f(df, city, type_, resample_rule, use_median=True):
+    df = df.query(f"city_ == '{city}' and active == False")
+    x = df.resample(resample_rule, origin='end')['price'].describe()  # agg(['median', 'mean', 'std', 'size'])
+    heb_type = "שכירות" if type_ == 'rent' else "מכירה"
+    title = f"{city} {heb_type} אחוזון {resample_rule}"
+
+    from plotly.subplots import make_subplots
+    fig = make_subplots(
+        # specs=[[{"secondary_y": True}]]
+    )
+
+    if use_median:
+        for perc in ['25%', '50%', '75%']:
+            fig.add_trace(go.Scatter(x=x.index, y=x[perc].round(),
+                                     text=x['count'],
+                                     hovertemplate="%{x} (#%{text})<br>₪%{y}",
+                                     name="",
+                                     mode="lines+markers"))
+    else:
+        # USING MEAN AND STD IS REALLY NOISEY, CANT TELL NOTHNIG FROM THIS
+        fig.add_trace(go.Scatter(x=x.index, y=x["mean"], text=x['count'], mode="lines+markers", name=title))
+        fig.add_trace(go.Scatter(x=x.index, y=x["mean"] + x['std'], mode='lines', fill=None))
+        fig.add_trace(go.Scatter(x=x.index, y=x["mean"] - x['std'], mode='lines', fill='tonexty',
+                                 fillcolor="rgba(148, 0, 211, 0.15)"))
+    # fig.add_trace(go.Scatter(x=x.index, y=x['count'], name="count",
+    #                          mode="lines+markers", opacity=0.1), secondary_y=True)
+    fig.update_layout(showlegend=False, margin=dict(l=20, r=20, t=20, b=20), title=f'{city} ({get_heb_type_present(type_)})', )
+    fig.update_layout()
+    return fig
+
+    # fig, ax = plt.subplots(figsize=(20, 10))
+    # x[['25%', '50%', '75%']].plot(figsize=(8, 4), kind='line', stacked=False, title=title, ax=ax, marker='o')
+    # # plt.ylim([0, None])
+    # x.plot(y='count', ax=ax, secondary_y=True, linestyle='-.')
+    # plt.savefig(f'stats/plots_daily_{type_}/percentile_{city}.png')
+    # # plt.show()
+    # plt.close()
 
 
 def get_price_changes(eng, type_):
@@ -81,7 +128,7 @@ def get_price_changes(eng, type_):
     df_rent_g['dt_last'] = pd.to_datetime(df_rent_g['dt_last'])
     df_g = df_rent_g[df_rent_g['dt_last'] > datetime.now() - pd.to_timedelta('8D')].query("price_pct > -0.8")
     res = df_g.reset_index().sort_values(['price_pct', 'days'], ascending=[True, False])[:30]
-    res.to_html(f'plots_daily_{type_}/price_changes.html')
+    res.to_html(f'stats/plots_daily_{type_}/price_changes.html')
 
 
 def plot_ratio(res, type_):
@@ -93,7 +140,7 @@ def plot_ratio(res, type_):
     print("lower is better for rent as more demand")
     _ = plt.xticks(rotation=60)
     plt.tight_layout()
-    plt.savefig(f'plots_daily_{type_}/active_ratio.png')
+    plt.savefig(f'stats/plots_daily_{type_}/active_ratio.png')
     plt.close()
 
 
@@ -106,6 +153,25 @@ def plot_ratio_f(res, type_):
     fig.show()
 
 
+def plot_scatter(df, res_ratio, type_):
+    df['time_alive'] = (datetime.today() - df['date_added']).dt.days
+    df_g = df[~df['active']].groupby('city')['time_alive'].agg(['mean', 'std', 'median', 'size'])
+    df_g = df_g.join(res_ratio, how='inner')
+    len_b = len(df_g)
+    df_g = df_g[df_g['size'] >= 30]
+    print(len_b, len(df_g))
+    fig, ax = plt.subplots(figsize=(12, 12))
+    ax.scatter(df_g['median'], df_g['r'])
+    ax.set_title("פיזור זמן מול היחס"[::-1])
+    ax.set_ylabel('יחס דירות באתר מול דירות שירדו בחודש האחרון'[::-1])
+    ax.set_xlabel('זמן חציוני לדירות באתר מרגע הפרסום עד להורדה'[::-1])
+
+    for i, txt in enumerate(df_g.index):
+        ax.annotate(txt[::-1], (df_g['median'][i] * 1.01, df_g['r'][i]))
+    plt.savefig(f'stats/plots_daily_{type_}/scatter.png')
+    plt.close()
+
+
 def plot_scatter_f(df, res_ratio, type_):
     df['time_alive'] = (datetime.today() - df['date_added']).dt.days
     df_g = df[~df['active']].groupby('city')['time_alive'].agg(['mean', 'std', 'median', 'size'])
@@ -116,14 +182,17 @@ def plot_scatter_f(df, res_ratio, type_):
     fig = go.Figure(data=go.Scatter(x=df_g['median'], y=df_g['r'], marker_color=df_g['size'],
                                     mode='markers+text',
                                     textposition="bottom center",
-                                    hovertemplate="%{text}<br>#Days: %{x}</br>#Deals: %{marker.color}",
+                                    hovertemplate="%{text}<br>Ratio: %{y}<br>#Days: %{x}</br>#Deals: %{marker.color}",
                                     name="",
                                     text=df_g.index))  # hover text goes here
-    fig.update_layout(title=f"פיזור זמן מול היחס על דירה {get_heb_type(type_)}",
+    fig.update_layout(title=f"פיזור זמן מול היחס על דירה {get_heb_type_past(type_)}",
                       xaxis_title="זמן חציוני לדירות באתר מרגע הפרסום עד להורדה",
                       yaxis_title="יחס דירות באתר מול דירות שירדו בחודש האחרון",
+                      # template="ggplot2",
+                      margin=dict(l=20, r=20, t=20, b=20),
                       dragmode='pan')
-    fig.show()
+    return fig
+    # fig.show()
     #
     # fig, ax = plt.subplots(figsize=(12, 12))
     # ax.scatter(df_g['median'], df_g['r'])
@@ -133,7 +202,7 @@ def plot_scatter_f(df, res_ratio, type_):
     #
     # for i, txt in enumerate(df_g.index):
     #     ax.annotate(txt[::-1], (df_g['median'][i] * 1.01, df_g['r'][i]))
-    # plt.savefig(f'plots_daily_{type_}/scatter.png')
+    # plt.savefig(f'stats/plots_daily_{type_}/scatter.png')
     # plt.close()
 
 
@@ -166,19 +235,18 @@ def get_compare_closed_vs_active_median_price(df, city):
 
 def run(type_):
     print(f"Started daily stats for {type_}")
-    # eng = get_engine()
-    # df = fetch_data_log(type_, eng)
-    fname = f'test_log_{type_}.pk'
-    df = pd.read_pickle(fname)
+    eng = get_engine()
+    df = fetch_data_log(type_, eng)
+    fname = f'resources/df_log_{type_}.pk'
+    # df = pd.read_pickle(fname)
     df.to_pickle(fname)
     res_ratio = create_ratio(df, days_back=30, min_samples=200)
-    # plot_ratio_f(res_ratio, type_)
-    plot_scatter_f(df, res_ratio, type_)
-    exit()
+    plot_ratio(res_ratio, type_)
+    plot_scatter(df, res_ratio, type_)
     run_for_cities(df, type_, n_cities=9, resample_rule='7D')
     get_price_changes(eng, type_)
 
 
 if __name__ == '__main__':
-    # run('forsale')
+    run('forsale')
     run('rent')

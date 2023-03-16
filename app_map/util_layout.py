@@ -27,6 +27,11 @@ asset_type_cols = ['דירה', 'יחידת דיור', 'דירת גן', 'סאבל
 # https://community.plotly.com/t/dash-leaflet-custom-icon-for-each-marker-on-data-from-geojson/54158/10
 # Can use text instead of just icon with using DivIcon in JS.
 
+def get_page_menu():
+    return dbc.DropdownMenu([dbc.DropdownMenuItem(html.A(dbc.Button("Rent"), href="/rent")),
+                      dbc.DropdownMenuItem(html.A(dbc.Button("Analytics"), href="/analytics"))],
+                     label="Menu", style=dict(direction="ltr"))
+
 def get_layout(default_config):
     layout = html.Div(children=[
         html.Div(className="top-container", children=get_div_top_bar(default_config)),
@@ -171,6 +176,7 @@ def get_div_top_bar(config_defaults):
         dbc.Button("נקה", id="button-clear"),
         # dbc.Button("סנן", id='button-return'),
         dbc.Button("TBL", id="table-toggle", color="success"),
+        get_page_menu()
     ])
     return div_top_bar
 
