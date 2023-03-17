@@ -9,13 +9,12 @@ if len(sys.argv) > 1:
 
 def create_app():
     server = Flask(__name__)
-    # with server.app_context():
-    #     from app_map.dashboard_yad2_rent import get_dash as get_dash_rent
-    #     server, _ = get_dash_rent(server)
-    #     from app_map.dashboard_yad2_forsale import get_dash as get_dash_sale
-    #     server, _ = get_dash_sale(server)
-    #     from app_map.dashboard_stats import get_dash as get_dash_stats
-    #     server, _ = get_dash_stats(server)
+    # from app_map.dashboard_yad2_rent import get_dash as get_dash_rent
+    # server, _ = get_dash_rent(server)
+    # from app_map.dashboard_yad2_forsale import get_dash as get_dash_sale
+    # server, _ = get_dash_sale(server)
+    # from app_map.dashboard_stats import get_dash as get_dash_stats
+    # server, _ = get_dash_stats(server)
     return server
 
 
@@ -31,7 +30,8 @@ def hello_world():
 if __name__ == '__main__':
     print("is_prod", is_prod)
     if is_prod:
-        from waitress import serve
-        serve(app, host="0.0.0.0")
+        # from waitress import serve
+        # serve(app, host="0.0.0.0")
+        app.run(host="0.0.0.0", port=8050)
     else:
         app.run(debug=True, port=8050)
