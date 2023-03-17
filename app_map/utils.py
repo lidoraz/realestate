@@ -23,9 +23,15 @@ def get_df_with_prod(is_prod, filename):
         time_modified = os.path.getmtime(path_file)
         if (time.time() - time_modified) < (3600 * 24):
             should_update = False
+    # should_update=True
     if should_update:
         print(f"{datetime.now()}, Downloading file")
         from smart_open import open
+        # TODO Add here access only to auth users, something with bucket is not correct
+        # import boto3
+        # session = boto3.Session(
+        #     aws_access_key_id=os.environ['AWS_ACCESS_KEY_ID'],
+        #     aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'])
         # s3_file_name = "s3://real-estate-public/resources/yad2_rent_df.pk"
         nadlan_path = pre_path + "df_nadlan_recent.pk"
         with open(s3_file.format(filename="df_nadlan_recent.pk"), 'rb') as f:

@@ -7,6 +7,7 @@ catboost
 requests
 sqlalchemy
 smart-open
+boto3
 protobuf==3.20.0
 dash
 dash-table

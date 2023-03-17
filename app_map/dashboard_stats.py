@@ -12,6 +12,7 @@ from dash import html, Output, Input, State, ctx
 import pandas as pd
 
 from app_map.util_layout import get_page_menu
+from app_map.utils import get_df_with_prod
 from stats.daily_fetch_stats import plot_scatter_f, create_ratio, run_for_cities
 
 is_prod = False
@@ -23,13 +24,9 @@ if len(sys.argv) > 1:
 
 
 type_ = 'rent'
-# fname = f'test_log_{type_}.pk'
-if is_prod:
-    fname = 'resources/df_log_{}.pk'
-else:
-    fname = '../resources/df_log_{}.pk'
-df_rent = pd.read_pickle(fname.format("rent"))
-df_forsale = pd.read_pickle(fname.format("forsale"))
+fname = f'df_log_{type_}.pk'
+df_rent = get_df_with_prod(is_prod, fname.format("rent"))
+df_forsale = get_df_with_prod(is_prod, fname.format("forsale"))
 date_df = df_rent['date_updated'].max().date()
 str_update = f'מעודכן ל-{date_df}'
 days_back = 30
