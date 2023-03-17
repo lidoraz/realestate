@@ -3,22 +3,34 @@ import pandas as pd
 from dash import html, Output, Input, State, ctx
 import dash
 import time
-from app_map.util_layout import get_interactive_table, CLUSTER_MAX_ZOOM
+from app_map.util_layout import get_interactive_table, CLUSTER_MAX_ZOOM, get_marker_type_options, marker_type_default
 from app_map.utils import get_asset_points, preprocess_to_str_deals, get_geojsons, build_sidebar, get_similar_deals
 
-clear_filter_input_outputs = [
-    Output('button-clear', "n_clicks"),
-    # Output("price-slider", "value"),
-    Output("price-median-pct-slider", "value"),
-    Output("price-discount-pct-slider", "value"),
-    Output("ai-price-pct-slider", "value"),
-    Output("price-median-pct-slider-check", "value"),
-    Output("price-discount-pct-slider-check", "value"),
-    Output("ai-price-pct-slider-check", "value"),
-    Output("date-added", "value"),
-    Output("rooms-slider", "value"),
-    Output("status-asset", "value"),
-    Input('button-clear', "n_clicks")]
+
+def handle_marker_type(marker_type, marker_types):
+    # global context
+    marker_type_bool = np.array(marker_types)
+    marker_type_sum = marker_type_bool.sum()
+    if marker_type_sum == 1:
+        out_marker = get_marker_type_options()[marker_type_bool.argmax()]
+    else:
+        out_marker = marker_type
+    return out_marker
+
+
+def get_clear_filter_input_outputs(name):
+    return [
+        Output(f'{name}-button-clear', "n_clicks"),
+        Output(f"{name}-price-median-pct-slider", "value"),
+        Output(f"{name}-price-discount-pct-slider", "value"),
+        Output(f"{name}-ai-price-pct-slider", "value"),
+        Output(f"{name}-price-median-pct-slider-check", "value"),
+        Output(f"{name}-price-discount-pct-slider-check", "value"),
+        Output(f"{name}-ai-price-pct-slider-check", "value"),
+        Output(f"{name}-date-added", "value"),
+        Output(f"{name}-rooms-slider", "value"),
+        Output(f"{name}-status-asset", "value"),
+        Input(f'{name}-button-clear', "n_clicks")]
 
 
 def clear_filter(n_clicks):
@@ -30,35 +42,12 @@ def clear_filter(n_clicks):
 df_all = pd.DataFrame()
 config_defaults = dict()
 
-context = dict(map_zoom=300, zoom_ts=time.time())
-
-
-# def print_ctx():
-#     import json
-#     ctx_msg = json.dumps({
-#         # 'states': ctx.states,
-#         'triggered_prop_ids': ctx.triggered_prop_ids,
-#         'triggered': ctx.triggered,
-#         'timing_information': ctx.timing_information,
-#         # 'inputs': ctx.inputs
-#     }, indent=2)
-#     print(ctx_msg)
-
-
-# def sleep_bounds(min_sleep_time=1.5):
-#     is_triggered_by_map_bounds = len(ctx.triggered_prop_ids) == 1 and list(ctx.triggered_prop_ids)[0] == "map.bounds"
-#     if is_triggered_by_map_bounds:
-#         trigger_timing = ctx.timing_information
-#         time_passed_sec = (datetime.now().timestamp() - trigger_timing['__dash_server']['dur'])
-#         print('time_passed_sec', time_passed_sec)
-#         if time_passed_sec < min_sleep_time:
-#             sleep_time = min_sleep_time - time_passed_sec
-#             print('sleep_time', sleep_time)
-#             time.sleep(sleep_time)
+context = dict(map_zoom=300, zoom_ts=time.time(), marker_type=marker_type_default)
 
 
 def limit_refresh(map_zoom):
-    is_triggered_by_map_bounds = len(ctx.triggered_prop_ids) == 1 and list(ctx.triggered_prop_ids)[0] == "big-map.bounds"
+    is_triggered_by_map_bounds = len(ctx.triggered_prop_ids) == 1 and list(ctx.triggered_prop_ids)[
+        0] == "big-map.bounds"
     if map_zoom != context['map_zoom'] and is_triggered_by_map_bounds:
         context['map_zoom'] = map_zoom
         past_ts = context['zoom_ts']
@@ -73,29 +62,36 @@ def limit_refresh(map_zoom):
     # sleep_bounds()
 
 
-show_assets_input_output = [Output("geojson", "data"),
-                            Output("datatable-interactivity", "columns"),
-                            Output("datatable-interactivity", "data"),
-                            Output("datatable-interactivity", "style_data_conditional"),
-                            Output("fetched-assets", "children"),
-                            Output("button-around", "n_clicks"),
-                            Input("price-slider", "value"),
-                            Input("price-median-pct-slider", "value"),
-                            Input("price-discount-pct-slider", "value"),
-                            Input("ai-price-pct-slider", "value"),
-                            #
-                            Input("price-median-pct-slider-check", "value"),
-                            Input("price-discount-pct-slider-check", "value"),
-                            Input("ai-price-pct-slider-check", "value"),
-                            #
-                            Input("date-added", "value"), Input("date-updated", "value"),
-                            Input("rooms-slider", "value"), Input('agency-check', "value"),
-                            Input('parking-check', "value"), Input('balconies-check', "value"),
-                            Input('status-asset', "value"), Input('asset-type', "value"),
-                            Input("button-around", "n_clicks"),
-                            Input('marker-type', 'value'),
-                            Input('big-map', 'bounds'), State('big-map', 'zoom'),
-                            State("datatable-interactivity", "active_cell")]
+def get_show_assets_input_output(name):
+    return [Output(f"{name}-geojson", "data"),
+            Output(f'{name}-marker-type', 'value'),
+            Output(f"{name}-datatable-interactivity", "columns"),
+            Output(f"{name}-datatable-interactivity", "data"),
+            Output(f"{name}-datatable-interactivity", "style_data_conditional"),
+            Output(f"{name}-fetched-assets", "children"),
+            Output(f"{name}-button-around", "n_clicks"),
+            Input(f"{name}-price-slider", "value"),
+            Input(f"{name}-price-median-pct-slider", "value"),
+            Input(f"{name}-price-discount-pct-slider", "value"),
+            Input(f"{name}-ai-price-pct-slider", "value"),
+
+            Input(f"{name}-price-median-pct-slider-check", "value"),
+            Input(f"{name}-price-discount-pct-slider-check", "value"),
+            Input(f"{name}-ai-price-pct-slider-check", "value"),
+            #
+            Input(f"{name}-date-added", "value"),
+            Input(f"{name}-date-updated", "value"),
+            Input(f"{name}-rooms-slider", "value"),
+            Input(f'{name}-agency-check', "value"),
+            Input(f'{name}-parking-check', "value"),
+            Input(f'{name}-balconies-check', "value"),
+            Input(f'{name}-status-asset', "value"),
+            Input(f'{name}-asset-type', "value"),
+            Input(f"{name}-button-around", "n_clicks"),
+            Input(f'{name}-marker-type', 'value'),
+            Input(f'{name}-big-map', 'bounds'),
+            State(f'{name}-big-map', 'zoom'),
+            State(f"{name}-datatable-interactivity", "active_cell")]
 
 
 def show_assets(price_range,
@@ -105,6 +101,13 @@ def show_assets(price_range,
                 rooms_range, with_agency, with_parking, with_balconies, asset_status, asset_type, n_clicks_around,
                 marker_type,
                 map_bounds, map_zoom, active_cell=None):
+    print("marker_type", marker_type)
+    with_agency = True if len(with_agency) else False
+    with_parking = True if len(with_parking) else None
+    with_balconies = True if len(with_balconies) else None
+    is_price_median_pct_range = len(is_price_median_pct_range) > 0
+    is_price_discount_pct_range = len(is_price_discount_pct_range) > 0
+    is_price_ai_pct_range = len(is_price_ai_pct_range) > 0
     limit_refresh(map_zoom)
     if active_cell:
         return dash.no_update
@@ -119,12 +122,6 @@ def show_assets(price_range,
             price_from = price_range[0] * config_defaults["price_mul"]
             price_to = price_range[1] * config_defaults["price_mul"]
 
-        with_agency = True if len(with_agency) else False
-        with_parking = True if len(with_parking) else None
-        with_balconies = True if len(with_balconies) else None
-        is_price_median_pct_range = len(is_price_median_pct_range) > 0
-        is_price_discount_pct_range = len(is_price_discount_pct_range) > 0
-        is_price_ai_pct_range = len(is_price_ai_pct_range) > 0
         df_f = get_asset_points(df_all, price_from, price_to,
                                 price_median_pct_range, price_discount_pct_range, price_ai_pct_range,
                                 is_price_median_pct_range, is_price_discount_pct_range, is_price_ai_pct_range,
@@ -132,17 +129,21 @@ def show_assets(price_range,
                                 with_agency, with_parking, with_balconies, map_bounds=map_bounds,
                                 asset_status=asset_status, asset_type=asset_type, limit=True)
     # Can keep a list of points, if after fetch there was no new, no need to build new points, just keep them to save resources
-    deal_points = get_geojsons(df_f, marker_type)
+    out_marker = handle_marker_type(marker_type,
+                                    [is_price_median_pct_range, is_price_discount_pct_range, is_price_ai_pct_range])
+    deal_points = get_geojsons(df_f, out_marker)
     columns, data, style_data_conditional = get_interactive_table(df_f)
-    return deal_points, columns, data, style_data_conditional, len(df_f), None
+
+    return deal_points, out_marker, columns, data, style_data_conditional, len(df_f), None
 
 
-toggle_model_input_outputs = [Output("geojson", "click_feature"),  # output none to reset button for re-click
-                              Output("modal", "is_open"),
-                              Output("modal-title", "children"),
-                              Output("marker", "children"),
-                              Output("histogram", "figure"),
-                              Input("geojson", "click_feature")]
+def get_toggle_model_input_outputs(name):
+    return [Output(f"{name}-geojson", "click_feature"),  # output none to reset button for re-click
+            Output(f"{name}-modal", "is_open"),
+            Output(f"{name}-modal-title", "children"),
+            Output(f"{name}-marker", "children"),
+            Output(f"{name}-histogram", "figure"),
+            Input(f"{name}-geojson", "click_feature")]
 
 
 def toggle_modal(feature):
@@ -157,13 +158,14 @@ def toggle_modal(feature):
     return dash.no_update
 
 
-focus_on_asset_input_outputs = [Output("big-map", "center"),
-                                Output("big-map", "zoom"),
-                                Output("map-marker", "opacity"),
-                                Output("map-marker", "position"),
-                                Input("datatable-interactivity", "active_cell"),
-                                State("datatable-interactivity", "data"),
-                                ]
+def get_focus_on_asset_input_outputs(name):
+    return [Output(f"{name}-big-map", "center"),
+            Output(f"{name}-big-map", "zoom"),
+            Output(f"{name}-map-marker", "opacity"),
+            Output(f"{name}-map-marker", "position"),
+            Input(f"{name}-datatable-interactivity", "active_cell"),
+            State(f"{name}-datatable-interactivity", "data"),
+            ]
 
 
 # dl.Marker(position=[31.7, 32.7], opacity=0, id='map-marker')
@@ -176,11 +178,12 @@ def focus_on_asset(table_active_cell, table_data):
     return position, CLUSTER_MAX_ZOOM + 1, 0.75, position
 
 
-show_table_input_output = [Output("table-toggle", "n_clicks"),
-                           Output("table-modal", "is_open"),
-                           Input("table-toggle", "n_clicks"),
-                           State("table-modal", "is_open")
-                           ]
+def get_show_table_input_output(name):
+    return [Output(f"{name}-table-toggle", "n_clicks"),
+            Output(f"{name}-table-modal", "is_open"),
+            Input(f"{name}-table-toggle", "n_clicks"),
+            State(f"{name}-table-modal", "is_open")
+            ]
 
 
 def show_table_modal(n_clicks, is_open):
@@ -189,11 +192,12 @@ def show_table_modal(n_clicks, is_open):
     return dash.no_update
 
 
-clear_table_selecetd_input_output = [
-    # Output("map-marker", "opacity"),
-    Output("datatable-interactivity", "selected_cells"),
-    Output("datatable-interactivity", "active_cell"),
-    Input("table-modal", "is_open")]
+def get_clear_table_selecetd_input_output(name):
+    return [
+        # Output("map-marker", "opacity"),
+        Output(f"{name}-datatable-interactivity", "selected_cells"),
+        Output(f"{name}-datatable-interactivity", "active_cell"),
+        Input(f"{name}-table-modal", "is_open")]
 
 
 def clear_selected_if_closed(is_open):
@@ -202,13 +206,14 @@ def clear_selected_if_closed(is_open):
     return dash.no_update
 
 
-disable_range_input_outputs = [Output("price-median-pct-slider", "disabled"),
-                               Output("price-discount-pct-slider", "disabled"),
-                               Output("ai-price-pct-slider", "disabled"),
-                               Input("price-median-pct-slider-check", "value"),
-                               Input("price-discount-pct-slider-check", "value"),
-                               Input("ai-price-pct-slider-check", "value"),
-                               ]
+def get_disable_range_input_outputs(name):
+    return [Output(f"{name}-price-median-pct-slider", "disabled"),
+            Output(f"{name}-price-discount-pct-slider", "disabled"),
+            Output(f"{name}-ai-price-pct-slider", "disabled"),
+            Input(f"{name}-price-median-pct-slider-check", "value"),
+            Input(f"{name}-price-discount-pct-slider-check", "value"),
+            Input(f"{name}-ai-price-pct-slider-check", "value"),
+            ]
 
 
 def disable_range_sliders(is_price_median_pct_range, is_price_discount_pct_range, is_price_ai_pct_range):
@@ -218,10 +223,11 @@ def disable_range_sliders(is_price_median_pct_range, is_price_discount_pct_range
     return is_price_median_pct_range, is_price_discount_pct_range, is_price_ai_pct_range
 
 
-toggle_cluster_input_outputs = [
-    Output("geojson", "cluster"),
-    Input("cluster-check", "value")
-]
+def get_toggle_cluster_input_outputs(name):
+    return [
+        Output(f"{name}-geojson", "cluster"),
+        Input(f"{name}-cluster-check", "value")
+    ]
 
 
 def toggle_cluster(cluster_check):
@@ -230,13 +236,14 @@ def toggle_cluster(cluster_check):
 
 def add_callbacks(app, df, config):
     global df_all, config_defaults
-    df_all = df
     config_defaults = config
-    app.callback(clear_filter_input_outputs)(clear_filter)
-    app.callback(show_assets_input_output)(show_assets)
-    app.callback(toggle_model_input_outputs)(toggle_modal)
-    app.callback(focus_on_asset_input_outputs)(focus_on_asset)
-    app.callback(disable_range_input_outputs)(disable_range_sliders)
-    app.callback(show_table_input_output)(show_table_modal)
-    app.callback(toggle_cluster_input_outputs)(toggle_cluster)
-    app.callback(clear_table_selecetd_input_output)(clear_selected_if_closed)
+    df_all = df
+    name = config_defaults['name']
+    app.callback(get_clear_filter_input_outputs(name))(clear_filter)
+    app.callback(get_show_assets_input_output(name))(show_assets)
+    app.callback(get_toggle_model_input_outputs(name))(toggle_modal)
+    app.callback(get_focus_on_asset_input_outputs(name))(focus_on_asset)
+    app.callback(get_disable_range_input_outputs(name))(disable_range_sliders)
+    app.callback(get_show_table_input_output(name))(show_table_modal)
+    app.callback(get_toggle_cluster_input_outputs(name))(toggle_cluster)
+    app.callback(get_clear_table_selecetd_input_output(name))(clear_selected_if_closed)

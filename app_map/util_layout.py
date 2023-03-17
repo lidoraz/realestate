@@ -22,29 +22,45 @@ asset_status_cols = ['משופץ', 'במצב שמור', 'חדש (גרו בנכס
 asset_type_cols = ['דירה', 'יחידת דיור', 'דירת גן', 'סאבלט', 'דו משפחתי', 'מרתף/פרטר', 'גג/פנטהאוז', "בית פרטי/קוטג'",
                    'סטודיו/לופט', 'דופלקס', 'דירת נופש', 'משק חקלאי/נחלה', 'טריפלקס', 'החלפת דירות']
 
+marker_type_options = [
+
+    {'label': 'M', 'value': 'pct_diff_median'},
+    {'label': '%', 'value': 'price_pct'},
+    {'label': 'AI', 'value': 'ai_price_pct'},
+]
+marker_type_default = 'ai_price_pct'
+
+
+def get_marker_type_options():
+    return [x['value'] for x in marker_type_options]
+
 
 # https://stackoverflow.com/questions/34775308/leaflet-how-to-add-a-text-label-to-a-custom-marker-icon
 # https://community.plotly.com/t/dash-leaflet-custom-icon-for-each-marker-on-data-from-geojson/54158/10
 # Can use text instead of just icon with using DivIcon in JS.
 
 def get_page_menu():
-    return dbc.DropdownMenu([dbc.DropdownMenuItem(html.A(dbc.Button("Rent"), href="/rent")),
-                      dbc.DropdownMenuItem(html.A(dbc.Button("Analytics"), href="/analytics"))],
-                     label="Menu", style=dict(direction="ltr"))
+    return dbc.DropdownMenu([
+        dbc.DropdownMenuItem(html.A(dbc.Button("Sale"), href="/sale")),
+        dbc.DropdownMenuItem(html.A(dbc.Button("Rent"), href="/rent")),
+        dbc.DropdownMenuItem(html.A(dbc.Button("Analytics"), href="/analytics"))
+    ], label="Menu", style=dict(direction="ltr"))
+
 
 def get_layout(default_config):
+    name = default_config['name']
     layout = html.Div(children=[
         html.Div(className="top-container", children=get_div_top_bar(default_config)),
-        html.Div(className="grid-container", children=get_main_map()),
-        html.Div(className="table-container", children=[div_left_off_canvas]),
-        html.Div(className="modal-container", children=[div_offcanvas])
+        html.Div(className="grid-container", children=get_main_map(name)),
+        html.Div(className="table-container", children=[get_div_left_off_canvas(name)]),
+        html.Div(className="modal-container", children=[get_div_offcanvas(name)])
     ])
     return layout
 
 
-def get_table_container():
+def get_table_container(name):
     return html.Div(className="left-container", children=[DataTable(
-        id='datatable-interactivity',
+        id=f'{name}-datatable-interactivity',
         columns=None,
         data=None,
         editable=False,
@@ -89,34 +105,36 @@ def get_html_range_range_pct(text, element_id, checked=False):
 
 
 def get_div_top_bar(config_defaults):
+    name = config_defaults['name']
     div_top_bar = html.Div(className="top-toolbar", children=[
-        dbc.Button(html.Span("0", id="fetched-assets"), color="secondary", disabled=True),
+        dbc.Button(html.Span("0", id=f"{name}-fetched-assets"), color="secondary", disabled=True),
         html.Div([dcc.Checklist(options=[{'label': 'עם תיווך', 'value': 'Y'}], value=['Y'], inline=True,
                                 inputClassName="rounded-checkbox",
-                                id='agency-check'),
+                                id=f'{name}-agency-check'),
                   dcc.Checklist(options=[{'label': 'חניה', 'value': 'Y'}], value=[], inline=True,
                                 inputClassName="rounded-checkbox",
-                                id='parking-check'),
+                                id=f'{name}-parking-check'),
                   dcc.Checklist(options=[{'label': 'מרפסת', 'value': 'Y'}], value=[], inline=True,
                                 inputClassName="rounded-checkbox",
-                                id='balconies-check')], className="dash-dropdown"),
+                                id=f'{name}-balconies-check')], className="dash-dropdown"),
 
         html.Div([html.Span(price_text), dcc.RangeSlider(min=config_defaults["price-min"],
                                                          max=config_defaults["price-max"],
                                                          step=config_defaults['price_step'],
                                                          value=[config_defaults['price-from'],
                                                                 config_defaults['price-to']],
-                                                         id='price-slider', marks={config_defaults["price-max"]: '+',
-                                                                                   config_defaults["price-min"]: '-'},
+                                                         id=f'{name}-price-slider',
+                                                         marks={config_defaults["price-max"]: '+',
+                                                                config_defaults["price-min"]: '-'},
                                                          allowCross=False,
                                                          tooltip={'always_visible': True})],
                  className="slider-container"),
         html.Div(className="vertical"),
-        get_html_range_range_pct(median_price_txt, 'price-median-pct-slider'),
-        get_html_range_range_pct(price_pct_txt, 'price-discount-pct-slider'),
-        get_html_range_range_pct(ai_pct_txt, 'ai-price-pct-slider', True),
+        get_html_range_range_pct(median_price_txt, f'{name}-price-median-pct-slider'),
+        get_html_range_range_pct(price_pct_txt, f'{name}-price-discount-pct-slider'),
+        get_html_range_range_pct(ai_pct_txt, f'{name}-ai-price-pct-slider', True),
         html.Div([html.Span(n_rooms_txt),
-                  html.Div(dcc.RangeSlider(1, 6, 1, value=[3, 4], marks=rooms_marks, id='rooms-slider'))],
+                  html.Div(dcc.RangeSlider(1, 6, 1, value=[3, 4], marks=rooms_marks, id=f'{name}-rooms-slider'))],
                  className="slider-container"),
         dcc.Dropdown(
             asset_status_cols,
@@ -124,7 +142,7 @@ def get_div_top_bar(config_defaults):
             placeholder="מצב הנכס",
             multi=True,
             searchable=False,
-            id='status-asset',
+            id=f'{name}-status-asset',
             className="asset-dropdown"),
         dcc.Dropdown(
             asset_type_cols,
@@ -132,7 +150,7 @@ def get_div_top_bar(config_defaults):
             placeholder="סוג",
             multi=True,
             searchable=False,
-            id='asset-type',
+            id=f'{name}-asset-type',
             className="asset-dropdown"),
         # dbc.DropdownMenu([dcc.Checklist(className="labels-multiselect", id="status-asset",
         #                                 options=asset_status_cols, value=[]), dbc.Button("X")], label="מצב"),
@@ -140,18 +158,13 @@ def get_div_top_bar(config_defaults):
         #                                 options=asset_type_cols, value=[]), dbc.Button("X")], label="סוג"),
         dbc.DropdownMenu([
             dbc.DropdownMenuItem(dbc.RadioItems(
-                options=[
-                    {'label': 'AI', 'value': 'ai_price_pct'},
-                    {'label': 'M', 'value': 'pct_diff_median'},
-                    {'label': '%', 'value': 'price_pct'},
-
-                ],
-                value='ai_price_pct',
-                id='marker-type',
+                options=marker_type_options,
+                value=marker_type_default,
+                id=f'{name}-marker-type',
                 inline=True,
             ), ),
             dbc.DropdownMenuItem([date_added_txt, dcc.Input(
-                id="date-added",
+                id=f"{name}-date-added",
                 type="number",
                 placeholder=date_added_txt,
                 value=300,
@@ -160,7 +173,7 @@ def get_div_top_bar(config_defaults):
             )], header=True),
             # dbc.DropdownMenuItem(divider=True),
             dbc.DropdownMenuItem([date_updated_text, dcc.Input(
-                id="date-updated",
+                id=f"{name}-date-updated",
                 type="number",
                 placeholder=date_updated_text,
                 value=14,
@@ -169,13 +182,13 @@ def get_div_top_bar(config_defaults):
             )], header=True),
             dbc.DropdownMenuItem(dcc.Checklist(options=[{'value': 'Y', 'label': "Cluster"}], value=['Y'], inline=True,
                                                inputClassName="rounded-checkbox",
-                                               id='cluster-check'), header=False),
+                                               id=f'{name}-cluster-check'), header=False),
         ],
             label="עוד"),
-        dbc.Button("איזור", id="button-around"),
-        dbc.Button("נקה", id="button-clear"),
-        # dbc.Button("סנן", id='button-return'),
-        dbc.Button("TBL", id="table-toggle", color="success"),
+        dbc.Button("איזור", id=f"{name}-button-around"),
+        dbc.Button("נקה", id=f"{name}-button-clear"),
+        # dbc.Button("סנן", id=f"{name}-button-return'),
+        dbc.Button("TBL", id=f"{name}-table-toggle", color="success"),
         get_page_menu()
     ])
     return div_top_bar
@@ -186,39 +199,41 @@ def get_div_top_bar(config_defaults):
 # more Here:
 # https://github.com/geopandas/xyzservices/blob/main/provider_sources/leaflet-providers-parsed.json
 
-def get_main_map():
+def get_main_map(name):
     return dl.Map(children=[dl.TileLayer(url="https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png"),
-                            dl.GeoJSON(data=None, id="geojson", zoomToBounds=False, cluster=False,
+                            dl.GeoJSON(data=None, id=f"{name}-geojson", zoomToBounds=False, cluster=False,
                                        superClusterOptions=dict(maxZoom=CLUSTER_MAX_ZOOM),  # radius=50,
                                        options=dict(pointToLayer=POINT_TO_LAYER_FUN),
                                        ),
-                            dl.Marker(position=[31.7, 32.7], opacity=0, id='map-marker')
+                            dl.Marker(position=[31.7, 32.7], opacity=0, id=f'{name}-map-marker')
                             ],
-                  zoom=3, id='big-map', zoomControl=True,
+                  zoom=3, id=f'{name}-big-map', zoomControl=True,
                   bounds=[[31.7, 32.7], [32.5, 37.3]]
                   )
 
 
-div_left_off_canvas = dbc.Offcanvas(
-    get_table_container(),
-    id="table-modal",
-    scrollable=True,
-    title="Scrollable Offcanvas",
-    backdrop=False,
-    is_open=False
-)
+def get_div_left_off_canvas(name):
+    return dbc.Offcanvas(
+        get_table_container(name),
+        id=f"{name}-table-modal",
+        scrollable=True,
+        title="Scrollable Offcanvas",
+        backdrop=False,
+        is_open=False
+    )
 
-div_offcanvas = html.Div([dbc.Offcanvas(
-    children=[dbc.ModalTitle(id="modal-title"), html.Div(id='country'), html.Div(id='marker'),
-              dcc.Graph(id='histogram', figure={},
-                        config={'displayModeBar': False,
-                                'scrollZoom': False}),
-              html.Div(id='Country info pane')],
-    id="modal",
-    placement="end",
-    is_open=False,
-    style=dict(width="500px", direction="rtl")
-)])
+
+def get_div_offcanvas(name):
+    return html.Div([dbc.Offcanvas(
+        children=[dbc.ModalTitle(id=f"{name}-modal-title"), html.Div(id=f'{name}-marker'),
+                  dcc.Graph(id=f'{name}-histogram', figure={},
+                            config={'displayModeBar': False,
+                                    'scrollZoom': False})],
+        id=f"{name}-modal",
+        placement="end",
+        is_open=False,
+        style=dict(width="500px", direction="rtl")
+    )])
 
 
 def _discrete_background_color_bins(df, n_bins=10, columns='all', reverse=False):

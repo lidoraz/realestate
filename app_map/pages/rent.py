@@ -2,7 +2,7 @@ import os
 import sys
 import dash
 import dash_bootstrap_components as dbc
-dash.register_page(__name__, path='/rent', title="Rent", theme=dbc.themes.CYBORG)
+dash.register_page(__name__, path='/rent', title="Rent")
 from app_map.utils import *
 from app_map.util_layout import get_layout
 from app_map.utils_callbacks import add_callbacks
@@ -18,7 +18,8 @@ rent_config_default = {"price-from": 1_000, "price-to": 6_000, "median-price-pct
                        "ai_pct": None,
                        "price_step": 500,
                        "price_mul": 1,  # 1e3,
-                       "with_nadlan": False  # Work around for missing nadlan db in remote
+                       "with_nadlan": False,  # Work around for missing nadlan db in remote
+                       "name": "rent",
                        }
 
 # df_all = get_df_with_prod(True, filename="yad2_rent_df.pk")

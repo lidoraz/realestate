@@ -16,7 +16,8 @@ rent_config_default = {"price-from": 1_000, "price-to": 6_000, "median-price-pct
                        "ai_pct": None,
                        "price_step": 500,
                        "price_mul": 1,  # 1e3,
-                       "with_nadlan": False  # Work around for missing nadlan db in remote
+                       "with_nadlan": False,  # Work around for missing nadlan db in remote
+                       "name": "rent",
                        }
 
 df_all = get_df_with_prod(is_prod, filename="yad2_rent_df.pk")

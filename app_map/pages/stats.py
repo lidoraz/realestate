@@ -23,7 +23,7 @@ if len(sys.argv) > 1:
 
 type_ = 'rent'
 # fname = f'test_log_{type_}.pk'
-fname = 'resources/df_log_{}.pk'
+fname = '../resources/df_log_{}.pk'
 df_rent = pd.read_pickle(fname.format("rent"))
 df_forsale = pd.read_pickle(fname.format("forsale"))
 
