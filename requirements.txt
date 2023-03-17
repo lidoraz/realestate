@@ -17,3 +17,4 @@ dash-leaflet
 dash-bootstrap-components
 colorlover
 colour
+gunicorn
