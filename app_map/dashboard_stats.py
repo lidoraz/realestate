@@ -15,18 +15,14 @@ from app_map.util_layout import get_page_menu
 from app_map.utils import get_df_with_prod
 from stats.daily_fetch_stats import plot_scatter_f, create_ratio, run_for_cities
 
-is_prod = False
-if len(sys.argv) > 1:
-    is_prod = sys.argv[1] == "prod"
-
 # df_all = get_df_with_prod(is_prod, filename="../resources/yad2_rent_df.pk")
 # df_all = app_preprocess_df(df_all)
 
 
 type_ = 'rent'
 fname = f'df_log_{type_}.pk'
-df_rent = get_df_with_prod(is_prod, fname.format("rent"))
-df_forsale = get_df_with_prod(is_prod, fname.format("forsale"))
+df_rent = get_df_with_prod(fname.format("rent"))
+df_forsale = get_df_with_prod(fname.format("forsale"))
 date_df = df_rent['date_updated'].max().date()
 str_update = f'מעודכן ל-{date_df}'
 days_back = 30

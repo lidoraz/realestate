@@ -5,15 +5,11 @@ from app_map.utils import *
 from app_map.util_layout import get_layout
 from app_map.utils_callbacks import add_callbacks
 
-is_prod = False
-if len(sys.argv) > 1:
-    is_prod = sys.argv[1] == "prod"
-
 BASE_URL = "rent"
 
 
 def get_dash(server):
-    df_all = get_df_with_prod(is_prod, filename="yad2_rent_df.pk")
+    df_all = get_df_with_prod(filename="yad2_rent_df.pk")
     df_all = app_preprocess_df(df_all)
     rent_config_default = {"price-from": 1_000, "price-to": 6_000, "median-price-pct": None,
                            "price-min": 500, "price-max": 10_000,

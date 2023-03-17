@@ -12,10 +12,10 @@ from fetch_data.utils import filter_by_dist, get_nadlan_trans
 FETCH_LIMIT = 500
 
 
-def get_df_with_prod(is_prod, filename):
+def get_df_with_prod(filename):
     s3_file = "https://real-estate-public.s3.eu-west-2.amazonaws.com/resources/{filename}"
     pre_path = f"resources/"
-    if not is_prod:
+    if not os.path.exists(pre_path):
         pre_path = "../" + pre_path
     path_file = pre_path + filename
     should_update = True
