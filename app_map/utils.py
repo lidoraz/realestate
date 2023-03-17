@@ -25,7 +25,7 @@ def get_df_with_prod(is_prod, filename):
             should_update = False
     # should_update=True
     if should_update:
-        print(f"{datetime.now()}, Downloading file")
+        print(f"{datetime.now()}, Downloading file {filename}")
         from smart_open import open
         # TODO Add here access only to auth users, something with bucket is not correct
         # import boto3
@@ -41,7 +41,7 @@ def get_df_with_prod(is_prod, filename):
             df_all.to_pickle(path_file)
         print(f"{datetime.now()}, Downloaded files")
     else:
-        print(f"{datetime.now()} loading from FS file")
+        print(f"{datetime.now()} loading from FS file {filename}")
         df_all = pd.read_pickle(path_file)
     return df_all
 
