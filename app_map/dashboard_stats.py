@@ -1,4 +1,5 @@
 import os
+import random
 import sys
 import dash
 import dash_bootstrap_components as dbc
@@ -7,9 +8,9 @@ from dash import dcc
 # from app_map.util_layout import get_layout
 # from app_map.utils_callbacks import add_callbacks
 from dash import html, Output, Input, State, ctx
+
 import pandas as pd
 
-dash.register_page(__name__, path='/analytics', title="Analytics", theme=dbc.themes.CYBORG)
 from app_map.util_layout import get_page_menu
 from stats.daily_fetch_stats import plot_scatter_f, create_ratio, run_for_cities
 
@@ -19,14 +20,18 @@ if len(sys.argv) > 1:
 
 # df_all = get_df_with_prod(is_prod, filename="../resources/yad2_rent_df.pk")
 # df_all = app_preprocess_df(df_all)
-# app = dash.Dash(external_stylesheets=[dbc.themes.CYBORG])
+
 
 type_ = 'rent'
 # fname = f'test_log_{type_}.pk'
-fname = 'resources/df_log_{}.pk'
+if is_prod:
+    fname = 'resources/df_log_{}.pk'
+else:
+    fname = '../resources/df_log_{}.pk'
 df_rent = pd.read_pickle(fname.format("rent"))
 df_forsale = pd.read_pickle(fname.format("forsale"))
-
+date_df = df_rent['date_updated'].max().date()
+str_update = f'מעודכן ל-{date_df}'
 days_back = 30
 min_samples = 200
 
@@ -46,9 +51,10 @@ def get_scatter(df, type_, min_samples):
 def _gen_multi_html(figs):
     n_cols = 4
     n_rows = len(figs) // n_cols
+    import uuid
     [fig.update_layout(template="plotly_dark", dragmode=False) for fig in figs]
     graphs = [dbc.Row([dbc.Col(
-        dcc.Graph(id=f'graph-city-{i * j + j}', figure=figs[i * n_cols + j],
+        dcc.Graph(id=f'graph-{uuid.uuid4()}-city-{i * j + j}', figure=figs[i * n_cols + j],
                   config={'displayModeBar': False,
                           'scrollZoom': False}
                   ),
@@ -85,25 +91,30 @@ def get_multi_price_by_side():
 
 
 # https://community.plotly.com/t/how-to-log-client-ip-addresses/6613
+def get_dash(server):
+    app = dash.Dash(server=server, external_stylesheets=[dbc.themes.CYBORG], url_base_pathname='/analytics/')
 
+    app.layout = html.Div(
+        [
+            dbc.Row([dbc.Col(html.H1("ניתוח מתקדם - דירות")), dbc.Col(get_page_menu())]),
+            dbc.Row(dbc.Col(html.H6(str_update))),
+            dbc.Row([get_scatter(df_rent, 'rent', 200),
+                     get_scatter(df_forsale, 'forsale', 300)],
+                    style=dict(margin="15px", padding="15px")),
+            *get_multi_price_by_side(),
+            dbc.Row(
+                [
+                    dbc.Col(html.Div("One of three columns")),
+                    dbc.Col(html.Div("One of three columns")),
+                    dbc.Col(html.Div("One of three columns")),
+                ]
+            ),
+        ],
+        style=dict(direction="rtl", overflow="hidden")
 
-layout = html.Div(
-    [
-        dbc.Row([dbc.Col(html.H1("ניתוח מתקדם - דירות"), style=dict(color="white")), dbc.Col(get_page_menu())]),
-        dbc.Row([get_scatter(df_rent, 'rent', 200), get_scatter(df_forsale, 'forsale', 300)],
-                style=dict(margin="10px")),
-        *get_multi_price_by_side(),
-        dbc.Row(
-            [
-                dbc.Col(html.Div("One of three columns")),
-                dbc.Col(html.Div("One of three columns")),
-                dbc.Col(html.Div("One of three columns")),
-            ]
-        ),
-    ],
-    style={"direction": "rtl", "background-color": "black"}
+    )
+    return server, app
 
-)
 
 # @app.callback(
 #     Output("graph-1", "figure"),
@@ -120,8 +131,9 @@ layout = html.Div(
 #     return fig
 
 
-# if __name__ == '__main__':
-#     if is_prod:
-#         app.run_server(debug=True, host="0.0.0.0")
-#     else:
-#         app.run_server(debug=True)
+if __name__ == '__main__':
+    _, app = get_dash(True)
+    if is_prod:
+        app.run_server(debug=True, host="0.0.0.0")
+    else:
+        app.run_server(debug=True, port=8899)

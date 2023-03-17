@@ -9,6 +9,8 @@ from app_map.util_layout import *
 from scrape_yad2.utils import _get_parse_item_add_info
 from fetch_data.utils import filter_by_dist, get_nadlan_trans
 
+FETCH_LIMIT = 500
+
 
 def get_df_with_prod(is_prod, filename):
     s3_file = "https://real-estate-public.s3.eu-west-2.amazonaws.com/resources/{filename}"
@@ -135,7 +137,7 @@ def get_asset_points(df_all, price_from=None, price_to=None,
     print(q)
     df_f = df_all.query(q)
     if limit:
-        df_f = df_f[:1_000]
+        df_f = df_f[:FETCH_LIMIT]
 
     print(f"{datetime.now()} Triggerd, Fetched: {len(df_f)} rows")
     return df_f
@@ -147,9 +149,10 @@ def build_sidebar(deal):
     date_added = pd.to_datetime(deal['date_added'])
     add_info = _get_parse_item_add_info(deal['id'])
     # add_info = res_get_add_info(deal.name)
+    IMG_LIMIT = None
     if add_info:
         image_urls = add_info.pop('image_urls')
-        image_urls = image_urls[:3] if image_urls is not None else []
+        image_urls = image_urls if image_urls is not None else []
         info_text = add_info.pop('info_text')
         add_info_text = [html.Tr(html.Td(f"{k}: {v}")) for k, v in add_info.items()]
     else:
@@ -164,14 +167,14 @@ def build_sidebar(deal):
     carousel = None
     if len(image_urls):
         carousel = dbc.Carousel(
-            items=[{"key": f"{idx + 1}", "src": url, "href": "https://google.com"}
+            items=[{"key": f"{idx + 1}", "src": url, "href": "https://google.com", "img_class_name": "asset-images-img"}
                    for idx, url in
                    enumerate(image_urls)],
-            controls=True,
+            controls=False,
             indicators=True,
             interval=2000,
             ride="carousel",
-            style={"width": "300px"}
+            # style="sidebar-carousel"
         )
 
     # txt_html = html.Div([dbc.Row(

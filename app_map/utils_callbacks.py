@@ -3,7 +3,7 @@ import pandas as pd
 from dash import html, Output, Input, State, ctx
 import dash
 import time
-from app_map.util_layout import get_interactive_table, CLUSTER_MAX_ZOOM
+from app_map.util_layout import get_interactive_table, CLUSTER_MAX_ZOOM, marker_type_options
 from app_map.utils import get_asset_points, preprocess_to_str_deals, get_geojsons, build_sidebar, get_similar_deals
 
 clear_filter_input_outputs = [
@@ -27,10 +27,30 @@ def clear_filter(n_clicks):
     return dash.no_update
 
 
-df_all = pd.DataFrame()
+# df_all = pd.DataFrame()
 config_defaults = dict()
 
+
+def get_context_by_rule():
+    from flask import request
+    print("$$$$", request.url_rule)
+    name = request.url_rule.endpoint.split('/')[1]
+    return config_defaults[name]
+
+
 context = dict(map_zoom=300, zoom_ts=time.time())
+
+
+def handle_marker_type(marker_type, marker_types):
+    # global context
+    marker_type_bool = np.array(marker_types)
+    marker_type_sum = marker_type_bool.sum()
+    if marker_type_sum == 1:
+        vals = [x['value'] for x in marker_type_options]
+        out_marker = vals[marker_type_bool.argmax()]
+    else:
+        out_marker = marker_type
+    return out_marker
 
 
 # def print_ctx():
@@ -58,7 +78,8 @@ context = dict(map_zoom=300, zoom_ts=time.time())
 
 
 def limit_refresh(map_zoom):
-    is_triggered_by_map_bounds = len(ctx.triggered_prop_ids) == 1 and list(ctx.triggered_prop_ids)[0] == "big-map.bounds"
+    is_triggered_by_map_bounds = len(ctx.triggered_prop_ids) == 1 and list(ctx.triggered_prop_ids)[
+        0] == "big-map.bounds"
     if map_zoom != context['map_zoom'] and is_triggered_by_map_bounds:
         context['map_zoom'] = map_zoom
         past_ts = context['zoom_ts']
@@ -105,34 +126,38 @@ def show_assets(price_range,
                 rooms_range, with_agency, with_parking, with_balconies, asset_status, asset_type, n_clicks_around,
                 marker_type,
                 map_bounds, map_zoom, active_cell=None):
+    conf = get_context_by_rule()
     limit_refresh(map_zoom)
+    print("marker_type", marker_type)
+    with_agency = True if len(with_agency) else False
+    with_parking = True if len(with_parking) else None
+    with_balconies = True if len(with_balconies) else None
+    is_price_median_pct_range = len(is_price_median_pct_range) > 0
+    is_price_discount_pct_range = len(is_price_discount_pct_range) > 0
+    is_price_ai_pct_range = len(is_price_ai_pct_range) > 0
+
     if active_cell:
         return dash.no_update
     if n_clicks_around:
-        df_f = get_asset_points(df_all, map_bounds=map_bounds, limit=True)
+        df_f = get_asset_points(conf['data'], map_bounds=map_bounds, limit=True)
     else:
         # special case - max over 10M
-        if price_range[0] == config_defaults['price-max'] and price_range[0] == price_range[1]:
-            price_from = config_defaults['price-max'] * config_defaults["price_mul"]
+        if price_range[0] == conf['price-max'] and price_range[0] == price_range[1]:
+            price_from = conf['price-max'] * conf["price_mul"]
             price_to = np.inf
         else:
-            price_from = price_range[0] * config_defaults["price_mul"]
-            price_to = price_range[1] * config_defaults["price_mul"]
-
-        with_agency = True if len(with_agency) else False
-        with_parking = True if len(with_parking) else None
-        with_balconies = True if len(with_balconies) else None
-        is_price_median_pct_range = len(is_price_median_pct_range) > 0
-        is_price_discount_pct_range = len(is_price_discount_pct_range) > 0
-        is_price_ai_pct_range = len(is_price_ai_pct_range) > 0
-        df_f = get_asset_points(df_all, price_from, price_to,
+            price_from = price_range[0] * conf["price_mul"]
+            price_to = price_range[1] * conf["price_mul"]
+        df_f = get_asset_points(conf['data'], price_from, price_to,
                                 price_median_pct_range, price_discount_pct_range, price_ai_pct_range,
                                 is_price_median_pct_range, is_price_discount_pct_range, is_price_ai_pct_range,
                                 date_added, date_updated, rooms_range,
                                 with_agency, with_parking, with_balconies, map_bounds=map_bounds,
                                 asset_status=asset_status, asset_type=asset_type, limit=True)
     # Can keep a list of points, if after fetch there was no new, no need to build new points, just keep them to save resources
-    deal_points = get_geojsons(df_f, marker_type)
+    out_marker = handle_marker_type(marker_type,
+                                    [is_price_median_pct_range, is_price_discount_pct_range, is_price_ai_pct_range])
+    deal_points = get_geojsons(df_f, out_marker)
     columns, data, style_data_conditional = get_interactive_table(df_f)
     return deal_points, columns, data, style_data_conditional, len(df_f), None
 
@@ -149,10 +174,11 @@ def toggle_modal(feature):
     if feature:
         props = feature['properties']
         if 'deal_id' in props:
+            conf = get_context_by_rule()
             deal_id = feature['properties']['deal_id']
-            deal = df_all.loc[deal_id]
+            deal = conf['data'].loc[deal_id]
             title_modal, str_html = build_sidebar(deal)
-            fig = get_similar_deals(df_all, deal, with_nadlan=config_defaults['with_nadlan'])
+            fig = get_similar_deals(conf['data'], deal, with_nadlan=conf['with_nadlan'])
             return None, True, title_modal, str_html, fig
     return dash.no_update
 
@@ -171,7 +197,8 @@ def focus_on_asset(table_active_cell, table_data):
     if table_active_cell is None:
         return dash.no_update
     id_ = [x for x in table_data if x['id'] == table_active_cell['row_id']][0]['id']
-    item = get_asset_points(df_all, id_=id_).squeeze()
+    conf = get_context_by_rule()
+    item = get_asset_points(conf['data'], id_=id_).squeeze()
     position = [item['lat'], item['long']]
     return position, CLUSTER_MAX_ZOOM + 1, 0.75, position
 
@@ -228,10 +255,11 @@ def toggle_cluster(cluster_check):
     return [len(cluster_check) > 0]
 
 
-def add_callbacks(app, df, config):
-    global df_all, config_defaults
-    df_all = df
-    config_defaults = config
+def add_callbacks(app, config):
+    # global df_all, config_defaults
+    # df_all = df
+    name = config['name']
+    config_defaults[name] = config
     app.callback(clear_filter_input_outputs)(clear_filter)
     app.callback(show_assets_input_output)(show_assets)
     app.callback(toggle_model_input_outputs)(toggle_modal)

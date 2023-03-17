@@ -9,29 +9,37 @@ is_prod = False
 if len(sys.argv) > 1:
     is_prod = sys.argv[1] == "prod"
 
-df_all = get_df_with_prod(is_prod, filename="yad2_forsale_df.pk")
-df_all = app_preprocess_df(df_all)
-df_all.query('-0.89 <price_pct < -0.05').to_csv('df_forsale.csv')
+BASE_URL = "sale"
 
-app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP], title="Sale")
 
-forsale_config_default = {"price-from": 500, "price-to": 3_000, "median-price-pct": -0.2,
-                          "price-min": 500, "price-max": 10_000,
-                          "switch-median": True,
-                          "discount-price-pct": None,
-                          "ai_pct": None,
-                          "price_step": 50,
-                          "price_mul": 1e3,  # 1e6,
-                          "with_nadlan": True
-                          }
+def get_dash(server):
+    app = dash.Dash(server=server,
+                    external_stylesheets=[dbc.themes.BOOTSTRAP], title="Sale", url_base_pathname=f'/{BASE_URL}/')
+    df_all = get_df_with_prod(is_prod, filename="yad2_forsale_df.pk")
+    df_all = app_preprocess_df(df_all)
+    df_all.query('-0.89 <price_pct < -0.05').to_csv('df_forsale.csv')
 
-app.layout = get_layout(forsale_config_default)
-add_callbacks(app, df_all, forsale_config_default)
+    forsale_config_default = {"price-from": 500, "price-to": 3_000, "median-price-pct": -0.2,
+                              "price-min": 500, "price-max": 10_000,
+                              "switch-median": True,
+                              "discount-price-pct": None,
+                              "ai_pct": None,
+                              "price_step": 50,
+                              "price_mul": 1e3,  # 1e6,
+                              "with_nadlan": True,
+                              "name": BASE_URL,
+                              "data": df_all
+                              }
+    app.layout = get_layout(forsale_config_default)
+    add_callbacks(app, forsale_config_default)
+    return server, app
+
 
 # https://python.plainenglish.io/how-to-create-a-model-window-in-dash-4ab1c8e234d3
 
 
 if __name__ == '__main__':
+    _, app = get_dash(True)
     if is_prod:
         app.run_server(debug=True, host="0.0.0.0")
     else:

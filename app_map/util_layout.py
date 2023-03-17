@@ -22,6 +22,14 @@ asset_status_cols = ['משופץ', 'במצב שמור', 'חדש (גרו בנכס
 asset_type_cols = ['דירה', 'יחידת דיור', 'דירת גן', 'סאבלט', 'דו משפחתי', 'מרתף/פרטר', 'גג/פנטהאוז', "בית פרטי/קוטג'",
                    'סטודיו/לופט', 'דופלקס', 'דירת נופש', 'משק חקלאי/נחלה', 'טריפלקס', 'החלפת דירות']
 
+marker_type_options = [
+
+    {'label': 'M', 'value': 'pct_diff_median'},
+    {'label': '%', 'value': 'price_pct'},
+    {'label': 'AI', 'value': 'ai_price_pct'},
+]
+marker_type_default = 'ai_price_pct'
+
 
 # https://stackoverflow.com/questions/34775308/leaflet-how-to-add-a-text-label-to-a-custom-marker-icon
 # https://community.plotly.com/t/dash-leaflet-custom-icon-for-each-marker-on-data-from-geojson/54158/10
@@ -29,8 +37,10 @@ asset_type_cols = ['דירה', 'יחידת דיור', 'דירת גן', 'סאבל
 
 def get_page_menu():
     return dbc.DropdownMenu([dbc.DropdownMenuItem(html.A(dbc.Button("Rent"), href="/rent")),
-                      dbc.DropdownMenuItem(html.A(dbc.Button("Analytics"), href="/analytics"))],
-                     label="Menu", style=dict(direction="ltr"))
+                             dbc.DropdownMenuItem(html.A(dbc.Button("Sale"), href="/sale")),
+                             dbc.DropdownMenuItem(html.A(dbc.Button("Analytics"), href="/analytics"))],
+                            label="Menu", style=dict(direction="ltr"))
+
 
 def get_layout(default_config):
     layout = html.Div(children=[
@@ -140,13 +150,8 @@ def get_div_top_bar(config_defaults):
         #                                 options=asset_type_cols, value=[]), dbc.Button("X")], label="סוג"),
         dbc.DropdownMenu([
             dbc.DropdownMenuItem(dbc.RadioItems(
-                options=[
-                    {'label': 'AI', 'value': 'ai_price_pct'},
-                    {'label': 'M', 'value': 'pct_diff_median'},
-                    {'label': '%', 'value': 'price_pct'},
-
-                ],
-                value='ai_price_pct',
+                options=marker_type_options,
+                value=marker_type_default,
                 id='marker-type',
                 inline=True,
             ), ),
