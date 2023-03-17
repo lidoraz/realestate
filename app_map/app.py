@@ -30,6 +30,7 @@ def hello_world():
 if __name__ == '__main__':
     print("is_prod", is_prod)
     if is_prod:
-        app.run(debug=False, host="0.0.0.0", port=8080)
+        from waitress import serve
+        serve(app, host="0.0.0.0", port=8080)
     else:
-        app.run(debug=True, port=8049)
+        app.run(debug=True, port=8050)
