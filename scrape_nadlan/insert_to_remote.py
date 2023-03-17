@@ -55,9 +55,14 @@ def insert_to_postgres_db(dt):
     file_lst = filter_files(dt)
 
     df = read_files(file_lst, True)
+    if df is None:
+        print(f"No items found for '{dt}', end!")
+        return -1, -1
     df = preprocessing(df, drop_duplicates=True, dropna=True)
+    n_fetched = len(df)
     df = check_exists(df, nadlan_trans_tbl, eng, 'trans_date')
-    _insert_not_safe(df, eng)
+    n_put = _insert_not_safe(df, eng)
+    return n_fetched, n_put
 
 
 def _warp(q):
@@ -84,8 +89,8 @@ def _insert_not_safe(df, eng):
         # conn.execute(_warp(f"DROP TABLE {tbl_name}"))
         # df_in_db = pd.read_sql(sql.text(f"SELECT * from {tbl_name} limit 10"), conn)
         res = df.to_sql(tbl_name, if_exists="append", index=False, con=conn)
-        conn.commit()
     print(f"Inserted {res} rows from df {len(df)}")
+    return res
 
 
 if __name__ == '__main__':
@@ -95,4 +100,14 @@ if __name__ == '__main__':
     if _dt is None:
         _dt = get_args()
 
-    insert_to_postgres_db(_dt)
+    job_name = f"INSERT NADLAN with {_dt}"
+    send_telegram_msg(f"⚪ Starting {job_name}")
+    n_fetched = 0
+    try:
+        n_fetched, n_put = insert_to_postgres_db(_dt)
+        if n_fetched == -1:
+            raise Exception(f"no new data found for {_dt}")
+        send_telegram_msg(f"🟢 FINISHED JOB in {job_name}, ({n_fetched}, {n_put})")
+    except Exception as e:
+        send_telegram_msg(f"🔴 ERROR in {job_name} ({n_fetched})")
+        send_telegram_msg(str(e))

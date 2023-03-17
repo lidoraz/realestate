@@ -154,6 +154,8 @@ def read_files(all_files, use_pool=False):
     with ThreadPoolExecutor(cpus) as executor:
         futures = [executor.submit(lambda x: pd.read_csv(x), p) for p in tqdm(all_files)]
         dfs = [f.result() for f in futures]
+    if len(dfs) == 0:
+        return None
     df = pd.concat(dfs, axis=0)
     return df
 
@@ -161,6 +163,9 @@ def read_files(all_files, use_pool=False):
 def copy_csv_files_to_db(like=None):
     all_files = filter_files(like)
     df = read_files(all_files, True)
+    if df is None:
+        print("No OBJECTS found! end..")
+        return -1
     from datetime import datetime
     df['insertionDate'] = df['insertionDate'].fillna(datetime.today())
     db = DB()
