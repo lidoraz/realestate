@@ -155,6 +155,7 @@ def run():
     # df = get_data_nadlan(eng)
     # df.to_pickle("nadlan.pk")
     df = pd.read_pickle("nadlan.pk")
+    #TODO ADD HERE, but first must auth bucket.
     print_recent(df)
     plot_timeline_new_vs_old(df, '14D', get_ir())
     df = add_columns(df)

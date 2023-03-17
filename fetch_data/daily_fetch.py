@@ -56,6 +56,7 @@ def pub_object(path):
     session = boto3.Session()
     s3 = session.resource('s3')
     buck = s3.Bucket(BUCKET_NAME)
+    print(f"Uploading file:: {path} bucket: {BUCKET_NAME}")
     buck.upload_file(path, path)
 
 

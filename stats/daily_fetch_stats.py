@@ -1,3 +1,6 @@
+import os
+
+from fetch_data.daily_fetch import pub_object
 from scrape_nadlan.utils_insert import get_engine
 import pandas as pd
 from datetime import datetime, timedelta
@@ -66,7 +69,7 @@ def create_percentiles_per_city(df, city, type_, resample_rule):
     x[['25%', '50%', '75%']].plot(figsize=(8, 4), kind='line', stacked=False, title=title, ax=ax, marker='o')
     # plt.ylim([0, None])
     x.plot(y='count', ax=ax, secondary_y=True, linestyle='-.')
-    plt.savefig(f'stats/plots_daily_{type_}/percentile_{city}.png')
+    plt.savefig(f'resources/stats/plots_daily_{type_}/percentile_{city}.png')
     # plt.show()
     plt.close()
 
@@ -97,7 +100,8 @@ def create_percentiles_per_city_f(df, city, type_, resample_rule, use_median=Tru
                                  fillcolor="rgba(148, 0, 211, 0.15)"))
     # fig.add_trace(go.Scatter(x=x.index, y=x['count'], name="count",
     #                          mode="lines+markers", opacity=0.1), secondary_y=True)
-    fig.update_layout(showlegend=False, margin=dict(l=20, r=20, t=20, b=20), title=f'{city} ({get_heb_type_present(type_)})', )
+    fig.update_layout(showlegend=False, margin=dict(l=20, r=20, t=20, b=20),
+                      title=f'{city} ({get_heb_type_present(type_)})', )
     fig.update_layout()
     return fig
 
@@ -105,7 +109,7 @@ def create_percentiles_per_city_f(df, city, type_, resample_rule, use_median=Tru
     # x[['25%', '50%', '75%']].plot(figsize=(8, 4), kind='line', stacked=False, title=title, ax=ax, marker='o')
     # # plt.ylim([0, None])
     # x.plot(y='count', ax=ax, secondary_y=True, linestyle='-.')
-    # plt.savefig(f'stats/plots_daily_{type_}/percentile_{city}.png')
+    # plt.savefig(f'resources/stats/plots_daily_{type_}/percentile_{city}.png')
     # # plt.show()
     # plt.close()
 
@@ -128,7 +132,7 @@ def get_price_changes(eng, type_):
     df_rent_g['dt_last'] = pd.to_datetime(df_rent_g['dt_last'])
     df_g = df_rent_g[df_rent_g['dt_last'] > datetime.now() - pd.to_timedelta('8D')].query("price_pct > -0.8")
     res = df_g.reset_index().sort_values(['price_pct', 'days'], ascending=[True, False])[:30]
-    res.to_html(f'stats/plots_daily_{type_}/price_changes.html')
+    res.to_html(f'resources/stats/plots_daily_{type_}/price_changes.html')
 
 
 def plot_ratio(res, type_):
@@ -140,7 +144,7 @@ def plot_ratio(res, type_):
     print("lower is better for rent as more demand")
     _ = plt.xticks(rotation=60)
     plt.tight_layout()
-    plt.savefig(f'stats/plots_daily_{type_}/active_ratio.png')
+    plt.savefig(f'resources/stats/plots_daily_{type_}/active_ratio.png')
     plt.close()
 
 
@@ -168,7 +172,7 @@ def plot_scatter(df, res_ratio, type_):
 
     for i, txt in enumerate(df_g.index):
         ax.annotate(txt[::-1], (df_g['median'][i] * 1.01, df_g['r'][i]))
-    plt.savefig(f'stats/plots_daily_{type_}/scatter.png')
+    plt.savefig(f'resources/stats/plots_daily_{type_}/scatter.png')
     plt.close()
 
 
@@ -202,7 +206,7 @@ def plot_scatter_f(df, res_ratio, type_):
     #
     # for i, txt in enumerate(df_g.index):
     #     ax.annotate(txt[::-1], (df_g['median'][i] * 1.01, df_g['r'][i]))
-    # plt.savefig(f'stats/plots_daily_{type_}/scatter.png')
+    # plt.savefig(f'resources/stats/plots_daily_{type_}/scatter.png')
     # plt.close()
 
 
@@ -237,9 +241,12 @@ def run(type_):
     print(f"Started daily stats for {type_}")
     eng = get_engine()
     df = fetch_data_log(type_, eng)
-    fname = f'resources/df_log_{type_}.pk'
+    file_path = f"resources/df_log_{type_}.pk"
     # df = pd.read_pickle(fname)
-    df.to_pickle(fname)
+    df.to_pickle(file_path)
+    pub_object(file_path)
+    #
+    os.makedirs(f"resources/stats/plots_daily_{type_}", exist_ok=True)
     res_ratio = create_ratio(df, days_back=30, min_samples=200)
     plot_ratio(res_ratio, type_)
     plot_scatter(df, res_ratio, type_)
