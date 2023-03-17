@@ -31,6 +31,6 @@ if __name__ == '__main__':
     print("is_prod", is_prod)
     if is_prod:
         from waitress import serve
-        serve(app, host="0.0.0.0", port=8080)
+        serve(app, host="0.0.0.0")
     else:
         app.run(debug=True, port=8050)
