@@ -1,6 +1,9 @@
+import os
+
 from flask import Flask
 from flask import redirect
 import sys
+
 
 is_prod = False
 if len(sys.argv) > 1:
@@ -29,9 +32,10 @@ def hello_world():
 
 if __name__ == '__main__':
     print("is_prod", is_prod)
+    host = os.environ.get("HOST")
     if is_prod:
         # from waitress import serve
         # serve(app, host="0.0.0.0")
-        app.run(host="0.0.0.0", port=8050)
+        app.run(host=host, port=8050)
     else:
         app.run(debug=True, port=8050)
