@@ -26,11 +26,8 @@ def hello_world():
 
 
 if __name__ == '__main__':
-    app.run(debug=False, port=8050)
-    # host = os.environ.get("DEBUG")
-    # if is_prod:
-    #     # from waitress import serve
-    #     # serve(app, host="0.0.0.0")
-    #     app.run(host=host, port=8050)
-    # else:
-    #     app.run(debug=True, port=8050)
+    if len(sys.argv) > 1 and sys.argv[1] == "debug":
+        app.run(debug=True, port=8050)
+    else:
+        app.run(debug=False, port=8050)
+

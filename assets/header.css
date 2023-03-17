@@ -88,7 +88,7 @@ p.rtl {
 }
 
 .sidebar-info-text {
-    font-size: 1vw;
+    font-size: small;
 
 }
 
@@ -254,4 +254,6 @@ p.rtl {
     /*max-height: 220px;*/
     /*object-fit: contain;*/
     object-fit: cover;
+    vertical-align:bottom;
+    border-radius: 10px;
 }

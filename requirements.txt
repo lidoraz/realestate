@@ -9,7 +9,6 @@ sqlalchemy
 smart-open
 boto3
 protobuf==3.20.0
-waitress
 dash
 dash-table
 dash-extensions
