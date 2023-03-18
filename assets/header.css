@@ -257,3 +257,18 @@ p.rtl {
     vertical-align:bottom;
     border-radius: 10px;
 }
+
+.analysis-main{
+    direction:rtl;
+    overflow: hidden;
+    margin:"0 2% 0";
+
+}
+.analysis-main h3{
+    margin-top:2%;
+
+}
+.analysis-main-multi-grid{
+    margin: 15px;
+    padding: 15px;
+}

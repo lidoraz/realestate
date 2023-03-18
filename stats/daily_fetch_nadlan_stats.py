@@ -99,11 +99,10 @@ def plot_timeline_new_vs_old_f(df, resample_rule, df_rates=None):
     fig.update_layout(template="plotly_dark", dragmode=False)
     import pickle
     file_path = "resources/fig_timeline_new_vs_old.pk"
-    pub_object(file_path)
     with open(file_path, 'wb') as f:
         pickle.dump(fig, f)
-    fig.show()
-    # return fig
+    pub_object(file_path)
+    return fig
 
 
 def plot_timeline_rooms(df):

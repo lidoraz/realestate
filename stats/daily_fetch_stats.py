@@ -9,8 +9,8 @@ import plotly.graph_objects as go
 
 plt.style.use('ggplot')
 
-log_tbl_cols = ['id', 'processing_date', 'date_updated', 'date_added', 'price', 'asset_type', 'rooms',
-                'asset_status', 'active', 'city',
+log_tbl_cols = ['id', 'processing_date', 'date_updated', 'date_added', 'price', 'rooms', 'square_meters',
+                'active', 'city', 'asset_type', 'asset_status'
                 # 'neighborhood', 'street', 'square_meters', 'is_agency',  'lat', 'long'
                 ]
 
@@ -49,11 +49,11 @@ def create_ratio(df, days_back=21, min_samples=200):
 
 
 def run_for_cities(df, type_, n_cities=9, resample_rule='7D', use_median=True):
-    sel_cities = ['חיפה', 'ירושלים', 'תל אביב יפו', 'רמת גן', 'אשדוד', 'ראשון לציון', 'ירשולים', 'באר שבע', 'נתניה']
-    # sel_cities = df['city'].value_counts().index[:n_cities].to_list()
-    df['city_'] = df['city'].apply(lambda x: x if x in sel_cities else "שאר הערים")
     figs = []
-    for city, grp in df.groupby('city_'):
+    sel_cities = ['חיפה', 'ירושלים', 'תל אביב יפו', 'רמת גן', 'אשדוד', 'ראשון לציון', 'ירשולים', 'באר שבע', 'הרצליה',
+                  'נתניה']
+    df = df[df['city'].isin(sel_cities)]
+    for city, grp in df.groupby('city'):
         fig = create_percentiles_per_city_f(df, city, type_, resample_rule, use_median)
         figs.append(fig)
     return figs  # create_percentiles_per_city(df, city, type_, resample_rule)
@@ -76,11 +76,13 @@ def create_percentiles_per_city(df, city, type_, resample_rule):
 
 def create_percentiles_per_city_f(df, city, type_, resample_rule, use_median=True):
     if city is not None:
-        df = df.query(f"city_ == '{city}' and active == False")
+        df = df.query(f"city == '{city}' and active == False")
         title = f'{city} ({get_heb_type_present(type_)})'
     else:
         df = df.query(f"active == False")
         title = f'({get_heb_type_present(type_)})'
+    if not len(df):
+        raise ValueError("Not cities found")
     x = df.resample(resample_rule, origin='end')['price'].describe()  # agg(['median', 'mean', 'std', 'size'])
 
     from plotly.subplots import make_subplots

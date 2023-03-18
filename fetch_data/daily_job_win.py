@@ -26,3 +26,4 @@ if __name__ == '__main__':
     except Exception as e:
         send_telegram_msg(f"🔴 ERROR in {job_name}")
         send_telegram_msg(str(e))
+        raise e
