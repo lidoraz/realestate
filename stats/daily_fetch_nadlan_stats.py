@@ -1,6 +1,9 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 from datetime import datetime
+
+from plotly.subplots import make_subplots
+
 plt.style.use('ggplot')
 timeline_size = (14, 5)
 from scrape_nadlan.utils_insert import get_engine
@@ -32,17 +35,22 @@ def print_recent(df):
 
 
 def get_ir():
-    df_rates = pd.read_csv("../resources/il_ir.csv")
+    df_rates = pd.read_csv("resources/il_ir.csv")
     df_rates['dt'] = pd.to_datetime(df_rates['dt'])
     df_rates = df_rates.set_index('dt')
     df_rates = df_rates.sort_index()
     return df_rates
 
 
-def plot_timeline_new_vs_old(df, resample_rule, df_rates=None):
+def calc_timeline_new_vs_old(df, resample_rule, df_rates=None):
     df['year_sold_built_diff'] = df.index.year - df['year_built']
     df['newOrUsed'] = df['year_sold_built_diff'].apply(lambda x: "new" if x <= 0 else "used")
-    res = df.resample(resample_rule, origin='end')['newOrUsed'].value_counts().unstack()[:-1]
+    res = df.resample(resample_rule, origin='end')['newOrUsed'].value_counts().unstack()  # [:-1]
+    return res
+
+
+def plot_timeline_new_vs_old(df, resample_rule, df_rates=None):
+    res = calc_timeline_new_vs_old(df, resample_rule, df_rates)
     fig, ax = plt.subplots(figsize=timeline_size)
     # make a plot
     ax.plot(res.index, res['new'], marker="*", label='new')
@@ -61,6 +69,39 @@ def plot_timeline_new_vs_old(df, resample_rule, df_rates=None):
                 dpi=100,
                 bbox_inches='tight')
     plt.close()
+
+
+def plot_timeline_new_vs_old_f(df, resample_rule, df_rates=None):
+    res = calc_timeline_new_vs_old(df, resample_rule, df_rates)
+    import plotly.graph_objects as go
+    fig = make_subplots( specs=[[{"secondary_y": True}]]
+    )
+    fig.add_trace(go.Scatter(x=res.index, y=res['new'],
+                             # text=x['count'],
+                             # hovertemplate="%{x} (#%{text})<br>₪%{y}",
+                             name="new",
+                             mode="lines+markers"))
+    fig.add_trace(go.Scatter(x=res.index, y=res['used'],
+                             # text=x['count'],
+                             # hovertemplate="%{x} (#%{text})<br>₪%{y}",
+                             name="used",
+                             mode="lines+markers"))
+    if df_rates is not None:
+        fig.add_trace(go.Scatter(x=df_rates.index, y=df_rates['p'], name="count",
+                                 mode="lines+markers", opacity=0.5), secondary_y=True)
+    fig.update_layout(
+        # title=f"פיזור זמן מול היחס על דירה {get_heb_type_past(type_)}",
+        xaxis_title="year",
+        yaxis_title="# Units",
+        # template="ggplot2",
+        margin=dict(l=20, r=20, t=20, b=20),
+        dragmode='pan')
+    fig.update_layout(template="plotly_dark", dragmode=False)
+    import pickle
+    with open("resources/fig_timeline_new_vs_old.pk", 'wb') as f:
+        pickle.dump(fig, f)
+    fig.show()
+    # return fig
 
 
 def plot_timeline_rooms(df):
@@ -151,13 +192,14 @@ def add_columns(df):
 
 
 def run():
-    # eng = get_engine()
-    # df = get_data_nadlan(eng)
-    # df.to_pickle("nadlan.pk")
-    df = pd.read_pickle("nadlan.pk")
-    #TODO ADD HERE, but first must auth bucket.
+    eng = get_engine()
+    df = get_data_nadlan(eng)
+    df.to_pickle("resources/nadlan.pk")
+    df = pd.read_pickle("resources/nadlan.pk")
+    # TODO ADD HERE, but first must auth bucket.
     print_recent(df)
-    plot_timeline_new_vs_old(df, '14D', get_ir())
+    # plot_timeline_new_vs_old(df, '14D', get_ir())
+    plot_timeline_new_vs_old_f(df, '30D', get_ir())
     df = add_columns(df)
     get_monthly_counts(df)
     get_n_sales(df)

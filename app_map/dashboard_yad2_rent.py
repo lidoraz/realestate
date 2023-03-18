@@ -34,7 +34,4 @@ def get_dash(server):
 
 if __name__ == '__main__':
     _, app = get_dash(True)
-    if is_prod:
-        app.run_server(debug=True, host="0.0.0.0")
-    else:
-        app.run_server(debug=True)
+    app.run_server(debug=True, port=8048)

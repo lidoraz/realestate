@@ -75,10 +75,13 @@ def create_percentiles_per_city(df, city, type_, resample_rule):
 
 
 def create_percentiles_per_city_f(df, city, type_, resample_rule, use_median=True):
-    df = df.query(f"city_ == '{city}' and active == False")
+    if city is not None:
+        df = df.query(f"city_ == '{city}' and active == False")
+        title = f'{city} ({get_heb_type_present(type_)})'
+    else:
+        df = df.query(f"active == False")
+        title = f'({get_heb_type_present(type_)})'
     x = df.resample(resample_rule, origin='end')['price'].describe()  # agg(['median', 'mean', 'std', 'size'])
-    heb_type = "שכירות" if type_ == 'rent' else "מכירה"
-    title = f"{city} {heb_type} אחוזון {resample_rule}"
 
     from plotly.subplots import make_subplots
     fig = make_subplots(
@@ -100,18 +103,8 @@ def create_percentiles_per_city_f(df, city, type_, resample_rule, use_median=Tru
                                  fillcolor="rgba(148, 0, 211, 0.15)"))
     # fig.add_trace(go.Scatter(x=x.index, y=x['count'], name="count",
     #                          mode="lines+markers", opacity=0.1), secondary_y=True)
-    fig.update_layout(showlegend=False, margin=dict(l=20, r=20, t=20, b=20),
-                      title=f'{city} ({get_heb_type_present(type_)})', )
-    fig.update_layout()
+    fig.update_layout(showlegend=False, margin=dict(l=20, r=20, t=20, b=20), title=title)
     return fig
-
-    # fig, ax = plt.subplots(figsize=(20, 10))
-    # x[['25%', '50%', '75%']].plot(figsize=(8, 4), kind='line', stacked=False, title=title, ax=ax, marker='o')
-    # # plt.ylim([0, None])
-    # x.plot(y='count', ax=ax, secondary_y=True, linestyle='-.')
-    # plt.savefig(f'resources/stats/plots_daily_{type_}/percentile_{city}.png')
-    # # plt.show()
-    # plt.close()
 
 
 def get_price_changes(eng, type_):
@@ -189,12 +182,13 @@ def plot_scatter_f(df, res_ratio, type_):
                                     hovertemplate="%{text}<br>Ratio: %{y}<br>#Days: %{x}</br>#Deals: %{marker.color}",
                                     name="",
                                     text=df_g.index))  # hover text goes here
-    fig.update_layout(title=f"פיזור זמן מול היחס על דירה {get_heb_type_past(type_)}",
-                      xaxis_title="זמן חציוני לדירות באתר מרגע הפרסום עד להורדה",
-                      yaxis_title="יחס דירות באתר מול דירות שירדו בחודש האחרון",
-                      # template="ggplot2",
-                      margin=dict(l=20, r=20, t=20, b=20),
-                      dragmode='pan')
+    fig.update_layout(
+        # title=f"פיזור זמן מול היחס על דירה {get_heb_type_past(type_)}",
+        xaxis_title="זמן חציוני לדירות באתר מרגע הפרסום עד להורדה",
+        yaxis_title="יחס דירות באתר מול דירות שירדו בחודש האחרון",
+        # template="ggplot2",
+        margin=dict(l=20, r=20, t=20, b=20),
+        dragmode='pan')
     return fig
     # fig.show()
     #
