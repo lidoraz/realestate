@@ -28,7 +28,7 @@ def before_request():
         address = request.environ['REMOTE_ADDR']
     else:
         address = request.environ['HTTP_X_FORWARDED_FOR']  # if behind a proxy
-    header_env = request.headers.environ['HTTP_USER_AGENT']
+    header_env = request.environ['HTTP_USER_AGENT']
     user_log = dict(ts=str(datetime.today().strftime("%Y-%m-%d %H:%M:%S")),
                     ip=address,
                     path=request.path,
