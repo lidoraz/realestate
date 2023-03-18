@@ -24,13 +24,13 @@ app = create_app()
 @app.before_request
 def before_request():
     # user_agent=request.headers['HTTP_USER_AGENT'], req_uri=request.headers['REQUEST_URI']
-    # if request.environ.get('HTTP_X_FORWARDED_FOR') is None:
-    #     print(request.environ['REMOTE_ADDR'])
-    # else:
-    #     print(request.environ['HTTP_X_FORWARDED_FOR']) # if behind a proxy
+    if request.environ.get('HTTP_X_FORWARDED_FOR') is None:
+        address = request.environ['REMOTE_ADDR']
+    else:
+        address = request.environ['HTTP_X_FORWARDED_FOR']  # if behind a proxy
     header_env = request.headers.environ['HTTP_USER_AGENT']
     user_log = dict(ts=str(datetime.today().strftime("%Y-%m-%d %H:%M:%S")),
-                    ip=request.remote_addr,
+                    ip=address,
                     path=request.path,
                     user_agent=header_env)
     # curr_file_mod = datetime.today().minute // 15
