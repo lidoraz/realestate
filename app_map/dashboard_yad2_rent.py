@@ -1,5 +1,3 @@
-import os
-import sys
 import dash
 from app_map.utils import *
 from app_map.util_layout import get_layout

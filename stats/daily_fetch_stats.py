@@ -90,10 +90,14 @@ def create_percentiles_per_city_f(df, city, type_, resample_rule, use_median=Tru
 
     if use_median:
         for perc in ['25%', '50%', '75%']:
+            pct_chg_str = x[perc].pct_change()
+            # text = pct_chg_str.apply(lambda x: f'{x}% ') + x['count'].astype(str).apply(lambda x: f"(#{x})")
+            # print(text)
             fig.add_trace(go.Scatter(x=x.index, y=x[perc].round(),
+                                     customdata=pct_chg_str,
                                      text=x['count'],
-                                     hovertemplate="%{x} (#%{text})<br>₪%{y}",
-                                     name="",
+                                     hovertemplate="%{x} (%{text:,.0f})<br>₪%{y:,.0f} (%{customdata:.2%})",
+                                     name=perc,
                                      mode="lines+markers"))
     else:
         # USING MEAN AND STD IS REALLY NOISEY, CANT TELL NOTHNIG FROM THIS
@@ -103,7 +107,15 @@ def create_percentiles_per_city_f(df, city, type_, resample_rule, use_median=Tru
                                  fillcolor="rgba(148, 0, 211, 0.15)"))
     # fig.add_trace(go.Scatter(x=x.index, y=x['count'], name="count",
     #                          mode="lines+markers", opacity=0.1), secondary_y=True)
-    fig.update_layout(showlegend=False, margin=dict(l=20, r=20, t=20, b=20), title=title)
+    fig.update_layout(showlegend=False,
+                      margin=dict(l=20, r=20, t=35, b=20),
+                      hoverlabel=dict(
+                          bgcolor="black",
+                          # bgcolor="white",
+                          # font_size=16,
+                          # font_family="Rockwell"
+                      ),
+                      title=title)
     return fig
 
 
@@ -179,7 +191,7 @@ def plot_scatter_f(df, res_ratio, type_):
     fig = go.Figure(data=go.Scatter(x=df_g['median'], y=df_g['r'], marker_color=df_g['size'],
                                     mode='markers+text',
                                     textposition="bottom center",
-                                    hovertemplate="%{text}<br>Ratio: %{y}<br>#Days: %{x}</br>#Deals: %{marker.color}",
+                                    hovertemplate="%{text}<br>Ratio: %{y:.2f}<br>#Days: %{x:,.0f}</br>#Deals: %{marker.color:,.0f}",
                                     name="",
                                     text=df_g.index))  # hover text goes here
     fig.update_layout(
@@ -231,7 +243,7 @@ def get_compare_closed_vs_active_median_price(df, city):
     print(df_g_p)
 
 
-def run(type_):
+def run_type_stats(type_):
     print(f"Started daily stats for {type_}")
     eng = get_engine()
     df = fetch_data_log(type_, eng)
@@ -249,5 +261,5 @@ def run(type_):
 
 
 if __name__ == '__main__':
-    run('forsale')
-    run('rent')
+    run_type_stats('forsale')
+    run_type_stats('rent')

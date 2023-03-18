@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 from dash import html, Output, Input, State, ctx
 import dash
 import time
@@ -17,13 +16,14 @@ clear_filter_input_outputs = [
     Output("ai-price-pct-slider-check", "value"),
     Output("date-added", "value"),
     Output("rooms-slider", "value"),
-    Output("status-asset", "value"),
+    Output("asset-status", "value"),
+    Output("asset-type", "value"),
     Input('button-clear', "n_clicks")]
 
 
 def clear_filter(n_clicks):
     if n_clicks:
-        return 0, [-100, 0], [-100, 0], [-100, 0], [], [], [], None, (1, 6), []
+        return 0, [-100, 0], [-100, 0], [-100, 0], [], [], [], None, (1, 6), [], []
     return dash.no_update
 
 
@@ -112,7 +112,7 @@ show_assets_input_output = [Output("geojson", "data"),
                             Input("date-added", "value"), Input("date-updated", "value"),
                             Input("rooms-slider", "value"), Input('agency-check', "value"),
                             Input('parking-check', "value"), Input('balconies-check', "value"),
-                            Input('status-asset', "value"), Input('asset-type', "value"),
+                            Input('asset-status', "value"), Input('asset-type', "value"),
                             Input("button-around", "n_clicks"),
                             Input('marker-type', 'value'),
                             Input('big-map', 'bounds'), State('big-map', 'zoom'),

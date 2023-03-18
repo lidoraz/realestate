@@ -1,7 +1,9 @@
+import os
+
 import matplotlib.pyplot as plt
 import pandas as pd
 from datetime import datetime
-
+from fetch_data.daily_fetch import pub_object
 from plotly.subplots import make_subplots
 
 plt.style.use('ggplot')
@@ -65,7 +67,7 @@ def plot_timeline_new_vs_old(df, resample_rule, df_rates=None):
         ax2.plot(df_rates.index, df_rates['p'], color="gray", label='prime')
         ax2.set_ylabel("prime", fontsize=14)
         ax2.legend()
-    fig.savefig(f'plots_daily_nadlan/timeline_new_vs_old.png',
+    fig.savefig(f'resources/plots_daily_nadlan/timeline_new_vs_old.png',
                 dpi=100,
                 bbox_inches='tight')
     plt.close()
@@ -77,17 +79,15 @@ def plot_timeline_new_vs_old_f(df, resample_rule, df_rates=None):
     fig = make_subplots( specs=[[{"secondary_y": True}]]
     )
     fig.add_trace(go.Scatter(x=res.index, y=res['new'],
-                             # text=x['count'],
-                             # hovertemplate="%{x} (#%{text})<br>₪%{y}",
+                             hovertemplate="%{x}<br>%{y:,.0f}",
                              name="new",
                              mode="lines+markers"))
     fig.add_trace(go.Scatter(x=res.index, y=res['used'],
-                             # text=x['count'],
-                             # hovertemplate="%{x} (#%{text})<br>₪%{y}",
+                             hovertemplate="%{x}<br>%{y:,.0f}",
                              name="used",
                              mode="lines+markers"))
     if df_rates is not None:
-        fig.add_trace(go.Scatter(x=df_rates.index, y=df_rates['p'], name="count",
+        fig.add_trace(go.Scatter(x=df_rates.index, y=df_rates['p'], name="prime",
                                  mode="lines+markers", opacity=0.5), secondary_y=True)
     fig.update_layout(
         # title=f"פיזור זמן מול היחס על דירה {get_heb_type_past(type_)}",
@@ -98,7 +98,9 @@ def plot_timeline_new_vs_old_f(df, resample_rule, df_rates=None):
         dragmode='pan')
     fig.update_layout(template="plotly_dark", dragmode=False)
     import pickle
-    with open("resources/fig_timeline_new_vs_old.pk", 'wb') as f:
+    file_path = "resources/fig_timeline_new_vs_old.pk"
+    pub_object(file_path)
+    with open(file_path, 'wb') as f:
         pickle.dump(fig, f)
     fig.show()
     # return fig
@@ -107,7 +109,7 @@ def plot_timeline_new_vs_old_f(df, resample_rule, df_rates=None):
 def plot_timeline_rooms(df):
     ax = df.resample('M')['n_rooms_'].value_counts().unstack().plot(kind='area', stacked=True, figsize=timeline_size)
     fig = ax.get_figure()
-    fig.savefig('plots_daily_nadlan/timeline_rooms.png', dpi=100,
+    fig.savefig('resources/plots_daily_nadlan/timeline_rooms.png', dpi=100,
                 bbox_inches='tight')
     plt.close()
 
@@ -118,7 +120,7 @@ def plot_timeline_rooms_median_prices(df, n_months_back):
         ['3', '4', '5']].plot(figsize=timeline_size)
     # df.resample('M', convention='end', closed="left")['price_declared'].median().plot()
     plt.ylim([0, None])
-    plt.savefig('plots_daily_nadlan/timeline_rooms_median_price.png', dpi=100,
+    plt.savefig('resources/plots_daily_nadlan/timeline_rooms_median_price.png', dpi=100,
                 bbox_inches='tight')
     plt.close()
 
@@ -135,7 +137,7 @@ def plot_timeline_rooms_city(df, n_months_back):
         city = row_id
         pivot = data.reset_index().pivot(index='trans_date', columns='n_rooms_', values=metric)
         pivot.drop(columns=['+6', '-2']).plot(kind='line', figsize=timeline_size, title=title_suff + city[::-1])
-        plt.savefig(f'plots_daily_nadlan/timeline_rooms_city_{city}.png')
+        plt.savefig(f'resources/plots_daily_nadlan/timeline_rooms_city_{city}.png')
         plt.close()
 
 
@@ -157,7 +159,7 @@ def get_n_sales(df):
     # [cond_yeshuv_most & cond_full_sale]
     dff = df.groupby(['city_']).resample('Q', convention='end', closed="left").size().T.pct_change().dropna()
     # display(dff)
-    _plot_colorize_pct(dff).to_html("plots_daily_nadlan/n_sales.html")
+    _plot_colorize_pct(dff).to_html("resources/plots_daily_nadlan/n_sales.html")
 
 
 def get_monthly_counts(df):
@@ -165,14 +167,14 @@ def get_monthly_counts(df):
     df_monthly_counts = df.groupby(['city_']).resample('Q', convention='end', closed="left").size().T
     df_monthly_counts = df_monthly_counts.divide(df_monthly_counts.sum(axis=1).values, axis=0)
     df_style = df_monthly_counts.style.background_gradient('RdBu', axis=0).format('{:,.2%}')
-    df_style.to_html("plots_daily_nadlan/monthly_counts.html")
+    df_style.to_html("resources/plots_daily_nadlan/monthly_counts.html")
 
 
 def get_pct_change(df):
     print("Change in price")
     dff = df.groupby(['city_']).resample('Q', convention='end', closed="left")[
         'price_declared'].mean()  # .T.pct_change().dropna()
-    _plot_colorize_pct(dff.unstack().T.pct_change().dropna()).to_html("plots_daily_nadlan/pct_change.html")
+    _plot_colorize_pct(dff.unstack().T.pct_change().dropna()).to_html("resources/plots_daily_nadlan/pct_change.html")
 
 
 def add_columns(df):
@@ -191,15 +193,17 @@ def add_columns(df):
     return df
 
 
-def run():
+def run_nadlan_stats():
     eng = get_engine()
     df = get_data_nadlan(eng)
-    df.to_pickle("resources/nadlan.pk")
-    df = pd.read_pickle("resources/nadlan.pk")
+    os.makedirs("resources/plots_daily_nadlan", exist_ok=True)
+    # df.to_pickle("resources/nadlan.pk")
+    # df = pd.read_pickle("resources/nadlan.pk")
     # TODO ADD HERE, but first must auth bucket.
     print_recent(df)
     # plot_timeline_new_vs_old(df, '14D', get_ir())
     plot_timeline_new_vs_old_f(df, '30D', get_ir())
+
     df = add_columns(df)
     get_monthly_counts(df)
     get_n_sales(df)
@@ -210,4 +214,4 @@ def run():
 
 
 if __name__ == '__main__':
-    run()
+    run_nadlan_stats()

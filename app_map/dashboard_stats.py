@@ -1,6 +1,3 @@
-import os
-import random
-import sys
 import dash
 import dash_bootstrap_components as dbc
 from dash import dcc
@@ -30,6 +27,9 @@ str_update = f'מעודכן ל-{date_df}'
 days_back = 30
 min_samples = 200
 
+
+# def get_bars():
+#     plot_ratio_f(res, type_)
 
 def get_scatter(df, type_, min_samples):
     res_ratio = create_ratio(df, days_back=days_back, min_samples=min_samples)
@@ -108,6 +108,7 @@ import pickle
 from smart_open import open as s_open
 s3_file = "https://real-estate-public.s3.eu-west-2.amazonaws.com/resources/{filename}"
 with s_open(s3_file.format(filename="fig_timeline_new_vs_old.pk"), "rb") as f:
+# with open("resources/fig_timeline_new_vs_old.pk", "rb") as f:
     fig = pickle.load(f)
     fig.update_layout(legend=dict(x=0, y=1))
 
@@ -122,15 +123,17 @@ graph_obj = dcc.Graph(id=f'timeline-new-vs-old', figure=fig,
 
 # https://community.plotly.com/t/how-to-log-client-ip-addresses/6613
 def get_dash(server):
-    app = dash.Dash(server=server, external_stylesheets=[dbc.themes.CYBORG], url_base_pathname='/analytics/')
+    app = dash.Dash(server=server, external_stylesheets=[dbc.themes.CYBORG],
+                    title="Analytics", url_base_pathname='/analytics/')
 
     app.layout = html.Div(
         [
-            dbc.Row([dbc.Col(html.H1("ניתוח מתקדם - דירות")), dbc.Col(get_page_menu())]),
+            dbc.Row([dbc.Col(get_page_menu()), dbc.Col(html.H1("Advanced Analytics"), style=dict(direction="ltr"))]),
+            dbc.Row(dbc.Col(html.H6(str_update))),
             dbc.Row(dbc.Col(html.H4("מכירות דירות מול השפעת הריבית"))),
             dbc.Row(dbc.Col(graph_obj)),
-            dbc.Row(dbc.Col(html.H6(str_update))),
 
+            dbc.Row(dbc.Col()),
             dbc.Row(dbc.Col(html.H3("פיזור הביקוש מול ההיצע בעיר"))),
             dbc.Row(dbc.Col(html.Span(
                 "פיזור בין הזמן החציוני לדירה להפוך ללא רלוונטית מול מדד ההיצע - כלומר כמה דירות פנויות יש בעיר מול דירות שכבר לא רלוונטיות"))),
@@ -151,7 +154,7 @@ def get_dash(server):
                 ]
             ),
         ],
-        style=dict(direction="rtl", overflow="hidden")
+        style=dict(direction="rtl", overflow="hidden", margin="0 2% 0")
 
     )
     return server, app

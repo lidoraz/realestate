@@ -1,7 +1,5 @@
 # TODO: ADD TO DAILY STATS a flag for ACTIVE and NOT active such that we can see previous deals and investigate.
 import pandas as pd
-from fetch_data.price_distance_comp import add_distance
-from fetch_data.price_regression import add_ai_price
 from fetch_data.utils import get_price_hist, get_today, get_nadlan
 
 BUCKET_NAME = 'real-estate-public'
@@ -36,6 +34,8 @@ def process_tables(df_today, df_hist):
 
 
 def run_daily_job(type_, eng):
+    from fetch_data.price_regression import add_ai_price
+    from fetch_data.price_distance_comp import add_distance
     with eng.connect() as conn:
         df_hist = get_price_hist(type_, conn)
         df_today = get_today(type_, conn)

@@ -43,7 +43,7 @@ def get_page_menu():
     return dbc.DropdownMenu([dbc.DropdownMenuItem(html.A(dbc.Button("Rent"), href="/rent")),
                              dbc.DropdownMenuItem(html.A(dbc.Button("Sale"), href="/sale")),
                              dbc.DropdownMenuItem(html.A(dbc.Button("Analytics"), href="/analytics"))],
-                            label="Menu", style=dict(direction="ltr"))
+                            label="Menu") #  style=dict(direction="ltr")
 
 
 def get_layout(default_config):
@@ -104,7 +104,7 @@ def get_html_range_range_pct(text, element_id, checked=False):
 
 def get_div_top_bar(config_defaults):
     div_top_bar = html.Div(className="top-toolbar", children=[
-        dbc.Button(html.Span("0", id="fetched-assets"), color="secondary", disabled=True),
+        get_page_menu(),
         html.Div([dcc.Checklist(options=[{'label': 'עם תיווך', 'value': 'Y'}], value=['Y'], inline=True,
                                 inputClassName="rounded-checkbox",
                                 id='agency-check'),
@@ -138,7 +138,7 @@ def get_div_top_bar(config_defaults):
             placeholder="מצב הנכס",
             multi=True,
             searchable=False,
-            id='status-asset',
+            id='asset-status',
             className="asset-dropdown"),
         dcc.Dropdown(
             asset_type_cols,
@@ -148,7 +148,7 @@ def get_div_top_bar(config_defaults):
             searchable=False,
             id='asset-type',
             className="asset-dropdown"),
-        # dbc.DropdownMenu([dcc.Checklist(className="labels-multiselect", id="status-asset",
+        # dbc.DropdownMenu([dcc.Checklist(className="labels-multiselect", id="asset-status",
         #                                 options=asset_status_cols, value=[]), dbc.Button("X")], label="מצב"),
         # dbc.DropdownMenu([dcc.Checklist(className="labels-multiselect", id="asset-type",
         #                                 options=asset_type_cols, value=[]), dbc.Button("X")], label="סוג"),
@@ -185,7 +185,7 @@ def get_div_top_bar(config_defaults):
         dbc.Button("נקה", id="button-clear"),
         # dbc.Button("סנן", id='button-return'),
         dbc.Button("TBL", id="table-toggle", color="success"),
-        get_page_menu()
+        dbc.Button(html.Span("0", id="fetched-assets"), color="secondary", disabled=True)
     ])
     return div_top_bar
 
