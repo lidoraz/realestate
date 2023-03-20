@@ -28,7 +28,7 @@ def get_file_from_remote(filename):
     # should_update=True
     if should_update:
         print(f"{datetime.now()}, Downloading file {filename}")
-        from smart_open import s_open
+        from smart_open import open as s_open
         # TODO Add here access only to auth users, something with bucket is not correct
         # import boto3
         # session = boto3.Session(
