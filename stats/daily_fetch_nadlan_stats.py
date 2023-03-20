@@ -47,15 +47,21 @@ def get_ir():
     return df_rates
 
 
-def calc_timeline_new_vs_old(df, resample_rule, df_rates=None):
-    df['year_sold_built_diff'] = df.index.year - df['year_built']
-    df['newOrUsed'] = df['year_sold_built_diff'].apply(lambda x: "new" if x <= 0 else "used")
-    res = df.resample(resample_rule, origin='end')['newOrUsed'].value_counts().unstack()  # [:-1]
+def add_metrics(df, diff_year=0):
+    df['price_square_meter'] = df['price_declared'] / ((df['sq_m_gross'] + df['sq_m_net']) / 2)
+    diff = df.index.year - df['year_built']
+    df['is_new'] = diff <= diff_year
+    return df
+
+
+def calc_timeline_new_vs_old(df, resample_rule):
+    res = df.resample(resample_rule, origin='end')['is_new'].value_counts().unstack()  # [:-1]
+    res = res.rename(columns={True: 'new', False: 'used'})
     return res
 
 
 def plot_timeline_new_vs_old(df, resample_rule, df_rates=None):
-    res = calc_timeline_new_vs_old(df, resample_rule, df_rates)
+    res = calc_timeline_new_vs_old(df, resample_rule)
     fig, ax = plt.subplots(figsize=timeline_size)
     # make a plot
     ax.plot(res.index, res['new'], marker="*", label='new')
@@ -77,7 +83,7 @@ def plot_timeline_new_vs_old(df, resample_rule, df_rates=None):
 
 
 def plot_timeline_new_vs_old_f(df, resample_rule, df_rates=None):
-    res = calc_timeline_new_vs_old(df, resample_rule, df_rates)
+    res = calc_timeline_new_vs_old(df, resample_rule)
     import plotly.graph_objects as go
     fig = make_subplots(specs=[[{"secondary_y": True}]]
                         )
@@ -98,6 +104,7 @@ def plot_timeline_new_vs_old_f(df, resample_rule, df_rates=None):
         yaxis_title="# Units",
         # template="ggplot2",
         margin=dict(l=20, r=20, t=20, b=20),
+        legend=dict(x=0, y=1),
         dragmode='pan')
     fig.update_layout(template="plotly_dark", dragmode=False)
     file_path = "resources/fig_timeline_new_vs_old.pk"
@@ -186,24 +193,35 @@ def get_plot_agg_by_feat(df_agg, city, col_name):
     return fig
 
 
-def calc_agg_by_price_price_meter(df):
-    sel_cities = df['city'].value_counts().reset_index().loc[:120]['index'].to_list()
-    # taking avg between them
-    df['price_square_meter'] = df['price_declared'] / ((df['sq_m_gross'] + df['sq_m_net']) / 2)
+def calc_agg_by_metrics(df):
+    sel_cities = df['city'].value_counts().reset_index().loc[:99]['index'].sort_values().to_list()
+    metric_cols = ['price_square_meter', 'price_declared']
 
+    # def _calc(df_):
+    #     return df_.reset_index().groupby(['city', pd.Grouper(freq='30D', key='trans_date', label='right')])[
+    #         metric_cols].describe()
+    #
     def calc_perc(dff):
-        return dff.resample('30D', origin='end')[['price_square_meter', 'price_declared']].describe().drop(
+        return dff.resample('30D', origin='end')[metric_cols].describe().drop(
             ['mean', 'std', 'min', 'max'], axis=1, level=1)
 
-    res = dict(ALL=calc_perc(df))
-    for city in tqdm(sel_cities):
-        res[city] = calc_perc(df[df['city'] == city])
+    def to_pickle(data, path):
+        with open(path, 'wb') as f:
+            pickle.dump(data, f)
 
-    file_path = "resources/dict_df_agg_nadlan.pk"
-    with open(file_path, 'wb') as f:
-        pickle.dump(res, f)
-    pub_object(file_path)
-    return res
+    results = {}
+    res = dict(dict_df_agg_nadlan_all=df,
+               dict_df_agg_nadlan_new=df[df['is_new']],
+               dict_df_agg_nadlan_old=df[~df['is_new']])
+
+    for name, df_ in res.items():
+        res = dict(ALL=calc_perc(df_))
+        for city in tqdm(sel_cities):
+            res[city] = calc_perc(df_[df_['city'] == city])
+        to_pickle(res, f"resources/{name}.pk")
+        pub_object(f"resources/{name}.pk")
+        results[name] = res
+    return list(results.values())
 
 
 def add_columns(df):
@@ -228,20 +246,14 @@ def run_nadlan_stats(is_local):
     else:
         eng = get_engine()
         df = get_data_nadlan(eng)
-    dict_df_agg = calc_agg_by_price_price_meter(df)
-    # with open("resources/dict_df_agg_nadlan.pk", "rb") as f:
-    #     dict_df_agg = pickle.load(f)
-    # plot_agg_by_feat(dict_df_agg, None, 'price')
-    os.makedirs("resources/plots_daily_nadlan", exist_ok=True)
-    # df.to_pickle("resources/nadlan.pk")
-    # df = pd.read_pickle("resources/nadlan.pk")
+    df = add_metrics(df, diff_year=0)
+    plot_timeline_new_vs_old_f(df, '30D', get_ir())
+    df_agg_time_line_all, df_agg_time_line_new, df_agg_time_line_old = calc_agg_by_metrics(df)
     # TODO ADD HERE, but first must auth bucket.
     print_recent(df)
-    # plot_timeline_new_vs_old(df, '14D', get_ir())
-    plot_timeline_new_vs_old_f(df, '30D', get_ir())
-
     df = add_columns(df)
     get_monthly_counts(df)
+
     get_n_sales(df)
     get_pct_change(df)
     plot_timeline_rooms(df)

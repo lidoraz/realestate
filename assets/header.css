@@ -222,7 +222,7 @@ p.rtl {
 
 .dash-dropdown {
     width: 7%;
-    font-size:smaller;
+    font-size: smaller;
 }
 
 .span-color-pct {
@@ -254,21 +254,42 @@ p.rtl {
     /*max-height: 220px;*/
     /*object-fit: contain;*/
     object-fit: cover;
-    vertical-align:bottom;
+    vertical-align: bottom;
     border-radius: 10px;
 }
 
-.analysis-main{
-    direction:rtl;
+/* ANALYSIS PAGE*/
+
+.analysis-main {
+    direction: rtl;
     overflow: hidden;
-    margin:"0 2% 0";
+    margin-top: 10px;
 
 }
-.analysis-main h3{
-    margin-top:2%;
+
+.analysis-main h3 {
+    margin-top: 2%;
 
 }
-.analysis-main-multi-grid{
+
+.analysis-main-multi-grid {
     margin: 15px;
     padding: 15px;
+}
+
+@keyframes fadeIn {
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+svg {
+    animation: fadeIn 0.5s;
+}
+
+.form-group{
+    display:grid;
 }

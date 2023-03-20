@@ -35,7 +35,13 @@ fname = 'df_log_{}.pk'
 df_rent = get_file_from_remote(fname.format("rent"))
 df_forsale = get_file_from_remote(fname.format("forsale"))
 
-dict_df_agg = get_file_from_remote("dict_df_agg_nadlan.pk")
+dict_df_agg_nadlan_all = get_file_from_remote("dict_df_agg_nadlan_all.pk")
+dict_df_agg_nadlan_new = get_file_from_remote("dict_df_agg_nadlan_new.pk")
+dict_df_agg_nadlan_old = get_file_from_remote("dict_df_agg_nadlan_old.pk")
+
+dict_combined = dict(ALL=dict_df_agg_nadlan_all,
+                     NEW=dict_df_agg_nadlan_new,
+                     OLD=dict_df_agg_nadlan_old)
 
 cities = df_forsale['city'].value_counts()
 cities = cities[cities > 50].sort_index()
@@ -45,8 +51,7 @@ additional_all_key = [dict(label="בכל הארץ", value="ALL")]
 cities_options = additional_all_key + [dict(label=f'{city}', value=city) for city, cnt in
                                        cities.items()]
 # Removing first key:
-dict_df_agg_keys = sorted(dict_df_agg.keys())
-dict_df_agg_keys.pop()
+dict_df_agg_keys = sorted([k for k in dict_df_agg_nadlan_all.keys() if k != 'ALL'])
 cities_long_term_options = additional_all_key + [dict(label=f'{city}', value=city) for city in dict_df_agg_keys]
 df_rent = preprocess(df_rent)
 df_forsale = preprocess(df_forsale)
@@ -144,7 +149,7 @@ graph_obj = dcc.Graph(id=f'timeline-new-vs-old', figure=fig,
 
 # https://community.plotly.com/t/how-to-log-client-ip-addresses/6613
 def get_dash(server):
-    app = dash.Dash(server=server, external_stylesheets=[dbc.themes.CYBORG],
+    app = dash.Dash(server=server, external_stylesheets=[dbc.themes.CYBORG],  # dbc.themes.DARKLY
                     title="Analytics", url_base_pathname='/analytics/')
 
     app.layout = html.Div(
@@ -165,25 +170,59 @@ def get_dash(server):
                     dbc.Col([html.H4("RENT", style={"background-color": "#e28743"}),
                              get_scatter(df_rent, 'rent', 200)])],
                 className="analysis-main-multi-grid"),
-            dbc.Row(dbc.Col(html.H3("תנועות המחיר בזמן"))),
-            dbc.Row(dbc.Col(html.Span("בכל הארץ, כל גרף מייצג אחוזון, כאשר האמצע הוא החציון"))),
+            # dbc.Row(),
+            # dbc.Row(dbc.Col(html.Span("בכל הארץ, כל גרף מייצג אחוזון, כאשר האמצע הוא החציון"))),
             # dbc.Row(get_single_price(None), ),
-            dbc.Row(dbc.Col(html.H5("בטווח ארוך"))),
-            dbc.Row(dbc.Col([dbc.Select(id="city-long-term-select", options=cities_long_term_options,
-                                        value="ALL",
-                                        style=dict(width="200px", direction="ltr")),
-                             dbc.RadioItems(
-                                 options=[
-                                     {"label": "מחיר", "value": "price"},
-                                     {"label": "מחיר למ״ר", "value": "price_meter"},
-                                 ],
-                                 value="price",
-                                 inline=True,
-                                 id="metric-long-term-select",
-                             ),
-                             ])),
-            dbc.Row(dbc.Col(html.Div(id="pct-stats-long-term", style=dict(display="flex", margin="10px")))),
-            dbc.Row(dbc.Col(id='longterm-output')),
+            # dbc.Row(dbc.Col()),
+            html.H3("תנועות המחיר בזמן"),
+            dbc.Row([
+                dbc.Col([
+                    html.H5("בטווח ארוך"),
+                    html.Label("בחר עיר", className="col-sm-2 col-form-label"),
+                    dbc.Select(id="city-long-term-select", options=cities_long_term_options,
+                               value="ALL",
+                               style=dict(width="200px", direction="ltr"),
+                               className="form-select"),
+                    html.Label("מחיר לפי", className="col-sm-2 col-form-label"),
+                    dbc.RadioItems(
+                        options=[
+                            {"label": "מחיר", "value": "price"},
+                            {"label": "מחיר למ״ר", "value": "price_meter"},
+                        ],
+                        value="price",
+                        inline=True,
+                        id="metric-long-term-select",
+                        labelClassName="btn btn-outline-primary",
+                        className="btn-group",
+                        inputClassName="btn-check"
+                    ),
+                    html.Label("מצב הנכס", className="col-sm-2 col-form-label"),
+                    dbc.RadioItems(
+                        options=[
+                            {"label": "הכל", "value": "ALL"},
+                            {"label": "חדש", "value": "NEW"},
+                            {"label": "יד שניה", "value": "OLD"},
+                        ],
+                        value="ALL",
+                        inline=True,
+                        id="year-built-long-term-select",
+                        labelClassName="btn btn-outline-primary",
+                        className="btn-group",
+                        inputClassName="btn-check"
+                    ),
+                ], className="form-group"),
+                dbc.Col([html.Div(id="pct-stats-long-term", style=dict(display="flex", margin="10px")),
+                         html.Div(id='longterm-output')], width=9, md=12, sm=12, xs=12)
+            ]),
+            dbc.Alert(
+                "",
+                id="alert-auto",
+                is_open=False,
+                color="danger",
+                duration=4000,
+            ),
+            dbc.Row(dbc.Col()),
+            # dbc.Row(),
             dbc.Row(dbc.Col([dbc.Select(id="city-select", options=cities_options,
                                         value="ALL",
                                         style=dict(width="200px", direction="ltr")),
@@ -209,9 +248,11 @@ def get_dash(server):
             # ),
         ],
         className="analysis-main",
+
     )
 
     @app.callback(
+
         Output("city-output", "children"),
         Input("city-select", "value"),
         Input("metric-select", "value"),
@@ -227,10 +268,16 @@ def get_dash(server):
     @app.callback(
         Output("pct-stats-long-term", "children"),
         Output("longterm-output", "children"),
+        Output("alert-auto", "children"),
+        Output("alert-auto", "is_open"),
         Input("city-long-term-select", "value"),
         Input("metric-long-term-select", "value"),
+        Input("year-built-long-term-select", "value")
     )
-    def get_by_city_long_term(city, col_name):
+    def get_by_city_long_term(city, col_name, asset_year):
+        if asset_year not in ['ALL', 'NEW', 'OLD']:
+            asset_year = 'ALL'
+        dict_df_agg = dict_combined[asset_year]
         if city == "ALL":
             city = None
         if col_name not in ['price', 'price_meter']:
@@ -243,26 +290,44 @@ def get_dash(server):
         if city == 'ALL' or city is None:
             df_agg = dict_df_agg['ALL']
         else:
+            if city not in dict_df_agg:
+                alert_txt = "לא נמצא"
+                return dash.no_update, dash.no_update, alert_txt, True
             df_agg = dict_df_agg[city]
-        median_price = df_agg[col_name]['50%']
-        year_5_median = median_price.iloc[-(5 * 12)]
-        year_3_median = median_price.iloc[-(3 * 12)]
-        year_1_median = median_price.iloc[-12]
-        curr_price = median_price.iloc[-1]
-        prev = np.array([year_5_median, year_3_median, year_1_median])
-        prev = curr_price / prev - 1
-        print(f"5_year:{prev[0]:.2%}, 3_year:{prev[1]:.2%}, 1_year:{prev[2]:.2%}")
+        print(city, col_name, asset_year)
+        html_pct_bar = []
+        try:
+            median_price = df_agg[col_name]['50%']
+            year_5_median = median_price.iloc[-(5 * 12)]
+            year_3_median = median_price.iloc[-(3 * 12)]
+            year_1_median = median_price.iloc[-12]
+            year_6m_median = median_price.iloc[-6]
+            curr_price = median_price.iloc[-1]
+            prev = np.array([year_5_median, year_3_median, year_1_median, year_6m_median])
+            prev = curr_price / prev - 1
 
-        def get_span(name, val):
-            return html.Div([html.Span(name), html.Span(f"{'+' if val > 0 else ''}{val:.2%}", style=dict(color="red" if val > 0 else "green", direction="ltr"))],
-                            style={"margin-left": "10px", "display": "flex", "gap-left": "10px"})
+            def get_span(name, val):
+                if np.isnan(val):
+                    name = ""
+                    val = 0
+                sign = '+' if val > 0 else ''
+                val_str = f"{sign}{val:.2%}" if val != 0 else ""
+                color = "red" if val > 0 else "green" if val < 0 else "gray"
+                return html.Div([html.Span(name), html.Span(val_str,
+                                                            style=dict(color=color,
+                                                                       padding="5px"))],
+                                style={"margin-left": "10px", "gap-left": "10px"})
 
-        html_pct_bar = [get_span("5 שנים", prev[0]), get_span("3 שנים", prev[1]), get_span("שנה", prev[2])]
+            html_pct_bar = [get_span("5Y:", prev[0]), get_span("3Y:", prev[1]), get_span("1Y:", prev[2]),
+                            get_span("6M:", prev[3])]
+        except:
+            print("EXCEPTION while building pct_Bar")
+            pass
         fig = get_plot_agg_by_feat(df_agg, city, col_name)
-        fig.update_layout(template="plotly_dark")
+        fig.update_layout(template="plotly_dark", dragmode=False)
         graph = dcc.Graph(id=f'graph-long-price-{type_}-{city}', figure=fig,
                           config=config_figure_disable_all)
-        return html_pct_bar, graph
+        return html_pct_bar, graph, "", False
 
     return server, app
 

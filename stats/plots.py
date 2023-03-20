@@ -66,7 +66,7 @@ def create_percentiles_per_city_f(df, city, type_, resample_rule, col_name, use_
     )
 
     if use_median:
-        for perc in ['25%', '50%', '75%']:
+        for perc in ['75%', '50%', '25%']:
             pct_chg_str = x[perc].pct_change()
             # text = pct_chg_str.apply(lambda x: f'{x}% ') + x['count'].astype(str).apply(lambda x: f"(#{x})")
             # print(text)
@@ -84,8 +84,10 @@ def create_percentiles_per_city_f(df, city, type_, resample_rule, col_name, use_
                                  fillcolor="rgba(148, 0, 211, 0.15)"))
     # fig.add_trace(go.Scatter(x=x.index, y=x['count'], name="count",
     #                          mode="lines+markers", opacity=0.1), secondary_y=True)
-    fig.update_layout(showlegend=False,
+    fig.update_layout(showlegend=True,
                       margin=dict(l=20, r=20, t=35, b=20),
+                      legend=dict(x=0, y=1),
+
                       hoverlabel=dict(
                           bgcolor="black",
                           # bgcolor="white",
