@@ -42,7 +42,8 @@ def get_file_from_remote(filename):
             file_data = pickle.load(f)
             with open(path_file, "wb") as ff:
                 pickle.dump(file_data, ff)
-        print(f"{datetime.now()}, Downloaded files")
+            print(f"{datetime.now()}, Downloaded file and saved {filename}")
+            return file_data
     else:
         print(f"{datetime.now()} loading from FS file {filename}")
         with open(path_file, 'rb') as f:
