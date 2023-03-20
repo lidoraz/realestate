@@ -1,5 +1,8 @@
 import os
 
+# FIX for OpenBLAS blas_thread_init: pthread_create: Resource temporarily unavailable
+os.environ['OPENBLAS_NUM_THREADS'] = '1'
+
 from flask import Flask
 from flask import request
 from flask import redirect
