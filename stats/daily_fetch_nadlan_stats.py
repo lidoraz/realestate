@@ -2,6 +2,9 @@ import os
 
 import matplotlib.pyplot as plt
 import pandas as pd
+import pickle
+from tqdm import tqdm
+
 from datetime import datetime
 from fetch_data.daily_fetch import pub_object
 from plotly.subplots import make_subplots
@@ -76,8 +79,8 @@ def plot_timeline_new_vs_old(df, resample_rule, df_rates=None):
 def plot_timeline_new_vs_old_f(df, resample_rule, df_rates=None):
     res = calc_timeline_new_vs_old(df, resample_rule, df_rates)
     import plotly.graph_objects as go
-    fig = make_subplots( specs=[[{"secondary_y": True}]]
-    )
+    fig = make_subplots(specs=[[{"secondary_y": True}]]
+                        )
     fig.add_trace(go.Scatter(x=res.index, y=res['new'],
                              hovertemplate="%{x}<br>%{y:,.0f}",
                              name="new",
@@ -97,7 +100,6 @@ def plot_timeline_new_vs_old_f(df, resample_rule, df_rates=None):
         margin=dict(l=20, r=20, t=20, b=20),
         dragmode='pan')
     fig.update_layout(template="plotly_dark", dragmode=False)
-    import pickle
     file_path = "resources/fig_timeline_new_vs_old.pk"
     with open(file_path, 'wb') as f:
         pickle.dump(fig, f)
@@ -176,6 +178,55 @@ def get_pct_change(df):
     _plot_colorize_pct(dff.unstack().T.pct_change().dropna()).to_html("resources/plots_daily_nadlan/pct_change.html")
 
 
+def get_plot_agg_by_feat(dict_df_agg, city, col_name):
+    if col_name == 'price':
+        col_name = 'price_declared'
+    if col_name == 'price_meter':
+        col_name = 'price_square_meter'
+    if city == 'תל אביב יפו':
+        city = 'תל אביב -יפו'
+    if city == 'ALL' or city is None:
+        df_agg = dict_df_agg['ALL']
+    else:
+        if city in dict_df_agg:
+            df_agg = dict_df_agg[city]
+        else:
+            from itertools import zip_longest
+            def hamming_distance(s2):
+                return sum(c1 != c2 for c1, c2 in zip_longest(city, s2))
+
+            print("Could not find, guessing key...")
+            close_key = sorted(dict_df_agg.keys(), key=hamming_distance)[0]
+            print(f"Found - {close_key}")
+            df_agg = dict_df_agg[close_key]
+
+    from stats.plots import create_percentiles_per_city_f
+    # REALLY BAD PRACTICE, FIX THIS SOON
+    fig = create_percentiles_per_city_f(df=None, city=city, resample_rule=None, df_agg=df_agg, type_='sale',
+                                        col_name=col_name)
+    return fig
+
+
+def calc_agg_by_price_price_meter(df):
+    sel_cities = df['city'].value_counts().reset_index().loc[:120]['index'].to_list()
+    # taking avg between them
+    df['price_square_meter'] = df['price_declared'] / ((df['sq_m_gross'] + df['sq_m_net']) / 2)
+
+    def calc_perc(dff):
+        return dff.resample('30D', origin='end')[['price_square_meter', 'price_declared']].describe().drop(
+            ['mean', 'std', 'min', 'max'], axis=1, level=1)
+
+    res = dict(ALL=calc_perc(df))
+    for city in tqdm(sel_cities):
+        res[city] = calc_perc(df[df['city'] == city])
+
+    file_path = "resources/dict_df_agg_nadlan.pk"
+    with open(file_path, 'wb') as f:
+        pickle.dump(res, f)
+    pub_object(file_path)
+    return res
+
+
 def add_columns(df):
     def apply_room(x):
         if x >= 6:
@@ -192,9 +243,16 @@ def add_columns(df):
     return df
 
 
-def run_nadlan_stats():
-    eng = get_engine()
-    df = get_data_nadlan(eng)
+def run_nadlan_stats(is_local):
+    if is_local:
+        df = pd.read_pickle("resources/nadlan.pk")
+    else:
+        eng = get_engine()
+        df = get_data_nadlan(eng)
+    dict_df_agg = calc_agg_by_price_price_meter(df)
+    # with open("resources/dict_df_agg_nadlan.pk", "rb") as f:
+    #     dict_df_agg = pickle.load(f)
+    # plot_agg_by_feat(dict_df_agg, None, 'price')
     os.makedirs("resources/plots_daily_nadlan", exist_ok=True)
     # df.to_pickle("resources/nadlan.pk")
     # df = pd.read_pickle("resources/nadlan.pk")
@@ -213,4 +271,8 @@ def run_nadlan_stats():
 
 
 if __name__ == '__main__':
-    run_nadlan_stats()
+    is_local = True
+
+    if is_local:
+        print("READING FROM LOCAL")
+    run_nadlan_stats(is_local)

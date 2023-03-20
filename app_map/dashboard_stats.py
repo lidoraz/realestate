@@ -1,6 +1,10 @@
 import dash
 import dash_bootstrap_components as dbc
+import numpy as np
 from dash import dcc
+import pickle
+from smart_open import open as s_open
+
 # from app_map.utils import *
 # from app_map.util_layout import get_layout
 # from app_map.utils_callbacks import add_callbacks
@@ -10,19 +14,28 @@ import pandas as pd
 
 from app_map.util_layout import get_page_menu
 from app_map.utils import get_df_with_prod
-from stats.daily_fetch_stats import plot_scatter_f, create_ratio, run_for_cities, create_percentiles_per_city_f
+from stats.daily_fetch_nadlan_stats import get_plot_agg_by_feat
+from stats.plots import create_percentiles_per_city_f
+from stats.calc_plots import run_for_cities, create_ratio
+from stats.plots import plot_scatter_f
 
 # df_all = get_df_with_prod(is_prod, filename="../resources/yad2_rent_df.pk")
 # df_all = app_preprocess_df(df_all)
 config_figure_disable_all = {'displayModeBar': False,
                              'scrollZoom': False}
 
-# def preprocess(df):
-#
-#     # sel_cities = df['city'].value_counts().index[:n_cities].to_list()
-#     df['city_'] = df['city'].apply(lambda x: x if x in sel_cities else "שאר הערים")
-#     # df = df.dropna(subset=['price'])
-#     return df
+def get_from_s3_any(filename):
+    s3_file = "https://real-estate-public.s3.eu-west-2.amazonaws.com/resources/{filename}"
+    with s_open(s3_file.format(filename=filename), "rb") as f:
+        # with open("resources/fig_timeline_new_vs_old.pk", "rb") as f:
+        file = pickle.load(f)
+        return file
+
+def preprocess(df):
+    df['price_meter'] = df['price'] / df['square_meter_build']
+    df['price_meter'] = df['price_meter'].replace(np.inf, np.nan)
+    df.sort_values('price_meter', ascending=False)
+    return df
 
 
 type_ = 'rent'
@@ -30,14 +43,19 @@ fname = 'df_log_{}.pk'
 df_rent = get_df_with_prod(fname.format("rent"))
 df_forsale = get_df_with_prod(fname.format("forsale"))
 
+dict_df_agg = get_from_s3_any("dict_df_agg_nadlan.pk")
+
 cities = df_forsale['city'].value_counts()
 cities = cities[cities > 50].sort_index()
 
 # label=f'{city} ({cnt:,.0f})'
 cities_options = [dict(label="בכל הארץ", value="ALL")] + [dict(label=f'{city}', value=city) for city, cnt in
                                                           cities.items()]
-# df_rent = preprocess(df_rent)
-# df_forsale = preprocess(df_forsale)
+
+cities_long_term_options = [dict(label=f'{city}', value=city) for city in
+                            sorted(dict_df_agg.keys())]
+df_rent = preprocess(df_rent)
+df_forsale = preprocess(df_forsale)
 
 date_df = df_rent['date_updated'].max().date()
 str_update = f'מעודכן ל-{date_df}'
@@ -84,17 +102,18 @@ def _get_multi_price(df, type_, only_figs=True):
     return graphs
 
 
-def _get_single_price(df, type_, city=None):
+def _get_single_price(df, type_, city, col_name):
     days_back = 7
-    fig = create_percentiles_per_city_f(df, city=city, type_=type_, resample_rule=f'{days_back}D', use_median=True)
+    fig = create_percentiles_per_city_f(df, city=city, type_=type_, resample_rule=f'{days_back}D', col_name=col_name,
+                                        use_median=True)
     fig.update_layout(template="plotly_dark", dragmode=False)
     return dcc.Graph(id=f'graph-single-price-{type_}-{city}', figure=fig,
                      config=config_figure_disable_all)
 
 
-def get_single_price(city=None):
-    return [dbc.Col(_get_single_price(df_forsale, "sale", city=city)),
-            dbc.Col(_get_single_price(df_rent, "rent", city=city))]
+def get_single_price(city=None, col_name='price'):
+    return [dbc.Col(_get_single_price(df_forsale, "sale", city, col_name)),
+            dbc.Col(_get_single_price(df_rent, "rent", city, col_name))]
 
 
 # def get_multi_price_parts():
@@ -116,15 +135,9 @@ def get_multi_price_by_side():
     return cont
 
 
-import pickle
-
-from smart_open import open as s_open
-
-s3_file = "https://real-estate-public.s3.eu-west-2.amazonaws.com/resources/{filename}"
-with s_open(s3_file.format(filename="fig_timeline_new_vs_old.pk"), "rb") as f:
-    # with open("resources/fig_timeline_new_vs_old.pk", "rb") as f:
-    fig = pickle.load(f)
-    fig.update_layout(legend=dict(x=0, y=1))
+# MAIN NADLAN # DEALS
+fig = get_from_s3_any("fig_timeline_new_vs_old.pk")
+fig.update_layout(legend=dict(x=0, y=1))
 
 modeBarButtonsToRemove = ['select2d', 'lasso2d']
 graph_obj = dcc.Graph(id=f'timeline-new-vs-old', figure=fig,
@@ -161,19 +174,44 @@ def get_dash(server):
             dbc.Row(dbc.Col(html.H3("תנועות המחיר בזמן"))),
             dbc.Row(dbc.Col(html.Span("בכל הארץ, כל גרף מייצג אחוזון, כאשר האמצע הוא החציון"))),
             # dbc.Row(get_single_price(None), ),
-            dbc.Row(dbc.Col(dbc.Select(id="city-select", options=cities_options,
-                                       value="ALL",
-
-                                       style=dict(width="200px", direction="ltr")))),
+            dbc.Row(dbc.Col(html.H5("שינוי בטווח ארוך"))),
+            dbc.Row(dbc.Col([dbc.Select(id="city-long-term-select", options=cities_long_term_options,
+                                        value="ALL",
+                                        style=dict(width="200px", direction="ltr")),
+                             dbc.RadioItems(
+                                 options=[
+                                     {"label": "מחיר", "value": "price"},
+                                     {"label": "מחיר למ״ר", "value": "price_meter"},
+                                 ],
+                                 value="price",
+                                 inline=True,
+                                 id="metric-long-term-select",
+                             ),
+                             ])),
+            dbc.Row(dbc.Col(id='longterm-output')),
+            dbc.Row(dbc.Col([dbc.Select(id="city-select", options=cities_options,
+                                        value="ALL",
+                                        style=dict(width="200px", direction="ltr")),
+                             dbc.RadioItems(
+                                 options=[
+                                     {"label": "מחיר", "value": "price"},
+                                     {"label": "מחיר למ״ר", "value": "price_meter"},
+                                 ],
+                                 value="price",
+                                 inline=True,
+                                 id="metric-select",
+                             ),
+                             ])),
+            dbc.Row(dbc.Col(html.H5("שינוי בטווח הקצר"))),
             dbc.Row(get_single_price(), id="city-output"),
             *get_multi_price_by_side(),
-            dbc.Row(
-                [
-                    dbc.Col(html.Div("One of three columns")),
-                    dbc.Col(html.Div("One of three columns")),
-                    dbc.Col(html.Div("One of three columns")),
-                ]
-            ),
+            # dbc.Row(
+            #     [
+            #         dbc.Col(html.Div("One of three columns")),
+            #         dbc.Col(html.Div("One of three columns")),
+            #         dbc.Col(html.Div("One of three columns")),
+            #     ]
+            # ),
         ],
         className="analysis-main",
     )
@@ -181,12 +219,37 @@ def get_dash(server):
     @app.callback(
         Output("city-output", "children"),
         Input("city-select", "value"),
+        Input("metric-select", "value"),
     )
-    def get_by_city(city):
+    def get_by_city(city, col_name):
         if city == "ALL":
             city = None
-        children = get_single_price(city)
+        if col_name not in ['price', 'price_meter']:
+            col_name = 'price'
+        children = get_single_price(city, col_name)
+        print(list(dict_df_agg.keys()))
+        fig = get_plot_agg_by_feat(dict_df_agg, city, col_name)
+        fig.update_layout(template="plotly_dark")
+        graph = dcc.Graph(id=f'graph-long-price-{type_}-{city}', figure=fig,
+                          config=config_figure_disable_all)
         return children
+
+    @app.callback(
+        Output("longterm-output", "children"),
+        Input("city-long-term-select", "value"),
+        Input("metric-long-term-select", "value"),
+    )
+    def get_by_city(city, col_name):
+        if city == "ALL":
+            city = None
+        if col_name not in ['price', 'price_meter']:
+            col_name = 'price'
+        print(list(dict_df_agg.keys()))
+        fig = get_plot_agg_by_feat(dict_df_agg, city, col_name)
+        fig.update_layout(template="plotly_dark")
+        graph = dcc.Graph(id=f'graph-long-price-{type_}-{city}', figure=fig,
+                          config=config_figure_disable_all)
+        return graph
 
     return server, app
 
