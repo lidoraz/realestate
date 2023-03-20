@@ -2,8 +2,6 @@ import dash
 import dash_bootstrap_components as dbc
 import numpy as np
 from dash import dcc
-import pickle
-from smart_open import open as s_open
 
 # from app_map.utils import *
 # from app_map.util_layout import get_layout
@@ -13,7 +11,7 @@ from dash import html, Output, Input, State, ctx
 import pandas as pd
 
 from app_map.util_layout import get_page_menu
-from app_map.utils import get_df_with_prod
+from app_map.utils import get_file_from_remote
 from stats.daily_fetch_nadlan_stats import get_plot_agg_by_feat
 from stats.plots import create_percentiles_per_city_f
 from stats.calc_plots import run_for_cities, create_ratio
@@ -24,12 +22,6 @@ from stats.plots import plot_scatter_f
 config_figure_disable_all = {'displayModeBar': False,
                              'scrollZoom': False}
 
-def get_from_s3_any(filename):
-    s3_file = "https://real-estate-public.s3.eu-west-2.amazonaws.com/resources/{filename}"
-    with s_open(s3_file.format(filename=filename), "rb") as f:
-        # with open("resources/fig_timeline_new_vs_old.pk", "rb") as f:
-        file = pickle.load(f)
-        return file
 
 def preprocess(df):
     df['price_meter'] = df['price'] / df['square_meter_build']
@@ -40,20 +32,22 @@ def preprocess(df):
 
 type_ = 'rent'
 fname = 'df_log_{}.pk'
-df_rent = get_df_with_prod(fname.format("rent"))
-df_forsale = get_df_with_prod(fname.format("forsale"))
+df_rent = get_file_from_remote(fname.format("rent"))
+df_forsale = get_file_from_remote(fname.format("forsale"))
 
-dict_df_agg = get_from_s3_any("dict_df_agg_nadlan.pk")
+dict_df_agg = get_file_from_remote("dict_df_agg_nadlan.pk")
 
 cities = df_forsale['city'].value_counts()
 cities = cities[cities > 50].sort_index()
 
 # label=f'{city} ({cnt:,.0f})'
-cities_options = [dict(label="בכל הארץ", value="ALL")] + [dict(label=f'{city}', value=city) for city, cnt in
-                                                          cities.items()]
-
-cities_long_term_options = [dict(label=f'{city}', value=city) for city in
-                            sorted(dict_df_agg.keys())]
+additional_all_key = [dict(label="בכל הארץ", value="ALL")]
+cities_options = additional_all_key + [dict(label=f'{city}', value=city) for city, cnt in
+                                       cities.items()]
+# Removing first key:
+dict_df_agg_keys = sorted(dict_df_agg.keys())
+dict_df_agg_keys.pop()
+cities_long_term_options = additional_all_key + [dict(label=f'{city}', value=city) for city in dict_df_agg_keys]
 df_rent = preprocess(df_rent)
 df_forsale = preprocess(df_forsale)
 
@@ -136,7 +130,7 @@ def get_multi_price_by_side():
 
 
 # MAIN NADLAN # DEALS
-fig = get_from_s3_any("fig_timeline_new_vs_old.pk")
+fig = get_file_from_remote("fig_timeline_new_vs_old.pk")
 fig.update_layout(legend=dict(x=0, y=1))
 
 modeBarButtonsToRemove = ['select2d', 'lasso2d']
@@ -174,7 +168,7 @@ def get_dash(server):
             dbc.Row(dbc.Col(html.H3("תנועות המחיר בזמן"))),
             dbc.Row(dbc.Col(html.Span("בכל הארץ, כל גרף מייצג אחוזון, כאשר האמצע הוא החציון"))),
             # dbc.Row(get_single_price(None), ),
-            dbc.Row(dbc.Col(html.H5("שינוי בטווח ארוך"))),
+            dbc.Row(dbc.Col(html.H5("בטווח ארוך"))),
             dbc.Row(dbc.Col([dbc.Select(id="city-long-term-select", options=cities_long_term_options,
                                         value="ALL",
                                         style=dict(width="200px", direction="ltr")),
@@ -188,6 +182,7 @@ def get_dash(server):
                                  id="metric-long-term-select",
                              ),
                              ])),
+            dbc.Row(dbc.Col(html.Div(id="pct-stats-long-term", style=dict(display="flex", margin="10px")))),
             dbc.Row(dbc.Col(id='longterm-output')),
             dbc.Row(dbc.Col([dbc.Select(id="city-select", options=cities_options,
                                         value="ALL",
@@ -202,7 +197,7 @@ def get_dash(server):
                                  id="metric-select",
                              ),
                              ])),
-            dbc.Row(dbc.Col(html.H5("שינוי בטווח הקצר"))),
+            dbc.Row(dbc.Col(html.H5("בטווח הקצר"))),
             dbc.Row(get_single_price(), id="city-output"),
             *get_multi_price_by_side(),
             # dbc.Row(
@@ -227,29 +222,47 @@ def get_dash(server):
         if col_name not in ['price', 'price_meter']:
             col_name = 'price'
         children = get_single_price(city, col_name)
-        print(list(dict_df_agg.keys()))
-        fig = get_plot_agg_by_feat(dict_df_agg, city, col_name)
-        fig.update_layout(template="plotly_dark")
-        graph = dcc.Graph(id=f'graph-long-price-{type_}-{city}', figure=fig,
-                          config=config_figure_disable_all)
         return children
 
     @app.callback(
+        Output("pct-stats-long-term", "children"),
         Output("longterm-output", "children"),
         Input("city-long-term-select", "value"),
         Input("metric-long-term-select", "value"),
     )
-    def get_by_city(city, col_name):
+    def get_by_city_long_term(city, col_name):
         if city == "ALL":
             city = None
         if col_name not in ['price', 'price_meter']:
             col_name = 'price'
-        print(list(dict_df_agg.keys()))
-        fig = get_plot_agg_by_feat(dict_df_agg, city, col_name)
+
+        if col_name == 'price':
+            col_name = 'price_declared'
+        if col_name == 'price_meter':
+            col_name = 'price_square_meter'
+        if city == 'ALL' or city is None:
+            df_agg = dict_df_agg['ALL']
+        else:
+            df_agg = dict_df_agg[city]
+        median_price = df_agg[col_name]['50%']
+        year_5_median = median_price.iloc[-(5 * 12)]
+        year_3_median = median_price.iloc[-(3 * 12)]
+        year_1_median = median_price.iloc[-12]
+        curr_price = median_price.iloc[-1]
+        prev = np.array([year_5_median, year_3_median, year_1_median])
+        prev = curr_price / prev - 1
+        print(f"5_year:{prev[0]:.2%}, 3_year:{prev[1]:.2%}, 1_year:{prev[2]:.2%}")
+
+        def get_span(name, val):
+            return html.Div([html.Span(name), html.Span(f"{'+' if val > 0 else ''}{val:.2%}", style=dict(color="red" if val > 0 else "green", direction="ltr"))],
+                            style={"margin-left": "10px", "display": "flex", "gap-left": "10px"})
+
+        html_pct_bar = [get_span("5 שנים", prev[0]), get_span("3 שנים", prev[1]), get_span("שנה", prev[2])]
+        fig = get_plot_agg_by_feat(df_agg, city, col_name)
         fig.update_layout(template="plotly_dark")
         graph = dcc.Graph(id=f'graph-long-price-{type_}-{city}', figure=fig,
                           config=config_figure_disable_all)
-        return graph
+        return html_pct_bar, graph
 
     return server, app
 

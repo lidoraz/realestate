@@ -7,7 +7,7 @@ BASE_URL = "rent"
 
 
 def get_dash(server):
-    df_all = get_df_with_prod(filename="yad2_rent_df.pk")
+    df_all = get_file_from_remote(filename="yad2_rent_df.pk")
     df_all = app_preprocess_df(df_all)
     rent_config_default = {"price-from": 1_000, "price-to": 6_000, "median-price-pct": None,
                            "price-min": 500, "price-max": 10_000,

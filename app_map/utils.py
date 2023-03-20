@@ -2,6 +2,7 @@ import os
 import time
 
 import pandas as pd
+import pickle
 from datetime import datetime
 import numpy as np
 from app_map.marker import get_marker_tooltip, icon_maps, icon_real_estate, get_color
@@ -12,7 +13,7 @@ from fetch_data.utils import filter_by_dist, get_nadlan_trans
 FETCH_LIMIT = 500
 
 
-def get_df_with_prod(filename):
+def get_file_from_remote(filename):
     s3_file = "https://real-estate-public.s3.eu-west-2.amazonaws.com/resources/{filename}"
     pre_path = f"resources/"
     if not os.path.exists(pre_path):
@@ -23,10 +24,11 @@ def get_df_with_prod(filename):
         time_modified = os.path.getmtime(path_file)
         if (time.time() - time_modified) < (3600 * 24):
             should_update = False
+
     # should_update=True
     if should_update:
         print(f"{datetime.now()}, Downloading file {filename}")
-        from smart_open import open
+        from smart_open import s_open
         # TODO Add here access only to auth users, something with bucket is not correct
         # import boto3
         # session = boto3.Session(
@@ -34,16 +36,17 @@ def get_df_with_prod(filename):
         #     aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'])
         # s3_file_name = "s3://real-estate-public/resources/yad2_rent_df.pk"
         nadlan_path = pre_path + "df_nadlan_recent.pk"
-        with open(s3_file.format(filename="df_nadlan_recent.pk"), 'rb') as f:
+        with s_open(s3_file.format(filename="df_nadlan_recent.pk"), 'rb') as f:
             pd.read_pickle(f).to_pickle(nadlan_path)
-        with open(s3_file.format(filename=filename), 'rb') as f:
-            df_all = pd.read_pickle(f)
-            df_all.to_pickle(path_file)
+        with s_open(s3_file.format(filename=filename), 'rb') as f:
+            file_data = pickle.load(f)
+            with open(path_file, "wb") as ff:
+                pickle.dump(file_data, ff)
         print(f"{datetime.now()}, Downloaded files")
     else:
         print(f"{datetime.now()} loading from FS file {filename}")
-        df_all = pd.read_pickle(path_file)
-    return df_all
+        with open(path_file, 'rb') as f:
+            return pickle.load(f)
 
 
 def app_preprocess_df(df_all):

@@ -4,6 +4,8 @@ from nadlan_sales.DB import DB
 
 from nadlan_sales.scraper_logic import Scraper
 from datetime import datetime, timedelta
+
+
 def test_case_1():
     from_gush = 7164
     to_gush = 7168  # 7171
@@ -96,7 +98,6 @@ def get_over_monthly():
 
 
 if __name__ == "__main__":
-
     date_minus30 = datetime.today() - timedelta(days=30)
     date_minus30 = date_minus30.strftime("%d/%m/%Y")
     test_case_daily_fetch(date_minus30)

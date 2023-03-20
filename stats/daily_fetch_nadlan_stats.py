@@ -178,28 +178,7 @@ def get_pct_change(df):
     _plot_colorize_pct(dff.unstack().T.pct_change().dropna()).to_html("resources/plots_daily_nadlan/pct_change.html")
 
 
-def get_plot_agg_by_feat(dict_df_agg, city, col_name):
-    if col_name == 'price':
-        col_name = 'price_declared'
-    if col_name == 'price_meter':
-        col_name = 'price_square_meter'
-    if city == 'תל אביב יפו':
-        city = 'תל אביב -יפו'
-    if city == 'ALL' or city is None:
-        df_agg = dict_df_agg['ALL']
-    else:
-        if city in dict_df_agg:
-            df_agg = dict_df_agg[city]
-        else:
-            from itertools import zip_longest
-            def hamming_distance(s2):
-                return sum(c1 != c2 for c1, c2 in zip_longest(city, s2))
-
-            print("Could not find, guessing key...")
-            close_key = sorted(dict_df_agg.keys(), key=hamming_distance)[0]
-            print(f"Found - {close_key}")
-            df_agg = dict_df_agg[close_key]
-
+def get_plot_agg_by_feat(df_agg, city, col_name):
     from stats.plots import create_percentiles_per_city_f
     # REALLY BAD PRACTICE, FIX THIS SOON
     fig = create_percentiles_per_city_f(df=None, city=city, resample_rule=None, df_agg=df_agg, type_='sale',
