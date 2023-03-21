@@ -217,6 +217,9 @@ def calc_agg_by_metrics(df):
     for name, df_ in res.items():
         res = dict(ALL=calc_perc(df_))
         for city in tqdm(sel_cities):
+            df_f = df_[df_['city'] == city]
+            if not len(df_f):
+                continue
             res[city] = calc_perc(df_[df_['city'] == city])
         to_pickle(res, f"resources/{name}.pk")
         pub_object(f"resources/{name}.pk")
@@ -240,7 +243,7 @@ def add_columns(df):
     return df
 
 
-def run_nadlan_stats(is_local):
+def run_nadlan_stats(is_local=False):
     if is_local:
         df = pd.read_pickle("resources/nadlan.pk")
     else:
