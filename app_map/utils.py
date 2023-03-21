@@ -289,6 +289,36 @@ def get_similar_deals(df_all, deal, days_back=99, dist_km=1, with_nadlan=True):
     fig = plot_deal_vs_sale_sold(df_open_deals, df_tax, deal)
     return fig
 
+
+def create_pct_bar(df_agg, col_name):
+    median_price = df_agg[col_name]['50%']
+    year_5_median = median_price.iloc[-(5 * 12)]
+    year_3_median = median_price.iloc[-(3 * 12)]
+    year_1_median = median_price.iloc[-12]
+    year_6m_median = median_price.iloc[-6]
+    curr_price = median_price.iloc[-1]
+    prev = np.array([year_5_median, year_3_median, year_1_median, year_6m_median])
+    prev = curr_price / prev - 1
+
+    def get_span(name, val):
+        if np.isnan(val):
+            name = ""
+            val = 0
+        sign = '+' if val > 0 else ''
+        val_str = f"{sign}{val:.2%}" if val != 0 else ""
+        color = "red" if val > 0 else "green" if val < 0 else "gray"
+        return html.Div(
+            [html.Span(name),
+             html.Span(val_str,
+                       style=dict(color=color, padding="5px 5px 0px"))],
+            style={"margin-left": "10px", "gap-left": "10px"})
+
+    return [html.Span("Median changes:", style={"margin-right": "10px"}),
+            get_span("5Y:", prev[0]),
+            get_span("3Y:", prev[1]),
+            get_span("1Y:", prev[2]),
+            get_span("6M:", prev[3])]
+
 #
 # def res_get_add_info(item):
 #     import requests

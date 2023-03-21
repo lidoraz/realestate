@@ -187,9 +187,9 @@ def get_pct_change(df):
 
 def get_plot_agg_by_feat(df_agg, city, col_name):
     from stats.plots import create_percentiles_per_city_f
-    # REALLY BAD PRACTICE, FIX THIS SOON
+        # REALLY BAD PRACTICE, FIX THIS SOON
     fig = create_percentiles_per_city_f(df=None, city=city, resample_rule=None, df_agg=df_agg, type_='sale',
-                                        col_name=col_name)
+                                            col_name=col_name)
     return fig
 
 

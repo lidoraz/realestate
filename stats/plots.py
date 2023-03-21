@@ -56,8 +56,7 @@ def create_percentiles_per_city_f(df, city, type_, resample_rule, col_name, use_
         x = df.resample(resample_rule, origin='end')[col_name].describe()  # agg(['median', 'mean', 'std', 'size'])
 
     else:
-        x = df_agg[col_name]
-        if city is None:
+        if city == "ALL":
             city = "כל הארץ"
         title = f'{city}(מכירה - הלמ״ס) '
     from plotly.subplots import make_subplots
@@ -66,22 +65,46 @@ def create_percentiles_per_city_f(df, city, type_, resample_rule, col_name, use_
     )
 
     if use_median:
-        for perc in ['75%', '50%', '25%']:
-            pct_chg_str = x[perc].pct_change()
-            # text = pct_chg_str.apply(lambda x: f'{x}% ') + x['count'].astype(str).apply(lambda x: f"(#{x})")
-            # print(text)
-            fig.add_trace(go.Scatter(x=x.index, y=x[perc].round(),
-                                     customdata=pct_chg_str,
-                                     text=x['count'],
-                                     hovertemplate="%{x} (%{text:,.0f})<br>₪%{y:,.0f} (%{customdata:.2%})",
-                                     name=perc,
-                                     mode="lines+markers"))
-    else:
-        # USING MEAN AND STD IS REALLY NOISEY, CANT TELL NOTHNIG FROM THIS
-        fig.add_trace(go.Scatter(x=x.index, y=x["mean"], text=x['count'], mode="lines+markers", name=title))
-        fig.add_trace(go.Scatter(x=x.index, y=x["mean"] + x['std'], mode='lines', fill=None))
-        fig.add_trace(go.Scatter(x=x.index, y=x["mean"] - x['std'], mode='lines', fill='tonexty',
-                                 fillcolor="rgba(148, 0, 211, 0.15)"))
+        if df_agg is not None:
+            if isinstance(df_agg, list):
+                df_all = df_agg[0][col_name]
+                df_new = df_agg[1][col_name]
+                df_old = df_agg[2][col_name]
+                perc = '50%'
+
+                # text = pct_chg_str.apply(lambda x: f'{x}% ') + x['count'].astype(str).apply(lambda x: f"(#{x})")
+                # print(text)
+                def get_trace(x, perc, name):
+                    return go.Scatter(x=x.index, y=x[perc].round(),
+                                      customdata=x[perc].pct_change(),
+                                      text=x['count'],
+                                      hovertemplate="%{x} (%{text:,.0f})<br>₪%{y:,.0f} (%{customdata:.2%})",
+                                      name=f"{name} ({perc})",
+                                      mode="lines+markers")
+
+                fig.add_trace(get_trace(df_all, perc, "ALL"))
+                fig.add_trace(get_trace(df_old, perc, "OLD"))
+                fig.add_trace(get_trace(df_new, perc, "NEW"))
+
+
+            else:
+                x = df_agg[col_name]
+                for perc in ['75%', '50%', '25%']:
+                    pct_chg_str = x[perc].pct_change()
+                    # text = pct_chg_str.apply(lambda x: f'{x}% ') + x['count'].astype(str).apply(lambda x: f"(#{x})")
+                    # print(text)
+                    fig.add_trace(go.Scatter(x=x.index, y=x[perc].round(),
+                                             customdata=pct_chg_str,
+                                             text=x['count'],
+                                             hovertemplate="%{x} (%{text:,.0f})<br>₪%{y:,.0f} (%{customdata:.2%})",
+                                             name=perc,
+                                             mode="lines+markers"))
+    # else:
+    #     # USING MEAN AND STD IS REALLY NOISEY, CANT TELL NOTHNIG FROM THIS
+    #     fig.add_trace(go.Scatter(x=x.index, y=x["mean"], text=x['count'], mode="lines+markers", name=title))
+    #     fig.add_trace(go.Scatter(x=x.index, y=x["mean"] + x['std'], mode='lines', fill=None))
+    #     fig.add_trace(go.Scatter(x=x.index, y=x["mean"] - x['std'], mode='lines', fill='tonexty',
+    #                              fillcolor="rgba(148, 0, 211, 0.15)"))
     # fig.add_trace(go.Scatter(x=x.index, y=x['count'], name="count",
     #                          mode="lines+markers", opacity=0.1), secondary_y=True)
     fig.update_layout(showlegend=True,
