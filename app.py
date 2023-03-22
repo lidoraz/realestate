@@ -18,10 +18,13 @@ def create_app():
     server, _ = get_dash_sale(server)
     from app_map.dashboard_stats import get_dash as get_dash_stats
     server, _ = get_dash_stats(server)
+
     return server
 
 
 app = create_app()
+
+
 
 
 @app.before_request
