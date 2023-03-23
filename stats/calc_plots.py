@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 
-from stats.plots import create_percentiles_per_city_f
+from stats.plots import create_percentiles_per_city_f, get_fig_quantiles_from_df
 
 
 def run_for_cities(df, type_, n_cities=9, resample_rule='7D', use_median=True):
@@ -11,7 +11,7 @@ def run_for_cities(df, type_, n_cities=9, resample_rule='7D', use_median=True):
                   'נתניה']
     df = df[df['city'].isin(sel_cities)]
     for city, grp in df.groupby('city'):
-        fig = create_percentiles_per_city_f(df, city, type_, resample_rule, 'price', use_median)
+        fig = get_fig_quantiles_from_df(df, city, type_, resample_rule, 'price')
         figs.append(fig)
     return figs  # create_percentiles_per_city(df, city, type_, resample_rule)
 

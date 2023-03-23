@@ -25,8 +25,6 @@ def create_app():
 app = create_app()
 
 
-
-
 @app.before_request
 def before_request():
     # user_agent=request.headers['HTTP_USER_AGENT'], req_uri=request.headers['REQUEST_URI']

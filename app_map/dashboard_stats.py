@@ -12,8 +12,7 @@ import pandas as pd
 
 from app_map.util_layout import get_page_menu
 from app_map.utils import get_file_from_remote
-from stats.daily_fetch_nadlan_stats import get_plot_agg_by_feat
-from stats.plots import create_percentiles_per_city_f
+from stats.plots import get_fig_quantiles_from_df, get_fig_quantiles_multi_city
 from stats.calc_plots import run_for_cities, create_ratio
 from stats.plots import plot_scatter_f
 
@@ -103,8 +102,7 @@ def _get_multi_price(df, type_, only_figs=True):
 
 def _get_single_price(df, type_, city, col_name):
     days_back = 7
-    fig = create_percentiles_per_city_f(df, city=city, type_=type_, resample_rule=f'{days_back}D', col_name=col_name,
-                                        use_median=True)
+    fig = get_fig_quantiles_from_df(df, city, type_, f'{days_back}D', col_name)
     fig.update_layout(template="plotly_dark", dragmode=False)
     return dcc.Graph(id=f'graph-single-price-{type_}-{city}', figure=fig,
                      config=config_figure_disable_all)
@@ -178,86 +176,95 @@ def get_dash(server):
             dbc.Row([
                 dbc.Col([
                     html.H5("בטווח ארוך"),
-                    html.Label("בחר עיר", className="col-sm-2 col-form-label"),
-                    # dcc.Dropdown(
-                    #     cities_long_term_options,
-                    #     [],
-                    #     placeholder="multi",
-                    #     multi=True,
-                    #     id="city-long-term-select-multi",
-                    #     # className="form-select",
-                    #     style=dict(width="300px", color="black")
-                    # ),
-                    dbc.Select(id="city-long-term-select", options=cities_long_term_options,
-                               value="ALL",
-                               style=dict(width="200px", direction="ltr"),
-                               className="form-select"),
-                    html.Label("מחיר לפי", className="col-sm-2 col-form-label"),
-                    dbc.RadioItems(
-                        options=[
-                            {"label": "מחיר", "value": "price_declared"},
-                            {"label": "מחיר למ״ר", "value": "price_square_meter"},
-                        ],
-                        value="price_declared",
-                        inline=True,
-                        id="metric-long-term-select",
-                        labelClassName="btn btn-outline-primary",
-                        className="btn-group",
-                        inputClassName="btn-check"
-                    ),
-                    html.Label("מצב הנכס", className="col-sm-2 col-form-label"),
-                    dbc.RadioItems(
-                        options=[
-                            {"label": "הכל", "value": "ALL"},
-                            {"label": "חדש", "value": "NEW"},
-                            {"label": "יד שניה", "value": "OLD"},
-                            {"label": "השוואה", "value": "CMP"}
-                        ],
-                        value="ALL",
-                        inline=True,
-                        id="year-built-long-term-select",
-                        labelClassName="btn btn-outline-primary",
-                        className="btn-group",
-                        inputClassName="btn-check"
-                    ),
-                ], className="form-group"),
-                dbc.Col([html.Div(id="pct-stats-long-term", style=dict(display="flex", margin="10px")),
-                         html.Div(id='longterm-output')], width=9, md=12, sm=12, xs=12)
-            ]),
-            dbc.Alert(
-                "asfsaf",
-                id="alert-auto",
-                is_open=False,
-                color="danger",
-                # duration=10_000,
-            ),
-            dbc.Row(dbc.Col()),
-            # dbc.Row(),
-            dbc.Row(dbc.Col([dbc.Select(id="city-select", options=cities_options,
-                                        value="ALL",
-                                        style=dict(width="200px", direction="ltr")),
-                             dbc.RadioItems(
-                                 options=[
-                                     {"dlabel": "מחיר", "value": "price"},
-                                     {"label": "מחיר למ״ר", "value": "price_meter"},
-                                 ],
-                                 value="price",
-                                 inline=True,
-                                 id="metric-select",
-                             ),
-                             ])),
-            dbc.Row(dbc.Col(html.H5("בטווח הקצר"))),
-            dbc.Row(get_single_price(), id="city-output"),
-            *get_multi_price_by_side(),
-            # dbc.Row(
-            #     [
-            #         dbc.Col(html.Div("One of three columns")),
-            #         dbc.Col(html.Div("One of three columns")),
-            #         dbc.Col(html.Div("One of three columns")),
-            #     ]
-            # ),
-        ],
-        className="analysis-main",
+                    html.Div([html.Label("בחר עיר"),
+                              dbc.Switch(id="city-long-term-select-multi-switch", value=False),
+                              html.Span('בחירה מרובה', style={"font-size": "smaller"})],
+                             style={"display": "flex"}),
+                html.Div([dcc.Dropdown(
+                    cities_long_term_options,
+                    value='ALL',
+                    placeholder="multi",
+                    multi=False,
+                    id="city-long-term-select-multi",
+                    clearable=False,
+                    # className="form-select",
+                    style={"width": "250px", "color": "black", "font-size": "initial"}
+                )], style={"display": "flex"}),
+
+                # dbc.Select(id="city-long-term-select", options=cities_long_term_options,
+                #            value="ALL",
+                #            style=dict(width="200px", direction="ltr"),
+                #            className="form-select"),
+                html.Label("מחיר לפי", className="col-sm-2 col-form-label"),
+                dbc.RadioItems(
+                    options=[
+                        {"label": "מחיר", "value": "price_declared"},
+                        {"label": "מחיר למ״ר", "value": "price_square_meter"},
+                    ],
+                    value="price_declared",
+                    inline=True,
+                    id="metric-long-term-select",
+                    labelClassName="btn btn-outline-primary",
+                    className="btn-group",
+                    inputClassName="btn-check"
+                ),
+                html.Label("מצב הנכס", className="col-sm-2 col-form-label"),
+                dbc.RadioItems(
+                    options=[
+                        {"label": "הכל", "value": "ALL"},
+                        {"label": "חדש", "value": "NEW"},
+                        {"label": "יד שניה", "value": "OLD"},
+                        {"label": "השוואה", "value": "CMP"}
+                    ],
+                    value="ALL",
+                    inline=True,
+                    id="year-built-long-term-select",
+                    labelClassName="btn btn-outline-primary",
+                    className="btn-group",
+                    inputClassName="btn-check"
+                ),
+            ], className="form-group"),
+            dbc.Col([html.Div(id="pct-stats-long-term",
+                              style={"display": "flex", "margin": "10px", "font-size": "smaller"}),
+                     html.Div(id='longterm-output')], width=9, md=12, sm=12, xs=12)
+        ]),
+                 dbc.Alert(
+                     "asfsaf",
+                     id="alert-auto",
+                     is_open=False,
+                     color="danger",
+                     # duration=10_000,
+                 ),
+                 dbc.Row(dbc.Col()),
+                 # dbc.Row(),
+                 dbc.Row(dbc.Col([dbc.Select(id="city-select", options=cities_options,
+                                             value="ALL",
+                                             style=dict(width="200px", direction="ltr")),
+                                  dbc.RadioItems(
+                                      options=[
+                                          {"label": "מחיר", "value": "price"},
+                                          {"label": "מחיר למ״ר", "value": "price_meter"},
+                                      ],
+                                      value="price",
+                                      inline=True,
+                                      id="metric-select",
+                                      labelClassName="btn btn-outline-primary",
+                                      className="btn-group",
+                                      inputClassName="btn-check"
+                                  ),
+                                  ])),
+                 dbc.Row(dbc.Col(html.H5("בטווח הקצר"))),
+                 dbc.Row(get_single_price(), id="city-output"),
+                 *get_multi_price_by_side(),
+    # dbc.Row(
+    #     [
+    #         dbc.Col(html.Div("One of three columns")),
+    #         dbc.Col(html.Div("One of three columns")),
+    #         dbc.Col(html.Div("One of three columns")),
+    #     ]
+    # ),
+    ],
+    className = "analysis-main",
 
     )
 
@@ -272,7 +279,8 @@ def get_dash(server):
             city = None
         if col_name not in ['price', 'price_meter']:
             col_name = 'price'
-        children = get_single_price(city, col_name)
+        children = [dbc.Col(_get_single_price(df_forsale, "sale", city, col_name)),
+                    dbc.Col(_get_single_price(df_rent, "rent", city, col_name))]
         return children
 
     @app.callback(
@@ -280,52 +288,55 @@ def get_dash(server):
         Output("longterm-output", "children"),
         Output("alert-auto", "children"),
         Output("alert-auto", "is_open"),
-        Input("city-long-term-select", "value"),
+        Input("city-long-term-select-multi", "value"),
         Input("metric-long-term-select", "value"),
         Input("year-built-long-term-select", "value")
     )
-    def get_by_city_long_term(city, col_name, asset_year):
+    def get_by_city_long_term(multi_city, col_name, asset_year):
         from app_map.utils import create_pct_bar
-        if asset_year != 'CMP':
-            dict_df_agg = dict_combined[asset_year]
-            df_agg = dict_df_agg[city]
-            print(df_agg.columns)
-            fig = get_plot_agg_by_feat(df_agg, city, col_name)
-            # HERE IT WILL SHOW AS USUAL
+        show_pct_bar = True
+        if isinstance(multi_city, list):
+            df_agg = [dict_combined["ALL"][c] for c in multi_city]
+            fig = get_fig_quantiles_multi_city(df_agg, multi_city, col_name)
+            show_pct_bar = False
         else:
-            df_agg = dict_combined["ALL"][city]
-            df_agg_new = dict_combined["NEW"][city]
-            df_agg_old = dict_combined["OLD"][city]
-            fig = get_plot_agg_by_feat([df_agg, df_agg_new, df_agg_old], city, col_name)
-        html_pct_bar = create_pct_bar(df_agg, col_name)
-        # is it CMP - CMP NEW VS OLD, and ALL:
+            city = multi_city
+            from stats.plots import get_fig_quantiles_city_new_vs_old
+            if asset_year != 'CMP':
+                dict_df_agg = dict_combined[asset_year]
+                df_agg = dict_df_agg[city]
+                print(df_agg.columns)
 
-        #     # if asset_year not in ['ALL', 'NEW', 'OLD', 'CMP']:
-        #     #     asset_year = 'ALL'
-        #     if city == "ALL":
-        #         city = None
-        #     # if col_name not in ['price', 'price_meter']:
-        #     #     col_name = 'price_declared'
-        #     if col_name == 'price':
-        #         col_name = 'price_declared'
-        #     if col_name == 'price_meter':
-        #         col_name = 'price_square_meter'
-        #     if asset_year != 'CMP':
-        # if city == 'ALL' or city is None:
-        #     if asset_year != 'CMP':
-        #         df_agg = dict_df_agg['ALL']
-        # else:
-        #     if city not in dict_df_agg:
-        #         alert_txt = "לא נמצא"
-        #         return dash.no_update, dash.no_update, alert_txt, True
-        #     df_agg = dict_df_agg[city]
-        # dict_df_agg = dict_combined[asset_year]
-        # print(city, col_name, asset_year)
+                fig = get_fig_quantiles_city_new_vs_old(df_agg, city, col_name)
+                # HERE IT WILL SHOW AS USUAL
+            else:
+                df_agg = [dict_combined["ALL"][city],
+                          dict_combined["NEW"][city],
+                          dict_combined["OLD"][city]]
+                fig = get_fig_quantiles_city_new_vs_old(df_agg, city, col_name)
+                df_agg = df_agg[0]  # Take ALL, used for pct_bar
+        fig.update_layout(template="plotly_dark", dragmode=False)
+        html_pct_bar = create_pct_bar(df_agg, col_name) if show_pct_bar else []
 
         fig.update_layout(template="plotly_dark", dragmode=False)
-        graph = dcc.Graph(id=f'graph-long-price-{type_}-{city}', figure=fig,
+        graph = dcc.Graph(id=f'graph-long-price-{type_}', figure=fig,
                           config=config_figure_disable_all)
         return html_pct_bar, graph, "", False
+
+    @app.callback(
+        Output('city-long-term-select-multi', 'multi'),
+        Output('city-long-term-select-multi', 'value'),
+        Input('city-long-term-select-multi-switch', 'value'),
+        Input('city-long-term-select-multi', 'value')
+
+    )
+    def switch_long_term_select(switch_val, value):
+        if not switch_val:
+            value = value[0] if isinstance(value, list) else value
+        if value is None:
+            value = "ALL"
+        print(switch_val, value)
+        return switch_val, value
 
     return server, app
 

@@ -293,3 +293,6 @@ svg {
 .form-group{
     display:grid;
 }
+.form-group col{
+    margin: 25px;
+}

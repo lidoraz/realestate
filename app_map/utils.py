@@ -313,7 +313,7 @@ def create_pct_bar(df_agg, col_name):
                        style=dict(color=color, padding="5px 5px 0px"))],
             style={"margin-left": "10px", "gap-left": "10px"})
 
-    return [html.Span("Median changes:", style={"margin-right": "10px"}),
+    return [#vhtml.Span(":", style={"margin-right": "10px",}),
             get_span("5Y:", prev[0]),
             get_span("3Y:", prev[1]),
             get_span("1Y:", prev[2]),

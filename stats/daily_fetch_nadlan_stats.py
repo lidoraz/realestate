@@ -185,14 +185,6 @@ def get_pct_change(df):
     _plot_colorize_pct(dff.unstack().T.pct_change().dropna()).to_html("resources/plots_daily_nadlan/pct_change.html")
 
 
-def get_plot_agg_by_feat(df_agg, city, col_name):
-    from stats.plots import create_percentiles_per_city_f
-        # REALLY BAD PRACTICE, FIX THIS SOON
-    fig = create_percentiles_per_city_f(df=None, city=city, resample_rule=None, df_agg=df_agg, type_='sale',
-                                            col_name=col_name)
-    return fig
-
-
 def calc_agg_by_metrics(df):
     sel_cities = df['city'].value_counts().reset_index().loc[:99]['index'].sort_values().to_list()
     metric_cols = ['price_square_meter', 'price_declared']
