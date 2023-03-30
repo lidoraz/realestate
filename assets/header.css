@@ -263,8 +263,8 @@ p.rtl {
 .analysis-main {
     direction: rtl;
     overflow: hidden;
-    margin-top: 10px;
-
+    margin: 10px auto auto;
+    max-width: 1000px;
 }
 
 .analysis-main h3 {
@@ -273,7 +273,7 @@ p.rtl {
 }
 
 .analysis-main-multi-grid {
-    margin: 15px;
+    /*margin: 15px;*/
     padding: 15px;
 }
 
