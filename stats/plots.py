@@ -72,12 +72,12 @@ def get_fig_quantiles_city_new_vs_old(df_agg, city, col_name):
     if isinstance(df_agg, list):
         perc = '50%'
         fig.add_trace(_get_trace_scatter(df_agg[0][col_name], perc, "ALL"))
-        fig.add_trace(_get_trace_scatter(df_agg[1][col_name], perc, "OLD"))
-        fig.add_trace(_get_trace_scatter(df_agg[2][col_name], perc, "NEW"))
+        fig.add_trace(_get_trace_scatter(df_agg[1][col_name], perc, "NEW"))
+        fig.add_trace(_get_trace_scatter(df_agg[2][col_name], perc, "OLD"))
     else:
         x = df_agg[col_name]
         for perc in ['75%', '50%', '25%']:
-            fig.add_trace(_get_trace_scatter(x, perc, perc))
+            fig.add_trace(_get_trace_scatter(x, perc, perc, show_perc_legend=False))
 
     return _update_multi_trace_layout(fig, title)
 
@@ -103,7 +103,7 @@ def get_fig_quantiles_from_df(df, city, type_, resample_rule, col_name):
         raise ValueError("Not cities found")
     x = df.resample(resample_rule, origin='end')[col_name].describe()  # agg(['median', 'mean', 'std', 'size'])
     for perc in ['75%', '50%', '25%']:
-        fig.add_trace(_get_trace_scatter(x, perc, perc))
+        fig.add_trace(_get_trace_scatter(x, perc, perc, show_perc_legend=False))
     return _update_multi_trace_layout(fig, title)
 
 
