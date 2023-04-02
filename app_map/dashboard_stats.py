@@ -107,7 +107,7 @@ def get_dash(server):
         [
             dbc.Row([dbc.Col(get_page_menu()),
                      dbc.Col(html.H1("Real Estate Analytics"), width=8, style=dict(direction="ltr"))]),
-            dbc.Row(dbc.Col(html.H6("", id='updated-at'))),
+            dbc.Row(dbc.Col(html.H6(f"מעודכן ל-{get_stats_data()['date_updated']}"))),
             dbc.Row(dbc.Col(html.H3("מכירות דירות מול השפעת הריבית"))),
             dbc.Row(dbc.Col(graph_obj)),
 
@@ -289,15 +289,11 @@ def get_dash(server):
     @app.callback(
         Output('city-long-term-select-multi', 'multi'),
         Output('city-long-term-select-multi', 'value'),
-        Output('updated-at', 'children'),
         Input('city-long-term-select-multi-switch', 'value'),
         Input('city-long-term-select-multi', 'value')
 
     )
     def switch_long_term_select(switch_val, value):
-        # Just use it to update the main title
-        date_df = get_stats_data()['date_updated']
-        str_update = f'מעודכן ל-{date_df}'
         val_b = value
         if not switch_val:
             value = value[0] if isinstance(value, list) else value
@@ -306,7 +302,7 @@ def get_dash(server):
         if val_b == value:
             value = dash.no_update
         print(switch_val, value)
-        return switch_val, value, str_update
+        return switch_val, value
 
     return server, app
 
