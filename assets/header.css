@@ -17,6 +17,7 @@
     top: 0;
     right: 0;
     direction: rtl;
+    /*overflow-x: scroll; !* Nasty fix but works*!*/
     /*margin-right: 10px;*/
     display: flex;
 }
@@ -137,7 +138,35 @@ p.rtl {
     /*display:grid;*/
     /*font-size: small;*/
     font-weight: bold;
-    padding: 2px
+    padding: 2px;
+    /*Add the fadeIn class for marker div to work*/
+    -webkit-animation-duration: 1s;
+    animation-duration: 1s;
+    -webkit-animation-fill-mode: both;
+    animation-fill-mode: both;
+}
+
+@-webkit-keyframes fadeIn {
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeIn {
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+.fadeIn {
+    -webkit-animation-name: fadeIn;
+    animation-name: fadeIn;
 }
 
 .marker-div-span {
@@ -155,6 +184,7 @@ p.rtl {
     width: 12%;
     text-align: center;
     direction: ltr;
+    min-width: 100px;
 }
 
 .rounded-checkbox {
@@ -220,9 +250,16 @@ p.rtl {
 /*    overflow: scroll;*/
 /*}*/
 
+.dash-options {
+    width: 5%;
+    font-size: smaller;
+    min-width: 70px;
+}
+
 .dash-dropdown {
     width: 7%;
     font-size: smaller;
+    min-width: 100px;
 }
 
 .span-color-pct {
@@ -290,9 +327,10 @@ svg {
     animation: fadeIn 0.5s;
 }
 
-.form-group{
-    display:grid;
+.form-group {
+    display: grid;
 }
-.form-group col{
+
+.form-group col {
     margin: 25px;
 }

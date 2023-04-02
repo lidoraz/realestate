@@ -8,10 +8,73 @@ from flask import request
 from flask import redirect
 import sys
 from datetime import datetime
+from flask_caching import Cache
+
+# from flask import Blueprint
+
+server = Flask(__name__)
+
+cache = Cache(server, config={'CACHE_TYPE': 'simple', 'CACHE_DEFAULT_TIMEOUT': 3600})
 
 
-def create_app():
-    server = Flask(__name__)
+# blueprint = Blueprint('dataframes', __name__)
+@cache.cached(timeout=3600)
+def load_dataframes():
+    from app_map.utils import get_file_from_remote
+    from app_map.utils import app_preprocess_df
+    df_rent_all = app_preprocess_df(get_file_from_remote(filename="yad2_rent_df.pk"),)
+    df_forsale_all = app_preprocess_df(get_file_from_remote(filename="yad2_forsale_df.pk"))
+    # STATS
+    def preprocess(df):
+        import numpy as np
+        df['price_meter'] = df['price'] / df['square_meter_build']
+        df['price_meter'] = df['price_meter'].replace(np.inf, np.nan)
+        df.sort_values('price_meter', ascending=False)
+        return df
+
+    df_log_rent = preprocess(get_file_from_remote("df_log_rent.pk"))
+    df_log_forsale = preprocess(get_file_from_remote("df_log_forsale.pk"))
+
+    dict_df_agg_nadlan_all = get_file_from_remote("dict_df_agg_nadlan_all.pk")
+    dict_df_agg_nadlan_new = get_file_from_remote("dict_df_agg_nadlan_new.pk")
+    dict_df_agg_nadlan_old = get_file_from_remote("dict_df_agg_nadlan_old.pk")
+    dict_combined = dict(ALL=dict_df_agg_nadlan_all,
+                         NEW=dict_df_agg_nadlan_new,
+                         OLD=dict_df_agg_nadlan_old)
+    date_updated = df_log_forsale['date_updated'].max().date()
+    stats = dict(df_log_forsale=df_log_forsale, df_log_rent=df_log_rent, dict_combined=dict_combined, date_updated=date_updated)
+    #
+    sale = dict(df_forsale_all=df_forsale_all)
+    rent = dict(df_rent_all=df_rent_all)
+
+    return dict(sale=sale, rent=rent, stats=stats)
+
+
+def get_stats_data():
+    with server.test_request_context():
+        return load_dataframes()['stats']
+
+
+def get_rent_data():
+    with server.test_request_context():
+        return load_dataframes()['rent']['df_rent_all']
+
+
+def get_sale_data():
+    with server.test_request_context():
+        return load_dataframes()['sale']['df_forsale_all']
+
+
+# @blueprint.route('/load_dataframe/<string:object_key>')
+# @cache.cached(timeout=3600)
+# def load_dataframe(object_key):
+#     bucket_name = 'my-s3-bucket'
+#     obj = s3.get_object(Bucket=bucket_name, Key=object_key)
+#     df = pd.read_csv(obj['Body'])
+#     return df
+
+
+def create_app(server):
     from app_map.dashboard_yad2_rent import get_dash as get_dash_rent
     server, _ = get_dash_rent(server)
     from app_map.dashboard_yad2_forsale import get_dash as get_dash_sale
@@ -22,7 +85,7 @@ def create_app():
     return server
 
 
-app = create_app()
+app = create_app(server)
 
 
 @app.before_request

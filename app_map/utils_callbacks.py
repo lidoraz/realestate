@@ -88,7 +88,8 @@ def limit_refresh(map_zoom):
         if update_diff < 2:
             print(update_diff)
             print("not much time has passed, Zoom changed! - No update")
-            return dash.no_update
+            return True
+    return False
     # print(locals())
     # print(ctx.triggered_prop_ids, map_zoom)
     # sleep_bounds()
@@ -127,7 +128,8 @@ def show_assets(price_range,
                 marker_type,
                 map_bounds, map_zoom, active_cell=None):
     conf = get_context_by_rule()
-    limit_refresh(map_zoom)
+    if limit_refresh(map_zoom):
+        return dash.no_update
     print("marker_type", marker_type)
     with_agency = True if len(with_agency) else False
     with_parking = True if len(with_parking) else None
@@ -139,7 +141,7 @@ def show_assets(price_range,
     if active_cell:
         return dash.no_update
     if n_clicks_around:
-        df_f = get_asset_points(conf['data'], map_bounds=map_bounds, limit=True)
+        df_f = get_asset_points(conf['func_data'](), map_bounds=map_bounds, limit=True)
     else:
         # special case - max over 10M
         if price_range[0] == conf['price-max'] and price_range[0] == price_range[1]:
@@ -148,7 +150,7 @@ def show_assets(price_range,
         else:
             price_from = price_range[0] * conf["price_mul"]
             price_to = price_range[1] * conf["price_mul"]
-        df_f = get_asset_points(conf['data'], price_from, price_to,
+        df_f = get_asset_points(conf['func_data'](), price_from, price_to,
                                 price_median_pct_range, price_discount_pct_range, price_ai_pct_range,
                                 is_price_median_pct_range, is_price_discount_pct_range, is_price_ai_pct_range,
                                 date_added, date_updated, rooms_range,
@@ -176,9 +178,9 @@ def toggle_modal(feature):
         if 'deal_id' in props:
             conf = get_context_by_rule()
             deal_id = feature['properties']['deal_id']
-            deal = conf['data'].loc[deal_id]
+            deal = conf['func_data']().loc[deal_id]
             title_modal, str_html = build_sidebar(deal)
-            fig = get_similar_deals(conf['data'], deal, with_nadlan=conf['with_nadlan'])
+            fig = get_similar_deals(conf['func_data'](), deal, with_nadlan=conf['with_nadlan'])
             return None, True, title_modal, str_html, fig
     return dash.no_update
 
@@ -198,7 +200,7 @@ def focus_on_asset(table_active_cell, table_data):
         return dash.no_update
     id_ = [x for x in table_data if x['id'] == table_active_cell['row_id']][0]['id']
     conf = get_context_by_rule()
-    item = get_asset_points(conf['data'], id_=id_).squeeze()
+    item = get_asset_points(conf['func_data'](), id_=id_).squeeze()
     position = [item['lat'], item['long']]
     return position, CLUSTER_MAX_ZOOM + 1, 0.75, position
 

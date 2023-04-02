@@ -24,7 +24,7 @@ asset_status_cols = [
                         'במצב שמור',
                         'דרוש שיפוץ'][::-1]
 asset_type_cols = ['דירה', 'יחידת דיור', 'דירת גן', 'סאבלט', 'דו משפחתי', 'מרתף/פרטר', 'גג/פנטהאוז', "בית פרטי/קוטג'",
-                   'סטודיו/לופט',               'דופלקס', 'דירת נופש', 'משק חקלאי/נחלה', 'טריפלקס', 'החלפת דירות']
+                   'סטודיו/לופט', 'דופלקס', 'דירת נופש', 'משק חקלאי/נחלה', 'טריפלקס', 'החלפת דירות']
 
 marker_type_options = [
 
@@ -43,7 +43,7 @@ def get_page_menu():
     return dbc.DropdownMenu([dbc.DropdownMenuItem(html.A(dbc.Button("Rent"), href="/rent")),
                              dbc.DropdownMenuItem(html.A(dbc.Button("Sale"), href="/sale")),
                              dbc.DropdownMenuItem(html.A(dbc.Button("Analytics"), href="/analytics"))],
-                            label="Menu") #  style=dict(direction="ltr")
+                            label="Menu")  # style=dict(direction="ltr")
 
 
 def get_layout(default_config):
@@ -99,7 +99,7 @@ def get_html_range_range_pct(text, element_id, checked=False):
                                      marks={-100: '-100%', 0: '0%', 100: '+100%'},
                                      allowCross=False,
                                      tooltip={'always_visible': True, 'placement': 'bottom'})],
-                    className="slider-container")
+                    className="slider-container-drop")
 
 
 def get_div_top_bar(config_defaults):
@@ -113,7 +113,7 @@ def get_div_top_bar(config_defaults):
                                 id='parking-check'),
                   dcc.Checklist(options=[{'label': 'מרפסת', 'value': 'Y'}], value=[], inline=True,
                                 inputClassName="rounded-checkbox",
-                                id='balconies-check')], className="dash-dropdown"),
+                                id='balconies-check')], className="dash-options"),
 
         html.Div([html.Span(price_text), dcc.RangeSlider(min=config_defaults["price-min"],
                                                          max=config_defaults["price-max"],
@@ -129,6 +129,11 @@ def get_div_top_bar(config_defaults):
         get_html_range_range_pct(median_price_txt, 'price-median-pct-slider'),
         get_html_range_range_pct(price_pct_txt, 'price-discount-pct-slider'),
         get_html_range_range_pct(ai_pct_txt, 'ai-price-pct-slider', True),
+        # dbc.DropdownMenu([
+        #     dbc.DropdownMenuItem(get_html_range_range_pct(median_price_txt, 'price-median-pct-slider'), toggle=False),
+        #     dbc.DropdownMenuItem(get_html_range_range_pct(price_pct_txt, 'price-discount-pct-slider'), toggle=False),
+        #     dbc.DropdownMenuItem(get_html_range_range_pct(ai_pct_txt, 'ai-price-pct-slider', True), toggle=False),
+        # ], label='F'),
         html.Div([html.Span(n_rooms_txt),
                   html.Div(dcc.RangeSlider(1, 6, 1, value=[3, 4], marks=rooms_marks, id='rooms-slider'))],
                  className="slider-container"),

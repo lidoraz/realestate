@@ -1,68 +1,34 @@
 import dash
 import dash_bootstrap_components as dbc
-import numpy as np
 from dash import dcc
-
-# from app_map.utils import *
-# from app_map.util_layout import get_layout
-# from app_map.utils_callbacks import add_callbacks
 from dash import html, Output, Input, State, ctx
-
-import pandas as pd
-
 from app_map.util_layout import get_page_menu
 from app_map.utils import get_file_from_remote
 from stats.plots import get_fig_quantiles_from_df, get_fig_quantiles_multi_city
 from stats.calc_plots import run_for_cities, create_ratio
 from stats.plots import plot_scatter_f
 
-# df_all = get_df_with_prod(is_prod, filename="../resources/yad2_rent_df.pk")
-# df_all = app_preprocess_df(df_all)
 config_figure_disable_all = {'displayModeBar': False,
                              'scrollZoom': False}
 
+from app import get_stats_data
 
-def preprocess(df):
-    df['price_meter'] = df['price'] / df['square_meter_build']
-    df['price_meter'] = df['price_meter'].replace(np.inf, np.nan)
-    df.sort_values('price_meter', ascending=False)
-    return df
-
-
-type_ = 'rent'
-fname = 'df_log_{}.pk'
-df_rent = get_file_from_remote(fname.format("rent"))
-df_forsale = get_file_from_remote(fname.format("forsale"))
-
-dict_df_agg_nadlan_all = get_file_from_remote("dict_df_agg_nadlan_all.pk")
-dict_df_agg_nadlan_new = get_file_from_remote("dict_df_agg_nadlan_new.pk")
-dict_df_agg_nadlan_old = get_file_from_remote("dict_df_agg_nadlan_old.pk")
-
-dict_combined = dict(ALL=dict_df_agg_nadlan_all,
-                     NEW=dict_df_agg_nadlan_new,
-                     OLD=dict_df_agg_nadlan_old)
-
-cities = df_forsale['city'].value_counts()
+stats_data = get_stats_data()
+cities = stats_data['df_log_forsale']['city'].value_counts()
 cities = cities[cities > 50].sort_index()
 
-# label=f'{city} ({cnt:,.0f})'
 additional_all_key = [dict(label="בכל הארץ", value="ALL")]
 cities_options = additional_all_key + [dict(label=f'{city}', value=city) for city, cnt in
                                        cities.items()]
 # Removing first key:
+dict_df_agg_nadlan_all = stats_data['dict_combined']['ALL']
 dict_df_agg_keys = sorted([k for k in dict_df_agg_nadlan_all.keys() if k != 'ALL'])
 cities_long_term_options = additional_all_key + [dict(label=f'{city}', value=city) for city in dict_df_agg_keys]
-df_rent = preprocess(df_rent)
-df_forsale = preprocess(df_forsale)
 
-date_df = df_rent['date_updated'].max().date()
-str_update = f'מעודכן ל-{date_df}'
 days_back = 30
 min_samples = 200
+del stats_data
 
-
-# def get_bars():
-#     plot_ratio_f(res, type_)
 
 def get_scatter(df, type_, min_samples):
     res_ratio = create_ratio(df, days_back=days_back, min_samples=min_samples)
@@ -77,8 +43,7 @@ def get_scatter(df, type_, min_samples):
                      )
 
 
-def _gen_multi_html(figs):
-    n_cols = 4
+def _gen_multi_html(figs, n_cols=4):
     n_rows = len(figs) // n_cols
     import uuid
     [fig.update_layout(template="plotly_dark", dragmode=False) for fig in figs]
@@ -91,13 +56,10 @@ def _gen_multi_html(figs):
     return graphs
 
 
-def _get_multi_price(df, type_, only_figs=True):
+def _get_multi_price(df, type_):
     days_back = 7
     figs = run_for_cities(df, type_, n_cities=8, resample_rule=f'{days_back}D', use_median=True)
-    if only_figs:
-        return figs
-    graphs = _gen_multi_html(figs)
-    return graphs
+    return figs
 
 
 def _get_single_price(df, type_, city, col_name):
@@ -109,24 +71,15 @@ def _get_single_price(df, type_, city, col_name):
 
 
 def get_single_price(city=None, col_name='price'):
-    return [dbc.Col(_get_single_price(df_forsale, "sale", city, col_name)),
-            dbc.Col(_get_single_price(df_rent, "rent", city, col_name))]
+    return [dbc.Col(_get_single_price(get_stats_data()['df_log_forsale'], "sale", city, col_name)),
+            dbc.Col(_get_single_price(get_stats_data()['df_log_rent'], "rent", city, col_name))]
 
 
-# def get_multi_price_parts():
-#     return [
-#         dbc.Row(dbc.Col(html.H2("מכירה - תנועות בערים נבחרות של המחיר בזמן, לפי אחוזונים"))),
-#         *_get_multi_price(df_forsale, "forsale"),
-#         dbc.Row(dbc.Col(html.H2("שכירות - תנועות בערים נבחרות של המחיר בזמן, לפי אחוזונים"))),
-#         *_get_multi_price(df_rent, "rent"),
-#     ]
-
-
-def get_multi_price_by_side():
-    figs1 = _get_multi_price(df_forsale, "forsale", only_figs=True)
-    figs2 = _get_multi_price(df_rent, "rent", only_figs=True)
+def get_multi_price_by_side(n_cols):
+    figs1 = _get_multi_price(get_stats_data()['df_log_forsale'], "forsale")
+    figs2 = _get_multi_price(get_stats_data()['df_log_rent'], "rent")
     figs = [item for pair in zip(figs1, figs2) for item in pair]
-    graphs = _gen_multi_html(figs)
+    graphs = _gen_multi_html(figs, n_cols)
     cont = [dbc.Row(dbc.Col(html.H3("תנועות בערים נבחרות של המחיר בזמן, לפי אחוזונים"))),
             dbc.Row(graphs)]
     return cont
@@ -152,8 +105,9 @@ def get_dash(server):
 
     app.layout = html.Div(
         [
-            dbc.Row([dbc.Col(get_page_menu()), dbc.Col(html.H1("Advanced Analytics"), style=dict(direction="ltr"))]),
-            dbc.Row(dbc.Col(html.H6(str_update))),
+            dbc.Row([dbc.Col(get_page_menu()),
+                     dbc.Col(html.H1("Real Estate Analytics"), width=8, style=dict(direction="ltr"))]),
+            dbc.Row(dbc.Col(html.H6("", id='updated-at'))),
             dbc.Row(dbc.Col(html.H3("מכירות דירות מול השפעת הריבית"))),
             dbc.Row(dbc.Col(graph_obj)),
 
@@ -164,9 +118,9 @@ def get_dash(server):
             dbc.Row(
                 [dbc.Col(
                     [html.H4("SALE", style={"background-color": "#1e81b0"}),
-                     get_scatter(df_forsale, 'forsale', 300)], width=6, xs=12),
+                     get_scatter(get_stats_data()['df_log_forsale'], 'forsale', 300)], width=6, xs=12),
                     dbc.Col([html.H4("RENT", style={"background-color": "#e28743"}),
-                             get_scatter(df_rent, 'rent', 200)], width=6, xs=12)],
+                             get_scatter(get_stats_data()['df_log_rent'], 'rent', 200)], width=6, xs=12)],
                 className="analysis-main-multi-grid"),
             # dbc.Row(),
             # dbc.Row(dbc.Col(html.Span("בכל הארץ, כל גרף מייצג אחוזון, כאשר האמצע הוא החציון"))),
@@ -180,91 +134,99 @@ def get_dash(server):
                               dbc.Switch(id="city-long-term-select-multi-switch", value=False),
                               html.Span('בחירה מרובה', style={"font-size": "smaller"})],
                              style={"display": "flex"}),
-                html.Div([dcc.Dropdown(
-                    cities_long_term_options,
+                    html.Div([dcc.Dropdown(
+                        cities_long_term_options,
+                        value='ALL',
+                        placeholder="multi",
+                        multi=False,
+                        id="city-long-term-select-multi",
+                        clearable=False,
+                        # className="form-select",
+                        style={"width": "250px", "color": "black", "font-size": "initial"}
+                    )], style={"display": "flex"}),
+
+                    # dbc.Select(id="city-long-term-select", options=cities_long_term_options,
+                    #            value="ALL",
+                    #            style=dict(width="200px", direction="ltr"),
+                    #            className="form-select"),
+                    html.Label("מחיר לפי", className="col-sm-2 col-form-label"),
+                    dbc.RadioItems(
+                        options=[
+                            {"label": "מחיר", "value": "price_declared"},
+                            {"label": "מחיר למ״ר", "value": "price_square_meter"},
+                        ],
+                        value="price_declared",
+                        inline=True,
+                        id="metric-long-term-select",
+                        labelClassName="btn btn-outline-primary",
+                        className="btn-group",
+                        inputClassName="btn-check"
+                    ),
+                    html.Label("מצב הנכס", className="col-sm-2 col-form-label"),
+                    dbc.RadioItems(
+                        options=[
+                            {"label": "חדש / יד שניה", "value": "CMP"},
+                            {"label": "הכל", "value": "ALL"},
+                            {"label": "חדש", "value": "NEW"},
+                            {"label": "יד שניה", "value": "OLD"},
+                        ],
+                        value="CMP",
+                        inline=True,
+                        id="year-built-long-term-select",
+                        labelClassName="btn btn-outline-primary",
+                        className="btn-group",
+                        inputClassName="btn-check"
+                    ),
+                ], className="form-group"),
+                dbc.Col([html.Div(id="pct-stats-long-term",
+                                  style={"display": "flex", "margin": "10px", "font-size": "smaller"}),
+                         html.Div(id='longterm-output')], width=9, md=12, sm=12, xs=12)
+            ]),
+            dbc.Alert(
+                "asfsaf",
+                id="alert-auto",
+                is_open=False,
+                color="danger",
+                # duration=10_000,
+            ),
+            dbc.Row(dbc.Col()),
+            dbc.Row(dbc.Col(html.H5("בטווח הקצר"))),
+            # dbc.Row(),
+            dbc.Row(dbc.Col([
+                dcc.Dropdown(
+                    cities_options,
                     value='ALL',
-                    placeholder="multi",
+                    placeholder="בטווח הקצר",
                     multi=False,
-                    id="city-long-term-select-multi",
+                    id="city-select",
                     clearable=False,
                     # className="form-select",
-                    style={"width": "250px", "color": "black", "font-size": "initial"}
-                )], style={"display": "flex"}),
-
-                # dbc.Select(id="city-long-term-select", options=cities_long_term_options,
-                #            value="ALL",
-                #            style=dict(width="200px", direction="ltr"),
-                #            className="form-select"),
-                html.Label("מחיר לפי", className="col-sm-2 col-form-label"),
+                    style={"width": "150px", "color": "black", "font-size": "initial", "margin": "7px"}
+                ),
                 dbc.RadioItems(
                     options=[
-                        {"label": "מחיר", "value": "price_declared"},
-                        {"label": "מחיר למ״ר", "value": "price_square_meter"},
+                        {"label": "מחיר", "value": "price"},
+                        {"label": "מחיר למ״ר", "value": "price_meter"},
                     ],
-                    value="price_declared",
+                    value="price",
                     inline=True,
-                    id="metric-long-term-select",
+                    id="metric-select",
                     labelClassName="btn btn-outline-primary",
                     className="btn-group",
                     inputClassName="btn-check"
                 ),
-                html.Label("מצב הנכס", className="col-sm-2 col-form-label"),
-                dbc.RadioItems(
-                    options=[
-                        {"label": "הכל", "value": "ALL"},
-                        {"label": "חדש", "value": "NEW"},
-                        {"label": "יד שניה", "value": "OLD"},
-                        {"label": "השוואה", "value": "CMP"}
-                    ],
-                    value="ALL",
-                    inline=True,
-                    id="year-built-long-term-select",
-                    labelClassName="btn btn-outline-primary",
-                    className="btn-group",
-                    inputClassName="btn-check"
-                ),
-            ], className="form-group"),
-            dbc.Col([html.Div(id="pct-stats-long-term",
-                              style={"display": "flex", "margin": "10px", "font-size": "smaller"}),
-                     html.Div(id='longterm-output')], width=9, md=12, sm=12, xs=12)
-        ]),
-                 dbc.Alert(
-                     "asfsaf",
-                     id="alert-auto",
-                     is_open=False,
-                     color="danger",
-                     # duration=10_000,
-                 ),
-                 dbc.Row(dbc.Col()),
-                 # dbc.Row(),
-                 dbc.Row(dbc.Col([dbc.Select(id="city-select", options=cities_options,
-                                             value="ALL",
-                                             style=dict(width="200px", direction="ltr")),
-                                  dbc.RadioItems(
-                                      options=[
-                                          {"label": "מחיר", "value": "price"},
-                                          {"label": "מחיר למ״ר", "value": "price_meter"},
-                                      ],
-                                      value="price",
-                                      inline=True,
-                                      id="metric-select",
-                                      labelClassName="btn btn-outline-primary",
-                                      className="btn-group",
-                                      inputClassName="btn-check"
-                                  ),
-                                  ])),
-                 dbc.Row(dbc.Col(html.H5("בטווח הקצר"))),
-                 dbc.Row(get_single_price(), id="city-output"),
-                 *get_multi_price_by_side(),
-    # dbc.Row(
-    #     [
-    #         dbc.Col(html.Div("One of three columns")),
-    #         dbc.Col(html.Div("One of three columns")),
-    #         dbc.Col(html.Div("One of three columns")),
-    #     ]
-    # ),
-    ],
-    className = "analysis-main",
+            ])),
+            dbc.Row(get_single_price(), id="city-output"),
+            *get_multi_price_by_side(n_cols=2),
+            # dbc.Row(
+            #     [
+            #         dbc.Col(html.Div("One of three columns")),
+            #         dbc.Col(html.Div("One of three columns")),
+            #         dbc.Col(html.Div("One of three columns")),
+            #     ]
+            # ),
+        ],
+        className="analysis-main",
 
     )
 
@@ -279,8 +241,8 @@ def get_dash(server):
             city = None
         if col_name not in ['price', 'price_meter']:
             col_name = 'price'
-        children = [dbc.Col(_get_single_price(df_forsale, "sale", city, col_name)),
-                    dbc.Col(_get_single_price(df_rent, "rent", city, col_name))]
+        children = [dbc.Col(_get_single_price(get_stats_data()['df_log_forsale'], "sale", city, col_name)),
+                    dbc.Col(_get_single_price(get_stats_data()['df_log_rent'], "rent", city, col_name))]
         return children
 
     @app.callback(
@@ -295,6 +257,7 @@ def get_dash(server):
     def get_by_city_long_term(multi_city, col_name, asset_year):
         from app_map.utils import create_pct_bar
         show_pct_bar = True
+        dict_combined = get_stats_data()['dict_combined']
         if isinstance(multi_city, list):
             df_agg = [dict_combined["ALL"][c] for c in multi_city]
             fig = get_fig_quantiles_multi_city(df_agg, multi_city, col_name)
@@ -319,24 +282,31 @@ def get_dash(server):
         html_pct_bar = create_pct_bar(df_agg, col_name) if show_pct_bar else []
 
         fig.update_layout(template="plotly_dark", dragmode=False)
-        graph = dcc.Graph(id=f'graph-long-price-{type_}', figure=fig,
+        graph = dcc.Graph(id=f'graph-long-price-sale', figure=fig,
                           config=config_figure_disable_all)
         return html_pct_bar, graph, "", False
 
     @app.callback(
         Output('city-long-term-select-multi', 'multi'),
         Output('city-long-term-select-multi', 'value'),
+        Output('updated-at', 'children'),
         Input('city-long-term-select-multi-switch', 'value'),
         Input('city-long-term-select-multi', 'value')
 
     )
     def switch_long_term_select(switch_val, value):
+        # Just use it to update the main title
+        date_df = get_stats_data()['date_updated']
+        str_update = f'מעודכן ל-{date_df}'
+        val_b = value
         if not switch_val:
             value = value[0] if isinstance(value, list) else value
         if value is None:
             value = "ALL"
+        if val_b == value:
+            value = dash.no_update
         print(switch_val, value)
-        return switch_val, value
+        return switch_val, value, str_update
 
     return server, app
 

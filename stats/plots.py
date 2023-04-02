@@ -25,9 +25,9 @@ def plot_scatter_f(df, res_ratio, type_):
     df['time_alive'] = (datetime.today() - df['date_added']).dt.days
     df_g = df[~df['active']].groupby('city')['time_alive'].agg(['mean', 'std', 'median', 'size'])
     df_g = df_g.join(res_ratio, how='inner')
-    len_b = len(df_g)
+    # len_b = len(df_g)
     df_g = df_g[df_g['size'] >= 30]
-    print(len_b, len(df_g))
+    # print(len_b, len(df_g))
     fig = go.Figure(data=go.Scatter(x=df_g['median'], y=df_g['r'], marker_color=df_g['size'],
                                     mode='markers+text',
                                     textposition="bottom center",

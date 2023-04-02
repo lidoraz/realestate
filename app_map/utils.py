@@ -13,7 +13,7 @@ from fetch_data.utils import filter_by_dist, get_nadlan_trans
 FETCH_LIMIT = 500
 
 
-def get_file_from_remote(filename):
+def get_file_from_remote(filename, always_update=False):
     s3_file = "https://real-estate-public.s3.eu-west-2.amazonaws.com/resources/{filename}"
     pre_path = f"resources/"
     if not os.path.exists(pre_path):
@@ -22,32 +22,40 @@ def get_file_from_remote(filename):
     should_update = True
     if os.path.exists(path_file):
         time_modified = os.path.getmtime(path_file)
-        if (time.time() - time_modified) < (3600 * 24):
+        if (time.time() - time_modified) < (3600 * 24) or datetime.now().replace(minute=0, second=0):
             should_update = False
 
     # should_update=True
-    if should_update:
-        print(f"{datetime.now()}, Downloading file {filename}")
+    if should_update or always_update:
         from smart_open import open as s_open
-        # TODO Add here access only to auth users, something with bucket is not correct
-        # import boto3
-        # session = boto3.Session(
-        #     aws_access_key_id=os.environ['AWS_ACCESS_KEY_ID'],
-        #     aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'])
-        # s3_file_name = "s3://real-estate-public/resources/yad2_rent_df.pk"
-        nadlan_path = pre_path + "df_nadlan_recent.pk"
-        with s_open(s3_file.format(filename="df_nadlan_recent.pk"), 'rb') as f:
-            pd.read_pickle(f).to_pickle(nadlan_path)
-        with s_open(s3_file.format(filename=filename), 'rb') as f:
-            file_data = pickle.load(f)
-            with open(path_file, "wb") as ff:
-                pickle.dump(file_data, ff)
-            print(f"{datetime.now()}, Downloaded file and saved {filename}")
-            return file_data
-    else:
-        print(f"{datetime.now()} loading from FS file {filename}")
-        with open(path_file, 'rb') as f:
-            return pickle.load(f)
+        def run():
+            print(f"{datetime.now()}, Downloading file {filename}")
+            # TODO Add here access only to auth users, something with bucket is not correct
+            #  Wewrite this to have background update this and download the pickles, and every 1 reload the pointers to load new df
+            #  https://stackoverflow.com/questions/21214270/how-to-schedule-a-function-to-run-every-hour-on-flask
+            # import boto3
+            # session = boto3.Session(
+            #     aws_access_key_id=os.environ['AWS_ACCESS_KEY_ID'],
+            #     aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'])
+            # s3_file_name = "s3://real-estate-public/resources/yad2_rent_df.pk"
+            nadlan_path = pre_path + "df_nadlan_recent.pk"
+            with s_open(s3_file.format(filename="df_nadlan_recent.pk"), 'rb') as f:
+                pd.read_pickle(f).to_pickle(nadlan_path)
+            with s_open(s3_file.format(filename=filename), 'rb') as f:
+                file_data = pickle.load(f)
+                with open(path_file, "wb") as ff:
+                    pickle.dump(file_data, ff)
+                print(f"{datetime.now()}, Downloaded file and saved {filename}")
+
+        from threading import Thread
+        thread = Thread(target=run)
+        exists = os.path.exists(pre_path + filename)
+        thread.start()
+        if not exists:
+            thread.join()
+    print(f"{datetime.now()} loading from FS file {filename}")
+    with open(path_file, 'rb') as f:
+        return pickle.load(f)
 
 
 def app_preprocess_df(df_all):
@@ -313,11 +321,11 @@ def create_pct_bar(df_agg, col_name):
                        style=dict(color=color, padding="5px 5px 0px"))],
             style={"margin-left": "10px", "gap-left": "10px"})
 
-    return [#vhtml.Span(":", style={"margin-right": "10px",}),
-            get_span("5Y:", prev[0]),
-            get_span("3Y:", prev[1]),
-            get_span("1Y:", prev[2]),
-            get_span("6M:", prev[3])]
+    return [  # vhtml.Span(":", style={"margin-right": "10px",}),
+        get_span("5Y:", prev[0]),
+        get_span("3Y:", prev[1]),
+        get_span("1Y:", prev[2]),
+        get_span("6M:", prev[3])]
 
 #
 # def res_get_add_info(item):

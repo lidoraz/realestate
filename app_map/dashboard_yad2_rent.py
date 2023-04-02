@@ -7,8 +7,9 @@ BASE_URL = "rent"
 
 
 def get_dash(server):
-    df_all = get_file_from_remote(filename="yad2_rent_df.pk")
-    df_all = app_preprocess_df(df_all)
+    from app import get_rent_data
+    # df_all = get_file_from_remote(filename="yad2_rent_df.pk")
+    # df_all = app_preprocess_df(df_all)
     rent_config_default = {"price-from": 1_000, "price-to": 6_000, "median-price-pct": None,
                            "price-min": 500, "price-max": 10_000,
                            "switch-median": False,
@@ -18,10 +19,10 @@ def get_dash(server):
                            "price_mul": 1,  # 1e3,
                            "with_nadlan": False,  # Work around for missing nadlan db in remote
                            "name": BASE_URL,
-                           "data": df_all
+                           "data": get_rent_data
                            }
 
-    df_all.query('-0.89 <price_pct < -0.05').to_csv('df_rent.csv')
+    # df_all.query('-0.89 <price_pct < -0.05').to_csv('df_rent.csv')
     app = dash.Dash(server=server, external_stylesheets=[dbc.themes.BOOTSTRAP], title="Rent",
                     url_base_pathname=f'/{BASE_URL}/')
 
