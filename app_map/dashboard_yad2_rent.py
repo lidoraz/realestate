@@ -19,7 +19,7 @@ def get_dash(server):
                            "price_mul": 1,  # 1e3,
                            "with_nadlan": False,  # Work around for missing nadlan db in remote
                            "name": BASE_URL,
-                           "data": get_rent_data
+                           "func_data": get_rent_data
                            }
 
     # df_all.query('-0.89 <price_pct < -0.05').to_csv('df_rent.csv')
