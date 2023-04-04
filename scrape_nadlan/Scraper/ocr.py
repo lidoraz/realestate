@@ -1,5 +1,30 @@
 import cv2
 import pytesseract
+import os
+from google.cloud import vision
+
+
+class OCR:
+
+    def __init__(self, path_to_token=r"C:\gcloud_service_file.json"):
+        os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = path_to_token
+        self.client = vision.ImageAnnotatorClient()
+
+    def detect_text(self, path):
+        # with open(path, 'rb') as f:
+        #     img = f.read()
+
+        img = cv2.imread(path)
+        img = cv2.fastNlMeansDenoising(img, 40, 40)
+        success, img = cv2.imencode('.png', img)
+        img = img.tobytes()
+        img = vision.Image(content=img)
+        res = self.client.text_detection(img)
+        text = res.full_text_annotation.text
+        res_digits = ''.join(c for c in text if c.isdigit())
+        print('ocr:', res_digits)
+        return res_digits
+
 
 TESSERACT_PATH = r'C:\Tesseract-OCR\tesseract.exe'
 

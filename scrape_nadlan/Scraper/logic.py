@@ -6,7 +6,7 @@ from selenium.common.exceptions import NoSuchElementException
 import pandas as pd
 from datetime import datetime
 from scrape_nadlan.Scraper.DB import columns
-from scrape_nadlan.Scraper.ocr import OCR1
+from scrape_nadlan.Scraper.ocr import OCR
 from pyproj import Transformer
 import logging
 import tempfile
@@ -15,7 +15,8 @@ import os
 import random
 from scrape_nadlan.Scraper.utils import sleep
 
-PATH = "resources/geckodriver.exe"
+# PATH = "resources/geckodriver.exe"
+PATH = os.path.expanduser('~') + '/geckodriver'
 print(f"GECKO DRIVER IS SER TO: '{PATH}'")
 
 logging.basicConfig(
@@ -67,7 +68,7 @@ def convert_wgs84_to_itm(lat, long):
 
 
 class Scraper:
-    def __init__(self, proxy_ip=None, silent=None):
+    def __init__(self, proxy_ip=None, headless=None):
         self.proxy_ip = proxy_ip
         profile = webdriver.FirefoxProfile()
         if proxy_ip:
@@ -80,7 +81,7 @@ class Scraper:
             }
         ### HEADLESS OPTION
         firefox_options = webdriver.FirefoxOptions()
-        if silent:
+        if headless:
             firefox_options.headless = True
             # firefox_options.add_argument("-s")
         import random
@@ -88,7 +89,8 @@ class Scraper:
         profile.set_preference("general.useragent.override", f"{random.choice(user_agents)} {str(uuid.uuid4())}")
         self.driver = webdriver.Firefox(executable_path=PATH, options=firefox_options)  # , firefox_profile=profile
         self.driver.minimize_window()
-        self.ocr = OCR1()
+        path = os.path.join(os.path.expanduser('~'), '/.ssh/gcloud_service_file.json')
+        self.ocr = OCR(path)
         self.url = "https://nadlan.taxes.gov.il/svinfonadlan2010/startpageNadlanNewDesign.aspx"
         # FIND GUSH HELKA: https://www.gov.il/apps/mapi/parcel_address/parcel_address.html
         # self.url = "https://mylocation.org/"

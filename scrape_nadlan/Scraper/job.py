@@ -62,7 +62,7 @@ scrapers = []
 
 
 def start_routine(use_proxy):
-    scraper = Scraper()
+    scraper = Scraper(headless=True)
     scrapers.append(scraper)
     while True:
         proxy = None
