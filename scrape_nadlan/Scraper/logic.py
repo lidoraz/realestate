@@ -89,7 +89,7 @@ class Scraper:
         profile.set_preference("general.useragent.override", f"{random.choice(user_agents)} {str(uuid.uuid4())}")
         self.driver = webdriver.Firefox(executable_path=PATH, options=firefox_options)  # , firefox_profile=profile
         self.driver.minimize_window()
-        path = os.path.join(os.path.expanduser('~'), '/.ssh/gcloud_service_file.json')
+        path = os.path.expanduser('~') + '/.ssh/gcloud_service_file.json'
         self.ocr = OCR(path)
         self.url = "https://nadlan.taxes.gov.il/svinfonadlan2010/startpageNadlanNewDesign.aspx"
         # FIND GUSH HELKA: https://www.gov.il/apps/mapi/parcel_address/parcel_address.html
