@@ -46,7 +46,7 @@ def get_engine():
 
 def get_telegram_creds():
     load_vault()
-    bot_id = os.environ.get("TELEGRAM_BOT_ID")
+    bot_id = os.environ.get("TELEGRAM_TOKEN")
     channel_id = os.environ.get("TELEGRAM_CHANNEL")
     assert bot_id
     assert channel_id
