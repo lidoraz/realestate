@@ -21,28 +21,22 @@ cache = Cache(server, config={'CACHE_TYPE': 'simple', 'CACHE_DEFAULT_TIMEOUT': 3
 @cache.cached(timeout=3600)
 def load_dataframes():
     from app_map.utils import get_file_from_remote
-    from app_map.utils import app_preprocess_df
-    df_rent_all = app_preprocess_df(get_file_from_remote(filename="yad2_rent_df.pk"),)
-    df_forsale_all = app_preprocess_df(get_file_from_remote(filename="yad2_forsale_df.pk"))
-    # STATS
-    def preprocess(df):
-        import numpy as np
-        df['price_meter'] = df['price'] / df['square_meter_build']
-        df['price_meter'] = df['price_meter'].replace(np.inf, np.nan)
-        df.sort_values('price_meter', ascending=False)
-        return df
-
-    df_log_rent = preprocess(get_file_from_remote("df_log_rent.pk"))
-    df_log_forsale = preprocess(get_file_from_remote("df_log_forsale.pk"))
-
+    from app_map.utils import app_preprocess_df, preprocess_stats
+    get_file_from_remote("df_nadlan_recent.pk")
+    df_rent_all = app_preprocess_df(get_file_from_remote("yad2_rent_df.pk"))
+    df_forsale_all = app_preprocess_df(get_file_from_remote("yad2_forsale_df.pk"))
     dict_df_agg_nadlan_all = get_file_from_remote("dict_df_agg_nadlan_all.pk")
     dict_df_agg_nadlan_new = get_file_from_remote("dict_df_agg_nadlan_new.pk")
     dict_df_agg_nadlan_old = get_file_from_remote("dict_df_agg_nadlan_old.pk")
     dict_combined = dict(ALL=dict_df_agg_nadlan_all,
                          NEW=dict_df_agg_nadlan_new,
                          OLD=dict_df_agg_nadlan_old)
+    df_log_rent = preprocess_stats(get_file_from_remote("df_log_rent.pk"))
+    df_log_forsale = preprocess_stats(get_file_from_remote("df_log_forsale.pk"))
+
     date_updated = df_log_forsale['date_updated'].max().date()
-    stats = dict(df_log_forsale=df_log_forsale, df_log_rent=df_log_rent, dict_combined=dict_combined, date_updated=date_updated)
+    stats = dict(df_log_forsale=df_log_forsale, df_log_rent=df_log_rent, dict_combined=dict_combined,
+                 date_updated=date_updated)
     #
     sale = dict(df_forsale_all=df_forsale_all)
     rent = dict(df_rent_all=df_rent_all)

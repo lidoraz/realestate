@@ -13,7 +13,7 @@ from fetch_data.utils import filter_by_dist, get_nadlan_trans
 FETCH_LIMIT = 500
 
 
-def get_file_from_remote(filename, always_update=False):
+def get_file_from_remote(filename, hours_to_updated=12):
     s3_file = "https://real-estate-public.s3.eu-west-2.amazonaws.com/resources/{filename}"
     pre_path = f"resources/"
     if not os.path.exists(pre_path):
@@ -22,11 +22,11 @@ def get_file_from_remote(filename, always_update=False):
     should_update = True
     if os.path.exists(path_file):
         time_modified = os.path.getmtime(path_file)
-        if (time.time() - time_modified) < (3600 * 24) or datetime.now().replace(minute=0, second=0):
+        if (time.time() - time_modified) / 3600 < hours_to_updated:
             should_update = False
 
     # should_update=True
-    if should_update or always_update:
+    if should_update:
         from smart_open import open as s_open
         def run():
             print(f"{datetime.now()}, Downloading file {filename}")
@@ -38,9 +38,9 @@ def get_file_from_remote(filename, always_update=False):
             #     aws_access_key_id=os.environ['AWS_ACCESS_KEY_ID'],
             #     aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'])
             # s3_file_name = "s3://real-estate-public/resources/yad2_rent_df.pk"
-            nadlan_path = pre_path + "df_nadlan_recent.pk"
-            with s_open(s3_file.format(filename="df_nadlan_recent.pk"), 'rb') as f:
-                pd.read_pickle(f).to_pickle(nadlan_path)
+            # nadlan_path = pre_path + "df_nadlan_recent.pk"
+            # with s_open(s3_file.format(filename="df_nadlan_recent.pk"), 'rb') as f:
+            #     pd.read_pickle(f).to_pickle(nadlan_path)
             with s_open(s3_file.format(filename=filename), 'rb') as f:
                 file_data = pickle.load(f)
                 with open(path_file, "wb") as ff:
@@ -74,6 +74,14 @@ def app_preprocess_df(df_all):
     df_all = df_all.reset_index()  # to extract id
     # df_f = df.query('price < 3000000 and -0.9 < price_pct < -0.01 and price_diff < 1e7')  # [:30]
     return df_all
+
+# STATS
+def preprocess_stats(df):
+    import numpy as np
+    df['price_meter'] = df['price'] / df['square_meter_build']
+    df['price_meter'] = df['price_meter'].replace(np.inf, np.nan)
+    df.sort_values('price_meter', ascending=False)
+    return df
 
 
 def preprocess_to_str_deals(df):
