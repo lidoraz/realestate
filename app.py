@@ -90,6 +90,7 @@ def load_dataframes():
     filenames = ["df_nadlan_recent.pk",
                  "yad2_rent_df.pk",
                  "yad2_forsale_df.pk",
+                 "fig_timeline_new_vs_old.pk",
                  "dict_df_agg_nadlan_all.pk",
                  "dict_df_agg_nadlan_new.pk",
                  "dict_df_agg_nadlan_old.pk",
