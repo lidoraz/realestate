@@ -1,5 +1,5 @@
 import dash
-from app_map.utils import *
+import dash_bootstrap_components as dbc
 from app_map.util_layout import get_layout
 from app_map.utils_callbacks import add_callbacks
 
@@ -8,8 +8,6 @@ BASE_URL = "rent"
 
 def get_dash(server):
     from app import get_rent_data
-    # df_all = get_file_from_remote(filename="yad2_rent_df.pk")
-    # df_all = app_preprocess_df(df_all)
     rent_config_default = {"price-from": 1_000, "price-to": 6_000, "median-price-pct": None,
                            "price-min": 500, "price-max": 10_000,
                            "switch-median": False,

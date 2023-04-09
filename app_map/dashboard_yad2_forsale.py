@@ -1,7 +1,6 @@
 import dash
 import dash_bootstrap_components as dbc
 from app_map.util_layout import get_layout
-from app_map.utils import get_file_from_remote, app_preprocess_df
 from app_map.utils_callbacks import add_callbacks
 
 BASE_URL = "sale"

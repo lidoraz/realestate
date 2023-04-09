@@ -175,6 +175,7 @@ def get_monthly_counts(df):
     df_monthly_counts = df.groupby(['city_']).resample('Q', convention='end', closed="left").size().T
     df_monthly_counts = df_monthly_counts.divide(df_monthly_counts.sum(axis=1).values, axis=0)
     df_style = df_monthly_counts.style.background_gradient('RdBu', axis=0).format('{:,.2%}')
+    os.makedirs("resources/plots_daily_nadlan", exist_ok=True)
     df_style.to_html("resources/plots_daily_nadlan/monthly_counts.html")
 
 

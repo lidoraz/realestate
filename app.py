@@ -9,6 +9,7 @@ from flask import redirect
 import sys
 from datetime import datetime
 from flask_caching import Cache
+import json
 
 # from flask import Blueprint
 
@@ -16,32 +17,91 @@ server = Flask(__name__)
 
 cache = Cache(server, config={'CACHE_TYPE': 'simple', 'CACHE_DEFAULT_TIMEOUT': 3600})
 
+# Logic - first time - download. then check for time, if its over 22:00, download again, check time in header, to update last update date. otherwise, use cache data
+cache_dict = {}
+updated_path = "resources/updated_at.json"
 
-# blueprint = Blueprint('dataframes', __name__)
-@cache.cached(timeout=3600)
-def load_dataframes():
-    from app_map.utils import get_file_from_remote
+from datetime import timedelta
+
+
+@cache.cached(timeout=50)
+def get_updated_at():
+    print("Reloading from disk..")
+    if not os.path.exists(updated_path):
+        return None
+    with open(updated_path, 'r') as f:
+        # TODO ADD TZ change here
+        updated_at = datetime.fromisoformat(json.loads(f.read())['updatedAt'])
+    return updated_at
+
+
+def is_cache_ok(hours_diff=24):
+    updated_at = get_updated_at()
+    if updated_at is None:
+        return False
+    remote_diff = (datetime.now() - updated_at).total_seconds() / 3600
+    if remote_diff < hours_diff:  # check remote
+        return True
+    print(f"Diff is: {remote_diff} hours, downloading from remote")
+    return False
+
+
+def download_files(filenames):
+    from app_map.utils import download_from_remote
+    dt_modified = None
+    for filename in filenames:
+        dt_modified = download_from_remote(filename)
+    with open(updated_path, "w") as f:
+        json.dump({"updatedAt": dt_modified}, f)
+        global cache_dict
+        cache_dict['updatedAt'] = dt_modified
+
+
+def _preprocess_and_load():
+    print("Loading from load_dataframes")
+    from app_map.utils import read_pk
     from app_map.utils import app_preprocess_df, preprocess_stats
-    get_file_from_remote("df_nadlan_recent.pk")
-    df_rent_all = app_preprocess_df(get_file_from_remote("yad2_rent_df.pk"))
-    df_forsale_all = app_preprocess_df(get_file_from_remote("yad2_forsale_df.pk"))
-    dict_df_agg_nadlan_all = get_file_from_remote("dict_df_agg_nadlan_all.pk")
-    dict_df_agg_nadlan_new = get_file_from_remote("dict_df_agg_nadlan_new.pk")
-    dict_df_agg_nadlan_old = get_file_from_remote("dict_df_agg_nadlan_old.pk")
+    df_rent_all = app_preprocess_df(read_pk("yad2_rent_df.pk"))
+    df_forsale_all = app_preprocess_df(read_pk("yad2_forsale_df.pk"))
+    fig_timeline_new_vs_old = read_pk("fig_timeline_new_vs_old.pk")
+    dict_df_agg_nadlan_all = read_pk("dict_df_agg_nadlan_all.pk")
+    dict_df_agg_nadlan_new = read_pk("dict_df_agg_nadlan_new.pk")
+    dict_df_agg_nadlan_old = read_pk("dict_df_agg_nadlan_old.pk")
     dict_combined = dict(ALL=dict_df_agg_nadlan_all,
                          NEW=dict_df_agg_nadlan_new,
                          OLD=dict_df_agg_nadlan_old)
-    df_log_rent = preprocess_stats(get_file_from_remote("df_log_rent.pk"))
-    df_log_forsale = preprocess_stats(get_file_from_remote("df_log_forsale.pk"))
+    df_log_rent = preprocess_stats(read_pk("df_log_rent.pk"))
+    df_log_forsale = preprocess_stats(read_pk("df_log_forsale.pk"))
 
     date_updated = df_log_forsale['date_updated'].max().date()
     stats = dict(df_log_forsale=df_log_forsale, df_log_rent=df_log_rent, dict_combined=dict_combined,
+                 fig_timeline_new_vs_old=fig_timeline_new_vs_old,
                  date_updated=date_updated)
     #
     sale = dict(df_forsale_all=df_forsale_all)
     rent = dict(df_rent_all=df_rent_all)
+    global cache_dict
+    cache_dict = dict(sale=sale, rent=rent, stats=stats)
+    return cache_dict
 
-    return dict(sale=sale, rent=rent, stats=stats)
+
+# @cache.cached(timeout=3600)
+def load_dataframes():
+    filenames = ["df_nadlan_recent.pk",
+                 "yad2_rent_df.pk",
+                 "yad2_forsale_df.pk",
+                 "dict_df_agg_nadlan_all.pk",
+                 "dict_df_agg_nadlan_new.pk",
+                 "dict_df_agg_nadlan_old.pk",
+                 "df_log_rent.pk",
+                 "df_log_forsale.pk"]
+    if not is_cache_ok():
+        download_files(filenames)
+        _preprocess_and_load()
+    global cache_dict
+    if len(cache_dict) == 0:
+        _preprocess_and_load()
+    return cache_dict
 
 
 def get_stats_data():
@@ -59,15 +119,6 @@ def get_sale_data():
         return load_dataframes()['sale']['df_forsale_all']
 
 
-# @blueprint.route('/load_dataframe/<string:object_key>')
-# @cache.cached(timeout=3600)
-# def load_dataframe(object_key):
-#     bucket_name = 'my-s3-bucket'
-#     obj = s3.get_object(Bucket=bucket_name, Key=object_key)
-#     df = pd.read_csv(obj['Body'])
-#     return df
-
-
 def create_app(server):
     from app_map.dashboard_yad2_rent import get_dash as get_dash_rent
     server, _ = get_dash_rent(server)
@@ -82,24 +133,19 @@ def create_app(server):
 app = create_app(server)
 
 
-@app.before_request
-def before_request():
-    # user_agent=request.headers['HTTP_USER_AGENT'], req_uri=request.headers['REQUEST_URI']
-    if request.environ.get('HTTP_X_FORWARDED_FOR') is None:
-        address = request.environ['REMOTE_ADDR']
-    else:
-        address = request.environ['HTTP_X_FORWARDED_FOR']  # if behind a proxy
-    header_env = request.environ['HTTP_USER_AGENT']
-    user_log = dict(ts=str(datetime.today().strftime("%Y-%m-%d %H:%M:%S")),
-                    ip=address,
-                    path=request.path,
-                    user_agent=header_env)
-    # curr_file_mod = datetime.today().minute // 15
-    # with open(f"user_activity_log_{curr_file_mod}", "a") as f:
-    #     print(",".join(user_log), flush=True, file=f)
-    # idea - log into file, split by 15 minute each, write into csv file or something like that in append way.
-    # after this has passed, upload it to postgres as is, in the meanti
-    print("REQ::", list(user_log.values()))
+# @app.before_request
+# def before_request():
+#     # user_agent=request.headers['HTTP_USER_AGENT'], req_uri=request.headers['REQUEST_URI']
+#     if request.environ.get('HTTP_X_FORWARDED_FOR') is None:
+#         address = request.environ['REMOTE_ADDR']
+#     else:
+#         address = request.environ['HTTP_X_FORWARDED_FOR']  # if behind a proxy
+#     header_env = request.environ['HTTP_USER_AGENT']
+#     user_log = dict(ts=str(datetime.today().strftime("%Y-%m-%d %H:%M:%S")),
+#                     ip=address,
+#                     path=request.path,
+#                     user_agent=header_env)
+#     print("REQ::", list(user_log.values()))
 
 
 @app.route("/")

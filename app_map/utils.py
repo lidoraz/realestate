@@ -13,49 +13,81 @@ from fetch_data.utils import filter_by_dist, get_nadlan_trans
 FETCH_LIMIT = 500
 
 
-def get_file_from_remote(filename, hours_to_updated=12):
-    s3_file = "https://real-estate-public.s3.eu-west-2.amazonaws.com/resources/{filename}"
+def _check_time_modified(session, path_file):
+    keys = session.client('s3').list_objects(Bucket='real-estate-public', Prefix=path_file).get('Contents')
+    dt_modified = None
+    if keys:
+        dt_modified = keys[0]['LastModified'].replace(tzinfo=None).strftime("%Y-%m-%dT%H:%M:%S")
+    return dt_modified
+
+
+def download_from_remote(filename):
+    bucket = "real-estate-public"
     pre_path = f"resources/"
-    if not os.path.exists(pre_path):
-        pre_path = "../" + pre_path
     path_file = pre_path + filename
-    should_update = True
-    if os.path.exists(path_file):
-        time_modified = os.path.getmtime(path_file)
-        if (time.time() - time_modified) / 3600 < hours_to_updated:
-            should_update = False
+    print(f"{datetime.now()}, Downloading file {filename}")
+    import boto3
+    session = boto3.Session(
+        aws_access_key_id=os.environ['AWS_ACCESS_KEY_ID'],
+        aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'],
+        region_name="eu-west-2")
+    dt_modified = _check_time_modified(session, path_file)
+    session.client('s3').download_file(bucket, path_file, path_file)
+    return dt_modified
 
-    # should_update=True
-    if should_update:
-        from smart_open import open as s_open
-        def run():
-            print(f"{datetime.now()}, Downloading file {filename}")
-            # TODO Add here access only to auth users, something with bucket is not correct
-            #  Wewrite this to have background update this and download the pickles, and every 1 reload the pointers to load new df
-            #  https://stackoverflow.com/questions/21214270/how-to-schedule-a-function-to-run-every-hour-on-flask
-            # import boto3
-            # session = boto3.Session(
-            #     aws_access_key_id=os.environ['AWS_ACCESS_KEY_ID'],
-            #     aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'])
-            # s3_file_name = "s3://real-estate-public/resources/yad2_rent_df.pk"
-            # nadlan_path = pre_path + "df_nadlan_recent.pk"
-            # with s_open(s3_file.format(filename="df_nadlan_recent.pk"), 'rb') as f:
-            #     pd.read_pickle(f).to_pickle(nadlan_path)
-            with s_open(s3_file.format(filename=filename), 'rb') as f:
-                file_data = pickle.load(f)
-                with open(path_file, "wb") as ff:
-                    pickle.dump(file_data, ff)
-                print(f"{datetime.now()}, Downloaded file and saved {filename}")
 
-        from threading import Thread
-        thread = Thread(target=run)
-        exists = os.path.exists(pre_path + filename)
-        thread.start()
-        if not exists:
-            thread.join()
-    print(f"{datetime.now()} loading from FS file {filename}")
-    with open(path_file, 'rb') as f:
+def read_pk(filename):
+    with open(f"resources/{filename}", "rb") as f:
         return pickle.load(f)
+
+
+# def get_file_from_remote(filename, hours_to_updated=12):
+#     s3_file = "https://real-estate-public.s3.eu-west-2.amazonaws.com/resources/{filename}"
+#     pre_path = f"resources/"
+#     if not os.path.exists(pre_path):
+#         pre_path = "../" + pre_path
+#     path_file = pre_path + filename
+#     should_update = True
+#     hours_modified = 0
+#     if os.path.exists(path_file):
+#         hours_modified = (time.time() - os.path.getmtime(path_file)) / 3600
+#         if hours_modified < hours_to_updated:
+#             should_update = False
+#
+#     if should_update:
+#         from smart_open import open as s_open
+#         def run():
+#             print(f"{datetime.now()}, Downloading file {filename}")
+#             # TODO Add here access only to auth users, something with bucket is not correct
+#             #  Wewrite this to have background update this and download the pickles, and every 1 reload the pointers to load new df
+#             #  https://stackoverflow.com/questions/21214270/how-to-schedule-a-function-to-run-every-hour-on-flask
+#             # import boto3
+#             # session = boto3.Session(
+#             #     aws_access_key_id=os.environ['AWS_ACCESS_KEY_ID'],
+#             #     aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'],
+#             #     region_name="eu-west-2")
+#             # objects = session.client('s3').list_objects(Bucket='real-estate-public', Prefix=pre_path + filename)
+#             # keys = objects.get('Contents')
+#             # if keys:
+#             #     key = keys[0]
+#             #     hours_modified = (datetime.now() - keys['LastModified'].replace(tzinfo=None)).total_seconds() / 3600
+#             #     should_update = hours_modified > 24
+#
+#             with s_open(s3_file.format(filename=filename), 'rb') as f:
+#                 file_data = pickle.load(f)
+#                 with open(path_file, "wb") as ff:
+#                     pickle.dump(file_data, ff)
+#                 print(f"{datetime.now()}, Downloaded file and saved {filename}")
+#
+#         from threading import Thread
+#         thread = Thread(target=run)
+#         exists = os.path.exists(pre_path + filename)
+#         thread.start()
+#         if not exists:
+#             thread.join()
+#     print(f"{datetime.now()} loading from FS file {filename}, ({hours_modified:0.2f}/{hours_to_updated})")
+#     with open(path_file, 'rb') as f:
+#         return pickle.load(f)
 
 
 def app_preprocess_df(df_all):
@@ -74,6 +106,7 @@ def app_preprocess_df(df_all):
     df_all = df_all.reset_index()  # to extract id
     # df_f = df.query('price < 3000000 and -0.9 < price_pct < -0.01 and price_diff < 1e7')  # [:30]
     return df_all
+
 
 # STATS
 def preprocess_stats(df):

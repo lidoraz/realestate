@@ -1,9 +1,8 @@
 import dash
 import dash_bootstrap_components as dbc
 from dash import dcc
-from dash import html, Output, Input, State, ctx
+from dash import html, Output, Input
 from app_map.util_layout import get_page_menu
-from app_map.utils import get_file_from_remote
 from stats.plots import get_fig_quantiles_from_df, get_fig_quantiles_multi_city
 from stats.calc_plots import run_for_cities, create_ratio
 from stats.plots import plot_scatter_f
@@ -15,7 +14,7 @@ from app import get_stats_data
 
 stats_data = get_stats_data()
 cities = stats_data['df_log_forsale']['city'].value_counts()
-cities = cities[cities > 50].sort_index()
+cities = cities[cities > 100].sort_index()
 
 additional_all_key = [dict(label="בכל הארץ", value="ALL")]
 cities_options = additional_all_key + [dict(label=f'{city}', value=city) for city, cnt in
@@ -86,7 +85,8 @@ def get_multi_price_by_side(n_cols):
 
 
 # MAIN NADLAN # DEALS
-fig = get_file_from_remote("fig_timeline_new_vs_old.pk")
+
+fig = get_stats_data()['fig_timeline_new_vs_old']
 fig.update_layout(legend=dict(x=0, y=1))
 
 modeBarButtonsToRemove = ['select2d', 'lasso2d']
@@ -301,7 +301,6 @@ def get_dash(server):
             value = "ALL"
         if val_b == value:
             value = dash.no_update
-        print(switch_val, value)
         return switch_val, value
 
     return server, app
