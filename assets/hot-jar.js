@@ -11,3 +11,15 @@
     r.src = t + h._hjSettings.hjid + j + h._hjSettings.hjsv;
     a.appendChild(r);
 })(window, document, 'https://static.hotjar.com/c/hotjar-', '.js?sv=');
+
+<!-- Google tag (gtag.js) -->
+var imported = document.createElement('script');
+imported.src = 'https://www.googletagmanager.com/gtag/js?id=G-20SXF8539L';
+document.head.appendChild(imported);
+
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+
+gtag('config', 'G-20SXF8539L');
+

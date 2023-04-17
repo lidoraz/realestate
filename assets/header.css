@@ -5,15 +5,15 @@
 .top-container {
     top: 0;
     right: 0;
-    position: absolute;
+    position: fixed;
+    z-index: 9999;
 }
 
 .top-toolbar {
-    position: sticky;
+    /*position: sticky;*/
     gap: 2px;
     padding: 0 5px 2px 5px;
     background-color: white;
-    z-index: 999;
     font-size: smaller;
     direction: rtl;
     border-radius: 5px;
