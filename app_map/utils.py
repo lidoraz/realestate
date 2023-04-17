@@ -96,6 +96,7 @@ def get_asset_points(df_all, price_from=None, price_to=None,
     sql_asset_type = _multi_str_filter(asset_type, "asset_type")
     rooms_from = rooms_range[0] or 1
     rooms_to = rooms_range[1] or 100
+    floor_range[1] = 9999 if floor_range[1] == 32 else floor_range[1]
     sql_cond = dict(
         sql_rooms_range=f"{rooms_from} <= rooms <= {rooms_to}.5" if rooms_from is not None and rooms_to is not None else "",
         sql_floor_range=f"{floor_range[0]} <= floor <= {floor_range[1]}",

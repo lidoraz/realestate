@@ -152,7 +152,7 @@ def get_div_top_bar(config_defaults):
                                                     tooltip=slider_tooltip))],
                           className='slider-container-drop'),
                  html.Div([html.Span(n_floor_txt),
-                           html.Div(dcc.RangeSlider(0, 30, 1, value=[0, 30], marks=floor_marks, id='floor-slider',
+                           html.Div(dcc.RangeSlider(0, max(floor_marks.keys()), 4, value=[0, 30], marks=floor_marks, id='floor-slider',
                                                     tooltip=slider_tooltip,
                                                     ))],
                           className='slider-container-drop'),
