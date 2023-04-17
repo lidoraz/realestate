@@ -56,29 +56,32 @@ def get_diff(updated_at):
 
 
 def is_cache_ok(hours_diff=24):
+    updated_at = get_updated_at()
+    if updated_at:
+        diff = get_diff(updated_at)
+        print(f"diff from remote - {diff:.2f} < {hours_diff}")
+        return diff < hours_diff
+    return False
+
+
+def get_updated_at():
     try:
         with open(updated_path, 'r') as f:
             # TODO ADD TZ change here
             updated_at = datetime.fromisoformat(json.loads(f.read())['updatedAt'])
+            return updated_at
     except Exception as e:
         return False
-    diff = get_diff(updated_at)
-    print(f"diff from remote - {diff:.2f} < {hours_diff}")
-    return diff < hours_diff
-
-
-def get_updated_at():
-    with open(updated_path, 'r') as f:
-        # TODO ADD TZ change here
-        updated_at = datetime.fromisoformat(json.loads(f.read())['updatedAt'])
-        return updated_at
 
 
 def download_files(filenames):
     s3_client = get_aws_session().client('s3')
     updated_at = get_updated_at()
-    diff_h = get_diff(updated_at)
-    print(f"Downloading from remote, diff is {diff_h:.1f} hours")
+    txt = "Downloading from remote"
+    if updated_at:
+        diff_h = get_diff(updated_at)
+        txt += f", diff is {diff_h:.1f} hours"
+    print(txt)
     for filename in filenames:
         download_from_remote(s3_client, filename)
     dt_modified = check_time_modified(get_aws_session(), filenames[0])
