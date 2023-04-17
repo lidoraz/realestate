@@ -1,8 +1,4 @@
-import os
-import time
-
 import pandas as pd
-import pickle
 from datetime import datetime
 import numpy as np
 from app_map.marker import get_marker_tooltip, icon_maps, icon_real_estate, get_color
@@ -11,83 +7,6 @@ from scrape_yad2.utils import _get_parse_item_add_info
 from fetch_data.utils import filter_by_dist, get_nadlan_trans
 
 FETCH_LIMIT = 500
-
-
-def _check_time_modified(session, path_file):
-    keys = session.client('s3').list_objects(Bucket='real-estate-public', Prefix=path_file).get('Contents')
-    dt_modified = None
-    if keys:
-        dt_modified = keys[0]['LastModified'].replace(tzinfo=None).strftime("%Y-%m-%dT%H:%M:%S")
-    return dt_modified
-
-
-def download_from_remote(filename):
-    bucket = "real-estate-public"
-    pre_path = f"resources/"
-    path_file = pre_path + filename
-    print(f"{datetime.now()}, Downloading file {filename}")
-    import boto3
-    session = boto3.Session(
-        aws_access_key_id=os.environ['AWS_ACCESS_KEY_ID'],
-        aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'],
-        region_name="eu-west-2")
-    dt_modified = _check_time_modified(session, path_file)
-    session.client('s3').download_file(bucket, path_file, path_file)
-    return dt_modified
-
-
-def read_pk(filename):
-    with open(f"resources/{filename}", "rb") as f:
-        return pickle.load(f)
-
-
-# def get_file_from_remote(filename, hours_to_updated=12):
-#     s3_file = "https://real-estate-public.s3.eu-west-2.amazonaws.com/resources/{filename}"
-#     pre_path = f"resources/"
-#     if not os.path.exists(pre_path):
-#         pre_path = "../" + pre_path
-#     path_file = pre_path + filename
-#     should_update = True
-#     hours_modified = 0
-#     if os.path.exists(path_file):
-#         hours_modified = (time.time() - os.path.getmtime(path_file)) / 3600
-#         if hours_modified < hours_to_updated:
-#             should_update = False
-#
-#     if should_update:
-#         from smart_open import open as s_open
-#         def run():
-#             print(f"{datetime.now()}, Downloading file {filename}")
-#             # TODO Add here access only to auth users, something with bucket is not correct
-#             #  Wewrite this to have background update this and download the pickles, and every 1 reload the pointers to load new df
-#             #  https://stackoverflow.com/questions/21214270/how-to-schedule-a-function-to-run-every-hour-on-flask
-#             # import boto3
-#             # session = boto3.Session(
-#             #     aws_access_key_id=os.environ['AWS_ACCESS_KEY_ID'],
-#             #     aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'],
-#             #     region_name="eu-west-2")
-#             # objects = session.client('s3').list_objects(Bucket='real-estate-public', Prefix=pre_path + filename)
-#             # keys = objects.get('Contents')
-#             # if keys:
-#             #     key = keys[0]
-#             #     hours_modified = (datetime.now() - keys['LastModified'].replace(tzinfo=None)).total_seconds() / 3600
-#             #     should_update = hours_modified > 24
-#
-#             with s_open(s3_file.format(filename=filename), 'rb') as f:
-#                 file_data = pickle.load(f)
-#                 with open(path_file, "wb") as ff:
-#                     pickle.dump(file_data, ff)
-#                 print(f"{datetime.now()}, Downloaded file and saved {filename}")
-#
-#         from threading import Thread
-#         thread = Thread(target=run)
-#         exists = os.path.exists(pre_path + filename)
-#         thread.start()
-#         if not exists:
-#             thread.join()
-#     print(f"{datetime.now()} loading from FS file {filename}, ({hours_modified:0.2f}/{hours_to_updated})")
-#     with open(path_file, 'rb') as f:
-#         return pickle.load(f)
 
 
 def app_preprocess_df(df_all):
@@ -156,7 +75,7 @@ def _multi_str_filter(multi_choice, col_name):
     sql_state_asset = ""
     if len(multi_choice) > 0:
         states = ','.join(["'{}'".format(x.replace("'", "\\'")) for x in multi_choice])
-        sql_state_asset = f' and {col_name} in ({states})'
+        sql_state_asset = f'{col_name} in ({states})'
     return sql_state_asset
 
 
@@ -164,7 +83,8 @@ def get_asset_points(df_all, price_from=None, price_to=None,
                      price_median_pct_range=None, price_discount_pct_range=None, price_ai_pct_range=None,
                      is_price_median_pct_range=False, is_price_discount_pct_range=False, is_price_ai_pct_range=False,
                      date_added_days=None, date_updated=None,
-                     rooms_range=(None, None), with_agency=True, with_parking=None, with_balconies=None,
+                     rooms_range=(None, None), floor_range=(None, None),
+                     with_agency=True, with_parking=None, with_balconies=None,
                      asset_status=(),
                      asset_type=(),
                      map_bounds=None,
@@ -178,21 +98,22 @@ def get_asset_points(df_all, price_from=None, price_to=None,
     rooms_to = rooms_range[1] or 100
     sql_cond = dict(
         sql_rooms_range=f"{rooms_from} <= rooms <= {rooms_to}.5" if rooms_from is not None and rooms_to is not None else "",
-        sql_price=f"and {price_from} <= price <= {price_to}" if price_from is not None else "",
-        sql_is_agency="and is_agency == False" if not with_agency else "",
-        sql_is_parking="and parking > 0" if with_parking else "",
-        sql_is_balcony="and balconies == True" if with_balconies else "",
+        sql_floor_range=f"{floor_range[0]} <= floor <= {floor_range[1]}",
+        sql_price=f"{price_from} <= price <= {price_to}" if price_from is not None else "",
+        sql_is_agency="is_agency == False" if not with_agency else "",
+        sql_is_parking="parking > 0" if with_parking else "",
+        sql_is_balcony="balconies == True" if with_balconies else "",
         sql_asset_status=sql_asset_status,
         sql_asset_type=sql_asset_type,
-        sql_median_price_pct=f"and group_size > 30 and {price_median_pct_range[0] / 100}<=pct_diff_median <= {price_median_pct_range[1] / 100}" if is_price_median_pct_range else "",
-        sql_discount_pct=f"and {price_discount_pct_range[0] / 100} <= price_pct <= {price_discount_pct_range[1] / 100}" if is_price_discount_pct_range else "",
+        sql_median_price_pct=f"group_size > 30 and {price_median_pct_range[0] / 100}<=pct_diff_median <= {price_median_pct_range[1] / 100}" if is_price_median_pct_range else "",
+        sql_discount_pct=f"{price_discount_pct_range[0] / 100} <= price_pct <= {price_discount_pct_range[1] / 100}" if is_price_discount_pct_range else "",
         # sql_median_price_pct=f"and group_size > 30 and pct_diff_median <= {median_price_pct}" if median_price_pct is not None else "",
         # sql_discount_pct=f"and -0.90 <= price_pct <= {discount_price_pct}" if discount_price_pct is not None else "",
-        sql_ai_pct=f"and {price_ai_pct_range[0] / 100} <= ai_price_pct <= {price_ai_pct_range[1] / 100}" if is_price_ai_pct_range else "",
-        sql_map_bounds=f"and {map_bounds[0][0]} < lat < {map_bounds[1][0]} and {map_bounds[0][1]} < long < {map_bounds[1][1]}" if map_bounds else "",
-        sql_date_added=f"and date_added_d <= {date_added_days}" if date_added_days else "",
-        sql_date_updated=f"and date_updated_d <= {date_updated}" if date_updated else "")
-    q = ' '.join(list(sql_cond.values()))
+        sql_ai_pct=f"{price_ai_pct_range[0] / 100} <= ai_price_pct <= {price_ai_pct_range[1] / 100}" if is_price_ai_pct_range else "",
+        sql_map_bounds=f"{map_bounds[0][0]} < lat < {map_bounds[1][0]} and {map_bounds[0][1]} < long < {map_bounds[1][1]}" if map_bounds else "",
+        sql_date_added=f"date_added_d <= {date_added_days}" if date_added_days else "",
+        sql_date_updated=f"date_updated_d <= {date_updated}" if date_updated else "")
+    q = "1==1 and " + ' and '.join(list([v for v in sql_cond.values() if len(v)]))
     print(q)
     df_f = df_all.query(q)
     if limit:
@@ -205,6 +126,8 @@ def get_asset_points(df_all, price_from=None, price_to=None,
 def build_sidebar(deal):
     maps_url = f"http://maps.google.com/maps?z=12&t=m&q=loc:{deal['lat']}+{deal['long']}&hl=iw"  # ?hl=iw, t=k sattalite
     days_online = (datetime.today() - pd.to_datetime(deal['date_added'])).days
+    days_updated = (datetime.today() - pd.to_datetime(deal['date_updated'])).days
+    days_str_txt = lambda x: 'היום' if x == 0 else 'אתמול' if x == 1 else f'{x} ימים'
     date_added = pd.to_datetime(deal['date_added'])
     add_info = _get_parse_item_add_info(deal['id'])
     # add_info = res_get_add_info(deal.name)
@@ -261,7 +184,7 @@ def build_sidebar(deal):
                  get_html_span_pct(deal['ai_price_pct'])]),
 
          html.H6(f"הועלה בתאריך {date_added.date()}, (לפני {days_online / 7:0.1f} שבועות)"),
-         html.Span(f"מתי עודכן: {deal['date_updated']}"),
+         html.Span(f"מתי עודכן: {deal['date_updated']}, ({days_str_txt(days_updated)})"),
          html.Div(df_price_hist, className='text-ltr'),
          html.Span(),
          html.P([

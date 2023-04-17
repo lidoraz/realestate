@@ -9,12 +9,15 @@ price_text = "מחיר"
 date_added_txt = 'הועלה עד'
 date_updated_text = 'עודכן לפני'
 n_rooms_txt = 'חדרים'
+n_floor_txt = "קומה"
 median_price_txt = '% מהחציון'
 ai_pct_txt = '% ממחירAI '
 price_pct_txt = '% שינוי מחיר'
 rooms_marks = {r: str(r) for r in range(7)}
 rooms_marks[6] = '6+'
-
+floor_marks = {k: str(k) for k in range(0, 33, 4)}
+floor_marks.update({0: "קרקע", 32: "32+"})
+slider_tooltip = {'always_visible': True, 'placement': 'bottom'}
 CLUSTER_MAX_ZOOM = 15
 
 asset_status_cols = [
@@ -40,18 +43,19 @@ marker_type_default = 'ai_price_pct'
 # Can use text instead of just icon with using DivIcon in JS.
 
 def get_page_menu():
-    return dbc.DropdownMenu([dbc.DropdownMenuItem(html.A(dbc.Button("Rent"), href="/rent")),
-                             dbc.DropdownMenuItem(html.A(dbc.Button("Sale"), href="/sale")),
-                             dbc.DropdownMenuItem(html.A(dbc.Button("Analytics"), href="/analytics"))],
+    return dbc.DropdownMenu([dbc.DropdownMenuItem("Rent", href="/rent", external_link=True),
+                             dbc.DropdownMenuItem("Sale", href="/sale", external_link=True),
+                             dbc.DropdownMenuItem("Analytics", href="/analytics", external_link=True)],
                             label="Menu")  # style=dict(direction="ltr")
 
 
 def get_layout(default_config):
     layout = html.Div(children=[
-        html.Div(className="top-container", children=get_div_top_bar(default_config)),
+        html.Header(className="top-container", children=get_div_top_bar(default_config)),
+        html.Span("0", id="fetched-assets"),
         html.Div(className="grid-container", children=get_main_map()),
         html.Div(className="table-container", children=[div_left_off_canvas]),
-        html.Div(className="modal-container", children=[div_offcanvas])
+        html.Div(className="modal-container", children=[div_offcanvas]),
     ])
     return layout
 
@@ -96,9 +100,10 @@ def get_html_range_range_pct(text, element_id, checked=False):
                                      max=100,
                                      step=5, value=[-100, 0],
                                      id=element_id,
+                                     disabled=not checked,
                                      marks={-100: '-100%', 0: '0%', 100: '+100%'},
                                      allowCross=False,
-                                     tooltip={'always_visible': True, 'placement': 'bottom'})],
+                                     tooltip=slider_tooltip)],
                     className="slider-container-drop")
 
 
@@ -114,56 +119,66 @@ def get_div_top_bar(config_defaults):
                   dcc.Checklist(options=[{'label': 'מרפסת', 'value': 'Y'}], value=[], inline=True,
                                 inputClassName="rounded-checkbox",
                                 id='balconies-check')], className="dash-options"),
+        dbc.DropdownMenu([
+            html.Div([
+                html.Div([price_text, dcc.RangeSlider(min=config_defaults["price-min"],
+                                                      max=config_defaults["price-max"],
+                                                      step=config_defaults['price_step'],
+                                                      value=[config_defaults['price-from'],
+                                                             config_defaults['price-to']],
+                                                      id='price-slider',
+                                                      marks={config_defaults["price-max"]: '+',
+                                                             config_defaults["price-min"]: '-'},
+                                                      allowCross=False,
+                                                      tooltip=slider_tooltip)],
+                         className="slider-container-drop"),
+                html.Div([
+                    "תצוגה לפי",
+                    dbc.RadioItems(
+                        options=marker_type_options,
+                        value=marker_type_default,
+                        id='marker-type',
+                        inline=True,
+                    ),
+                ], style={"margin-bottom": "10px"}),
+                get_html_range_range_pct(median_price_txt, 'price-median-pct-slider'),
+                get_html_range_range_pct(price_pct_txt, 'price-discount-pct-slider'),
+                get_html_range_range_pct(ai_pct_txt, 'ai-price-pct-slider')],
+                className="dropdown-container")], label='F'),
+        dbc.DropdownMenu(
+            html.Div(
+                [html.Div([html.Span(n_rooms_txt),
+                           html.Div(dcc.RangeSlider(1, 6, 1, value=[3, 4], marks=rooms_marks, id='rooms-slider',
+                                                    tooltip=slider_tooltip))],
+                          className='slider-container-drop'),
+                 html.Div([html.Span(n_floor_txt),
+                           html.Div(dcc.RangeSlider(0, 30, 1, value=[0, 30], marks=floor_marks, id='floor-slider',
+                                                    tooltip=slider_tooltip,
+                                                    ))],
+                          className='slider-container-drop'),
+                 dcc.Dropdown(
+                     asset_status_cols,
+                     [],
+                     placeholder="מצב הנכס",
+                     multi=True,
+                     searchable=False,
+                     id='asset-status',
+                     className="asset-dropdown"),
+                 dcc.Dropdown(
+                     asset_type_cols,
+                     [],
+                     placeholder="סוג",
+                     multi=True,
+                     searchable=False,
+                     id='asset-type',
+                     className="asset-dropdown"),
+                 ], className="dropdown-container"), label="חדרים קומה"),
 
-        html.Div([html.Span(price_text), dcc.RangeSlider(min=config_defaults["price-min"],
-                                                         max=config_defaults["price-max"],
-                                                         step=config_defaults['price_step'],
-                                                         value=[config_defaults['price-from'],
-                                                                config_defaults['price-to']],
-                                                         id='price-slider', marks={config_defaults["price-max"]: '+',
-                                                                                   config_defaults["price-min"]: '-'},
-                                                         allowCross=False,
-                                                         tooltip={'always_visible': True})],
-                 className="slider-container"),
-        html.Div(className="vertical"),
-        get_html_range_range_pct(median_price_txt, 'price-median-pct-slider'),
-        get_html_range_range_pct(price_pct_txt, 'price-discount-pct-slider'),
-        get_html_range_range_pct(ai_pct_txt, 'ai-price-pct-slider', True),
-        # dbc.DropdownMenu([
-        #     dbc.DropdownMenuItem(get_html_range_range_pct(median_price_txt, 'price-median-pct-slider'), toggle=False),
-        #     dbc.DropdownMenuItem(get_html_range_range_pct(price_pct_txt, 'price-discount-pct-slider'), toggle=False),
-        #     dbc.DropdownMenuItem(get_html_range_range_pct(ai_pct_txt, 'ai-price-pct-slider', True), toggle=False),
-        # ], label='F'),
-        html.Div([html.Span(n_rooms_txt),
-                  html.Div(dcc.RangeSlider(1, 6, 1, value=[3, 4], marks=rooms_marks, id='rooms-slider'))],
-                 className="slider-container"),
-        dcc.Dropdown(
-            asset_status_cols,
-            [],
-            placeholder="מצב הנכס",
-            multi=True,
-            searchable=False,
-            id='asset-status',
-            className="asset-dropdown"),
-        dcc.Dropdown(
-            asset_type_cols,
-            [],
-            placeholder="סוג",
-            multi=True,
-            searchable=False,
-            id='asset-type',
-            className="asset-dropdown"),
         # dbc.DropdownMenu([dcc.Checklist(className="labels-multiselect", id="asset-status",
         #                                 options=asset_status_cols, value=[]), dbc.Button("X")], label="מצב"),
         # dbc.DropdownMenu([dcc.Checklist(className="labels-multiselect", id="asset-type",
         #                                 options=asset_type_cols, value=[]), dbc.Button("X")], label="סוג"),
         dbc.DropdownMenu([
-            dbc.DropdownMenuItem(dbc.RadioItems(
-                options=marker_type_options,
-                value=marker_type_default,
-                id='marker-type',
-                inline=True,
-            ), ),
             dbc.DropdownMenuItem([date_added_txt, dcc.Input(
                 id="date-added",
                 type="number",
@@ -189,8 +204,7 @@ def get_div_top_bar(config_defaults):
         dbc.Button("איזור", id="button-around"),
         dbc.Button("נקה", id="button-clear"),
         # dbc.Button("סנן", id='button-return'),
-        dbc.Button("TBL", id="table-toggle", color="success"),
-        dbc.Button(html.Span("0", id="fetched-assets"), color="secondary", disabled=True)
+        dbc.Button("TBL", id="table-toggle", color="success")
     ])
     return div_top_bar
 

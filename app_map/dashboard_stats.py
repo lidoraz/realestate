@@ -26,7 +26,6 @@ cities_long_term_options = additional_all_key + [dict(label=f'{city}', value=cit
 
 days_back = 30
 min_samples = 200
-del stats_data
 
 
 def get_scatter(df, type_, min_samples):

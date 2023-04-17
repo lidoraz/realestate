@@ -111,7 +111,8 @@ show_assets_input_output = [Output("geojson", "data"),
                             Input("ai-price-pct-slider-check", "value"),
                             #
                             Input("date-added", "value"), Input("date-updated", "value"),
-                            Input("rooms-slider", "value"), Input('agency-check', "value"),
+                            Input("rooms-slider", "value"), Input("floor-slider", "value"),
+                            Input('agency-check', "value"),
                             Input('parking-check', "value"), Input('balconies-check', "value"),
                             Input('asset-status', "value"), Input('asset-type', "value"),
                             Input("button-around", "n_clicks"),
@@ -124,7 +125,8 @@ def show_assets(price_range,
                 price_median_pct_range, price_discount_pct_range, price_ai_pct_range,
                 is_price_median_pct_range, is_price_discount_pct_range, is_price_ai_pct_range,
                 date_added, date_updated,
-                rooms_range, with_agency, with_parking, with_balconies, asset_status, asset_type, n_clicks_around,
+                rooms_range, floor_range,
+                with_agency, with_parking, with_balconies, asset_status, asset_type, n_clicks_around,
                 marker_type,
                 map_bounds, map_zoom, active_cell=None):
     conf = get_context_by_rule()
@@ -153,7 +155,7 @@ def show_assets(price_range,
         df_f = get_asset_points(conf['func_data'](), price_from, price_to,
                                 price_median_pct_range, price_discount_pct_range, price_ai_pct_range,
                                 is_price_median_pct_range, is_price_discount_pct_range, is_price_ai_pct_range,
-                                date_added, date_updated, rooms_range,
+                                date_added, date_updated, rooms_range, floor_range,
                                 with_agency, with_parking, with_balconies, map_bounds=map_bounds,
                                 asset_status=asset_status, asset_type=asset_type, limit=True)
     # Can keep a list of points, if after fetch there was no new, no need to build new points, just keep them to save resources

@@ -2,24 +2,29 @@
     right: 0 !important;
 }
 
-.top-toolbar {
-    margin: auto;
-    padding: 3px 5px 2px 7px; /*top right bot left*/
-    gap: 2px;
-    border-bottom: 1px solid gray;
-    background-color: white;
-    /*position: absolute;*/
-    position: relative;
-    z-index: 999;
-    width: 100%;
-    height: 9vh;
-    font-size: smaller;
+.top-container {
     top: 0;
     right: 0;
+    position: absolute;
+}
+
+.top-toolbar {
+    position: sticky;
+    gap: 2px;
+    padding: 0 5px 2px 5px;
+    background-color: white;
+    z-index: 999;
+    font-size: smaller;
     direction: rtl;
-    /*overflow-x: scroll; !* Nasty fix but works*!*/
-    /*margin-right: 10px;*/
+    border-radius: 5px;
     display: flex;
+}
+
+#fetched-assets{
+    position: absolute;
+    z-index: 999;
+    left:10px;
+    bottom:0;
 }
 
 .top-toolbar button {
@@ -57,9 +62,13 @@ p.rtl {
     /*text-align: right;*/
 }
 
+.rc-slider-with-marks { /* for RangeSlider*/
+    direction: ltr;
+}
+
 /*https://stackoverflow.com/questions/36469631/how-to-get-leaflet-for-r-use-100-of-shiny-dashboard-height?rq=1*/
 #big-map {
-    height: calc(100vh - 9vh) !important;
+    height: calc(100vh - 0vh) !important;
 }
 
 .price-diff-table td, .price-diff-table th {
@@ -187,6 +196,20 @@ p.rtl {
     min-width: 100px;
 }
 
+/*.slider-container-drop{*/
+/*    width:200px;*/
+/*    direction: rtl;*/
+/*    min-width: 150px;*/
+/*    text-align: center;*/
+/*}*/
+
+.dropdown-container {
+    width: 200px;
+    direction: rtl;
+    min-width: 150px;
+    text-align: center;
+}
+
 .rounded-checkbox {
     width: 14px;
     height: 14px;
@@ -257,7 +280,8 @@ p.rtl {
 }
 
 .dash-dropdown {
-    width: 7%;
+    padding: 10px;
+    /*width: 7%;*/
     font-size: smaller;
     min-width: 100px;
 }
