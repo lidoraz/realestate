@@ -56,10 +56,11 @@ def get_diff(updated_at):
 
 
 def is_cache_ok(hours_diff=24):
-    with open(updated_path, 'r') as f:
-        # TODO ADD TZ change here
-        updated_at = datetime.fromisoformat(json.loads(f.read())['updatedAt'])
-    if updated_at is None:
+    try:
+        with open(updated_path, 'r') as f:
+            # TODO ADD TZ change here
+            updated_at = datetime.fromisoformat(json.loads(f.read())['updatedAt'])
+    except Exception as e:
         return False
     diff = get_diff(updated_at)
     print(f"diff from remote - {diff:.2f} < {hours_diff}")
