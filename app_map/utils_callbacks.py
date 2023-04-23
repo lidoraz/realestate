@@ -2,8 +2,13 @@ import numpy as np
 from dash import html, Output, Input, State, ctx
 import dash
 import time
+import pandas as pd
 from app_map.util_layout import get_interactive_table, CLUSTER_MAX_ZOOM, marker_type_options
 from app_map.utils import get_asset_points, preprocess_to_str_deals, get_geojsons, build_sidebar, get_similar_deals
+import logging
+from flask import request
+
+LOGGER = logging.getLogger()
 
 clear_filter_input_outputs = [
     Output('button-clear', "n_clicks"),
@@ -32,9 +37,8 @@ config_defaults = dict()
 
 
 def get_context_by_rule():
-    from flask import request
-    print("$$$$", request.url_rule)
     name = request.url_rule.endpoint.split('/')[1]
+    LOGGER.info(f"context => {name}")
     return config_defaults[name]
 
 
@@ -86,8 +90,7 @@ def limit_refresh(map_zoom):
         context['zoom_ts'] = time.time()
         update_diff = context['zoom_ts'] - past_ts
         if update_diff < 2:
-            print(update_diff)
-            print("not much time has passed, Zoom changed! - No update")
+            LOGGER.debug(f'not much time has passed, Zoom changed! - No update {update_diff}')
             return True
     return False
     # print(locals())
@@ -132,7 +135,7 @@ def show_assets(price_range,
     conf = get_context_by_rule()
     if limit_refresh(map_zoom):
         return dash.no_update
-    print("marker_type", marker_type)
+    LOGGER.debug("marker_type", marker_type)
     with_agency = True if len(with_agency) else False
     with_parking = True if len(with_parking) else None
     with_balconies = True if len(with_balconies) else None
@@ -163,7 +166,9 @@ def show_assets(price_range,
                                     [is_price_median_pct_range, is_price_discount_pct_range, is_price_ai_pct_range])
     deal_points = get_geojsons(df_f, out_marker)
     columns, data, style_data_conditional = get_interactive_table(df_f)
-    return deal_points, columns, data, style_data_conditional, len(df_f), None
+    days_b = conf['func_data']()["date_updated_d"].min()
+    bot_html = f'({len(df_f)}){"" if (-1 if np.isnan(days_b) else days_b) == 0 else ", notUpdated"}'
+    return deal_points, columns, data, style_data_conditional, bot_html, None
 
 
 toggle_model_input_outputs = [Output("geojson", "click_feature"),  # output none to reset button for re-click

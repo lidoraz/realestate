@@ -1,15 +1,19 @@
+import time
 from datetime import datetime
 import json
 import os
-import threading
 import pickle
-
+import logging
+LOGGER = logging.getLogger()
 updated_path = "resources/updated_at.json"
 
 bucket = "real-estate-public"
 pre_path = f"resources/"
 is_downloading = False
 cache_dict = {}
+_last_loaded = 0
+_updated_at = datetime.fromisoformat("1970-01-01")
+
 
 filenames = ["df_nadlan_recent.pk",
              "yad2_rent_df.pk",
@@ -36,13 +40,13 @@ def check_time_modified(session, filename):
     keys = session.client('s3').list_objects(Bucket=bucket, Prefix=path_file).get('Contents')
     dt_modified = None
     if keys:
-        dt_modified = keys[0]['LastModified'].replace(tzinfo=None).strftime("%Y-%m-%dT%H:%M:%S")
+        dt_modified = datetime.isoformat(keys[0]['LastModified'])
     return dt_modified
 
 
 def download_from_remote(s3_client, filename):
     path_file = pre_path + filename
-    print(f"{datetime.now()}, Downloading file {filename}")
+    LOGGER.info(f"{datetime.now()}, Downloading file {filename}")
     s3_client.download_file(bucket, path_file, path_file)
 
 
@@ -52,39 +56,46 @@ def read_pk(filename):
 
 
 def get_diff(updated_at):
-    return (datetime.now() - updated_at).total_seconds() / 3600
+    return (datetime.now(updated_at.tzinfo) - updated_at).total_seconds() / 3600
 
 
 def is_cache_ok(hours_diff=24):
     updated_at = get_updated_at()
     if updated_at:
         diff = get_diff(updated_at)
-        print(f"diff from remote - {diff:.2f} < {hours_diff}")
+        LOGGER.debug(f"diff from remote - {diff:.2f} < {hours_diff}")
         return diff < hours_diff
     return False
 
 
 def get_updated_at():
-    try:
-        with open(updated_path, 'r') as f:
-            # TODO ADD TZ change here
-            updated_at = datetime.fromisoformat(json.loads(f.read())['updatedAt'])
-            return updated_at
-    except Exception as e:
-        return False
+    global _last_loaded, _updated_at
+    ts = time.time()
+    if ts - _last_loaded > 50:
+        LOGGER.debug(f"Reloading from file past: {_updated_at=}")
+        try:
+            with open(updated_path, 'r') as f:
+                _updated_at = datetime.fromisoformat(json.loads(f.read())['updatedAt'])
+                _last_loaded = ts
+                return _updated_at
+        except Exception as e:
+            return False
+    else:
+        LOGGER.debug(f"Using cache {_updated_at=}")
+        return _updated_at
 
 
 def download_files(filenames):
-    s3_client = get_aws_session().client('s3')
+    session = get_aws_session()
+    dt_modified = check_time_modified(session, filenames[0])
     updated_at = get_updated_at()
     txt = "Downloading from remote"
     if updated_at:
         diff_h = get_diff(updated_at)
         txt += f", diff is {diff_h:.1f} hours"
-    print(txt)
-    for filename in filenames:
-        download_from_remote(s3_client, filename)
-    dt_modified = check_time_modified(get_aws_session(), filenames[0])
+    LOGGER.info(txt)
+    # for filename in filenames:
+    #     download_from_remote(session.client('s3'), filename)
     with open(updated_path, "w") as f:
         json.dump({"updatedAt": dt_modified}, f)
     global is_downloading
@@ -92,7 +103,7 @@ def download_files(filenames):
 
 
 def _preprocess_and_load():
-    print("Loading from load_dataframes")
+    LOGGER.info("Loading from load_dataframes")
     from app_map.utils import app_preprocess_df, preprocess_stats
     df_rent_all = app_preprocess_df(read_pk("yad2_rent_df.pk"))
     df_forsale_all = app_preprocess_df(read_pk("yad2_forsale_df.pk"))
@@ -123,11 +134,25 @@ def download_remote(force_download=True):
         global cache_dict
         cache_dict = {}
     else:
-        print("Not downloading")
+        LOGGER.info("Not downloading")
 
 
 def load_dataframes():
+    if not is_cache_ok():
+        download_remote()
     # threading.Thread(target=download_files, args=(filenames,)).start()
     if len(cache_dict) == 0:
         _preprocess_and_load()
     return cache_dict
+
+
+def get_stats_data():
+    return load_dataframes()['stats']
+
+
+def get_rent_data():
+    return load_dataframes()['rent']['df_rent_all']
+
+
+def get_sale_data():
+    return load_dataframes()['sale']['df_forsale_all']

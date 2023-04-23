@@ -5,8 +5,11 @@ from app_map.marker import get_marker_tooltip, icon_maps, icon_real_estate, get_
 from app_map.util_layout import *
 from scrape_yad2.utils import _get_parse_item_add_info
 from fetch_data.utils import filter_by_dist, get_nadlan_trans
+import logging
 
-FETCH_LIMIT = 500
+LOGGER = logging.getLogger()
+
+FETCH_LIMIT = 250
 
 
 def app_preprocess_df(df_all):
@@ -96,10 +99,10 @@ def get_asset_points(df_all, price_from=None, price_to=None,
     sql_asset_type = _multi_str_filter(asset_type, "asset_type")
     rooms_from = rooms_range[0] or 1
     rooms_to = rooms_range[1] or 100
-    floor_range[1] = 9999 if floor_range[1] == 32 else floor_range[1]
+    floor_to = 9999 if floor_range[1] == 32 else floor_range[1] or 9999
     sql_cond = dict(
         sql_rooms_range=f"{rooms_from} <= rooms <= {rooms_to}.5" if rooms_from is not None and rooms_to is not None else "",
-        sql_floor_range=f"{floor_range[0]} <= floor <= {floor_range[1]}",
+        sql_floor_range=f"{floor_range[0]} <= floor <= {floor_to}",
         sql_price=f"{price_from} <= price <= {price_to}" if price_from is not None else "",
         sql_is_agency="is_agency == False" if not with_agency else "",
         sql_is_parking="parking > 0" if with_parking else "",
@@ -115,12 +118,12 @@ def get_asset_points(df_all, price_from=None, price_to=None,
         sql_date_added=f"date_added_d <= {date_added_days}" if date_added_days else "",
         sql_date_updated=f"date_updated_d <= {date_updated}" if date_updated else "")
     q = "1==1 and " + ' and '.join(list([v for v in sql_cond.values() if len(v)]))
-    print(q)
+    LOGGER.info(q)
     df_f = df_all.query(q)
     if limit:
         df_f = df_f[:FETCH_LIMIT]
 
-    print(f"{datetime.now()} Triggerd, Fetched: {len(df_f)} rows")
+    LOGGER.info(f"{datetime.now()} Triggerd, Fetched: {len(df_f)} rows")
     return df_f
 
 
@@ -167,13 +170,9 @@ def build_sidebar(deal):
     #     dbc.Row([dbc.Col([html.Span(f"מחיר הנכס מהחציון באיזור: "),
     #                       html.Span(f"{deal['pct_diff_median']:0.2%}", className="text-ltr")])])
     # ])
-    def get_pct_style(v):
-        if np.isnan(v):
-            v = 0
-        return {"background-color": get_color(v)}
-
     def get_html_span_pct(pct):
-        return html.Span(f"{pct:.1%}", style=get_pct_style(pct), className="span-color-pct text-ltr")
+        pct = 0 if np.isnan(pct) else pct
+        return html.Span(f"{pct:.1%}", style={"background-color": get_color(pct)}, className="span-color-pct text-ltr")
 
     title_html = html.Div([html.Span(f"{deal['price']:,.0f}₪"),
                            get_html_span_pct(deal['price_pct'])])

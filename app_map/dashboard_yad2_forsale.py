@@ -7,7 +7,7 @@ BASE_URL = "sale"
 
 
 def get_dash(server):
-    from app import get_sale_data
+    from app_map.persistance_utils import get_sale_data
     app = dash.Dash(server=server,
                     external_stylesheets=[dbc.themes.BOOTSTRAP], title="Sale", url_base_pathname=f'/{BASE_URL}/')
     # df_all = get_file_from_remote(filename="yad2_forsale_df.pk")

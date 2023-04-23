@@ -7,7 +7,7 @@ BASE_URL = "rent"
 
 
 def get_dash(server):
-    from app import get_rent_data
+    from app_map.persistance_utils import get_rent_data
     rent_config_default = {"price-from": 1_000, "price-to": 6_000, "median-price-pct": None,
                            "price-min": 500, "price-max": 10_000,
                            "switch-median": False,

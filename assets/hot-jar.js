@@ -13,7 +13,8 @@
 })(window, document, 'https://static.hotjar.com/c/hotjar-', '.js?sv=');
 
 <!-- Google tag (gtag.js) -->
-var imported = document.createElement('script');
+let imported = document.createElement('script');
+imported.async = true;
 imported.src = 'https://www.googletagmanager.com/gtag/js?id=G-20SXF8539L';
 document.head.appendChild(imported);
 

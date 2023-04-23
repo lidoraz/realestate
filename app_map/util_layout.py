@@ -15,7 +15,8 @@ ai_pct_txt = '% ממחירAI '
 price_pct_txt = '% שינוי מחיר'
 rooms_marks = {r: str(r) for r in range(7)}
 rooms_marks[6] = '6+'
-floor_marks = {k: str(k) for k in range(0, 33, 4)}
+max_floor = 32
+floor_marks = {k: str(k) for k in range(0, max_floor + 1, 4)}
 floor_marks.update({0: "קרקע", 32: "32+"})
 slider_tooltip = {'always_visible': True, 'placement': 'bottom'}
 CLUSTER_MAX_ZOOM = 15
@@ -52,7 +53,7 @@ def get_page_menu():
 def get_layout(default_config):
     layout = html.Div(children=[
         html.Header(className="top-container", children=get_div_top_bar(default_config)),
-        html.Span("0", id="fetched-assets"),
+        html.Span("", id="fetched-assets"),
         html.Div(className="grid-container", children=get_main_map()),
         html.Div(className="table-container", children=[div_left_off_canvas]),
         html.Div(className="modal-container", children=[div_offcanvas]),
@@ -152,7 +153,8 @@ def get_div_top_bar(config_defaults):
                                                     tooltip=slider_tooltip))],
                           className='slider-container-drop'),
                  html.Div([html.Span(n_floor_txt),
-                           html.Div(dcc.RangeSlider(0, max(floor_marks.keys()), 4, value=[0, 30], marks=floor_marks, id='floor-slider',
+                           html.Div(dcc.RangeSlider(0, max_floor, 4, value=[0, max_floor],
+                                                    marks=floor_marks, id='floor-slider',
                                                     tooltip=slider_tooltip,
                                                     ))],
                           className='slider-container-drop'),

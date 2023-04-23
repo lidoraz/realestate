@@ -10,7 +10,7 @@ from stats.plots import plot_scatter_f
 config_figure_disable_all = {'displayModeBar': False,
                              'scrollZoom': False}
 
-from app import get_stats_data
+from app_map.persistance_utils import get_stats_data
 
 stats_data = get_stats_data()
 cities = stats_data['df_log_forsale']['city'].value_counts()
