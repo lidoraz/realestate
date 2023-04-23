@@ -94,8 +94,8 @@ def download_files(filenames):
         diff_h = get_diff(updated_at)
         txt += f", diff is {diff_h:.1f} hours"
     LOGGER.info(txt)
-    # for filename in filenames:
-    #     download_from_remote(session.client('s3'), filename)
+    for filename in filenames:
+        download_from_remote(session.client('s3'), filename)
     with open(updated_path, "w") as f:
         json.dump({"updatedAt": dt_modified}, f)
     global is_downloading
