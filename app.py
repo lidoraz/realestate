@@ -9,7 +9,7 @@ from flask import redirect
 import sys
 from apscheduler.schedulers.background import BackgroundScheduler
 
-from app_map.persistance_utils import download_remote
+from app_map.persistance_utils import download_remote, is_cache_ok
 
 logging.basicConfig(
     level=logging.INFO,
@@ -22,7 +22,8 @@ logging.basicConfig(
 server = Flask(__name__)
 scheduler = BackgroundScheduler()
 scheduler.add_job(download_remote, 'cron', hour=20, minute=0)
-download_remote(force_download=False)
+if not is_cache_ok():
+    download_remote()
 scheduler.start()
 
 

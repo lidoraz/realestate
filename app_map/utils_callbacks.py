@@ -145,16 +145,12 @@ def show_assets(price_range,
 
     if active_cell:
         return dash.no_update
+    price_from = price_range[0] * conf["price_mul"]
+    # when max price is at limits, allow prices above it
+    price_to = np.inf if price_range[0] == conf['price-max'] else price_range[1] * conf["price_mul"]
     if n_clicks_around:
-        df_f = get_asset_points(conf['func_data'](), map_bounds=map_bounds, limit=True)
+        df_f = get_asset_points(conf['func_data'](), -np.inf, np.inf, map_bounds=map_bounds, limit=True)
     else:
-        # special case - max over 10M
-        if price_range[0] == conf['price-max'] and price_range[0] == price_range[1]:
-            price_from = conf['price-max'] * conf["price_mul"]
-            price_to = np.inf
-        else:
-            price_from = price_range[0] * conf["price_mul"]
-            price_to = price_range[1] * conf["price_mul"]
         df_f = get_asset_points(conf['func_data'](), price_from, price_to,
                                 price_median_pct_range, price_discount_pct_range, price_ai_pct_range,
                                 is_price_median_pct_range, is_price_discount_pct_range, is_price_ai_pct_range,
@@ -162,9 +158,9 @@ def show_assets(price_range,
                                 with_agency, with_parking, with_balconies, map_bounds=map_bounds,
                                 asset_status=asset_status, asset_type=asset_type, limit=True)
     # Can keep a list of points, if after fetch there was no new, no need to build new points, just keep them to save resources
-    out_marker = handle_marker_type(marker_type,
-                                    [is_price_median_pct_range, is_price_discount_pct_range, is_price_ai_pct_range])
-    deal_points = get_geojsons(df_f, out_marker)
+    # out_marker = handle_marker_type(marker_type,
+    #                                 [is_price_median_pct_range, is_price_discount_pct_range, is_price_ai_pct_range])
+    deal_points = get_geojsons(df_f, marker_type)
     columns, data, style_data_conditional = get_interactive_table(df_f)
     days_b = conf['func_data']()["date_updated_d"].min()
     bot_html = f'({len(df_f)}){"" if (-1 if np.isnan(days_b) else days_b) == 0 else ", notUpdated"}'

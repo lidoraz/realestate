@@ -36,13 +36,17 @@ def process_tables(df_today, df_hist):
 def run_daily_job(type_, eng):
     from fetch_data.price_regression import add_ai_price
     from fetch_data.price_distance_comp import add_distance
-    with eng.connect() as conn:
-        df_hist = get_price_hist(type_, conn)
-        df_today = get_today(type_, conn)
-    df = process_tables(df_today, df_hist)
+    df = fetch_prepare(type_, eng)
     df = add_ai_price(df, type_)
     df = add_distance(df)
     return df
+
+
+def fetch_prepare(type_, eng):
+    with eng.connect() as conn:
+        df_hist = get_price_hist(type_, conn)
+        df_today = get_today(type_, conn)
+    return process_tables(df_today, df_hist)
 
 
 def run_nadlan_daily(conn, day_backs, path_nadlan):

@@ -82,7 +82,7 @@ def _multi_str_filter(multi_choice, col_name):
     return sql_state_asset
 
 
-def get_asset_points(df_all, price_from=None, price_to=None,
+def get_asset_points(df_all, price_from=-np.inf, price_to=np.inf,
                      price_median_pct_range=None, price_discount_pct_range=None, price_ai_pct_range=None,
                      is_price_median_pct_range=False, is_price_discount_pct_range=False, is_price_ai_pct_range=False,
                      date_added_days=None, date_updated=None,
@@ -99,11 +99,12 @@ def get_asset_points(df_all, price_from=None, price_to=None,
     sql_asset_type = _multi_str_filter(asset_type, "asset_type")
     rooms_from = rooms_range[0] or 1
     rooms_to = rooms_range[1] or 100
+    floor_from = floor_range[0] if floor_range[0] is not None else 0
     floor_to = 9999 if floor_range[1] == 32 else floor_range[1] or 9999
     sql_cond = dict(
-        sql_rooms_range=f"{rooms_from} <= rooms <= {rooms_to}.5" if rooms_from is not None and rooms_to is not None else "",
-        sql_floor_range=f"{floor_range[0]} <= floor <= {floor_to}",
-        sql_price=f"{price_from} <= price <= {price_to}" if price_from is not None else "",
+        sql_rooms_range=f"{rooms_from} <= rooms <= {rooms_to}.5",
+        sql_floor_range=f"{floor_from} <= floor <= {floor_to}",
+        sql_price=f"{price_from} <= price <= {price_to}",
         sql_is_agency="is_agency == False" if not with_agency else "",
         sql_is_parking="parking > 0" if with_parking else "",
         sql_is_balcony="balconies == True" if with_balconies else "",

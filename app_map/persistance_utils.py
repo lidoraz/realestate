@@ -4,6 +4,7 @@ import json
 import os
 import pickle
 import logging
+
 LOGGER = logging.getLogger()
 updated_path = "resources/updated_at.json"
 
@@ -13,7 +14,6 @@ is_downloading = False
 cache_dict = {}
 _last_loaded = 0
 _updated_at = datetime.fromisoformat("1970-01-01")
-
 
 filenames = ["df_nadlan_recent.pk",
              "yad2_rent_df.pk",
@@ -100,6 +100,7 @@ def download_files(filenames):
         json.dump({"updatedAt": dt_modified}, f)
     global is_downloading
     is_downloading = False
+    LOGGER.info("Finished downloading")
 
 
 def _preprocess_and_load():
@@ -128,19 +129,19 @@ def _preprocess_and_load():
     cache_dict.update(dict(sale=sale, rent=rent, stats=stats))
 
 
-def download_remote(force_download=True):
-    if force_download or not is_cache_ok():
-        download_files(filenames)
-        global cache_dict
+def download_remote():
+    global is_downloading, cache_dict
+    if not is_downloading:
+        import threading
+        is_downloading = True
+        threading.Thread(target=download_files, args=(filenames,)).start()
+        LOGGER.info("Started downloading with thread")
         cache_dict = {}
-    else:
-        LOGGER.info("Not downloading")
 
 
 def load_dataframes():
     if not is_cache_ok():
         download_remote()
-    # threading.Thread(target=download_files, args=(filenames,)).start()
     if len(cache_dict) == 0:
         _preprocess_and_load()
     return cache_dict
