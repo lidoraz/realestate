@@ -4,8 +4,7 @@ import logging
 # FIX for OpenBLAS blas_thread_init: pthread_create: Resource temporarily unavailable
 os.environ['OPENBLAS_NUM_THREADS'] = '1'
 
-from flask import Flask
-from flask import redirect
+from flask import Flask, redirect
 import sys
 from apscheduler.schedulers.background import BackgroundScheduler
 
@@ -21,9 +20,9 @@ logging.basicConfig(
 )
 server = Flask(__name__)
 scheduler = BackgroundScheduler()
-scheduler.add_job(download_remote, 'cron', hour=20, minute=0)
+scheduler.add_job(download_remote, 'cron', hour=0, minute=0)
 if not is_cache_ok():
-    download_remote()
+    download_remote(block=True)
 scheduler.start()
 
 
@@ -39,7 +38,6 @@ def create_app(server):
 
 
 app = create_app(server)
-
 
 @app.route("/")
 def hello_world():

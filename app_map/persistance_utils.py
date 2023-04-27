@@ -129,13 +129,18 @@ def _preprocess_and_load():
     cache_dict.update(dict(sale=sale, rent=rent, stats=stats))
 
 
-def download_remote():
+def download_remote(block=False):
     global is_downloading, cache_dict
     if not is_downloading:
         import threading
         is_downloading = True
-        threading.Thread(target=download_files, args=(filenames,)).start()
-        LOGGER.info("Started downloading with thread")
+        if block:
+            LOGGER.info("Started downloading blocked")
+            download_files(filenames)
+        else:
+            LOGGER.info("Started downloading with thread")
+            threading.Thread(target=download_files, args=(filenames,)).start()
+        # Reset cache, forces reload
         cache_dict = {}
 
 

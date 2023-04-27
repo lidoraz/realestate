@@ -11,8 +11,8 @@ date_updated_text = 'עודכן לפני'
 n_rooms_txt = 'חדרים'
 n_floor_txt = "קומה"
 median_price_txt = '% מהחציון'
-ai_pct_txt = '% ממחירAI '
-price_pct_txt = '% שינוי מחיר'
+ai_pct_txt = '% ממחיר AI'
+price_pct_txt = '% הורדה במחיר'
 rooms_marks = {r: str(r) for r in range(7)}
 rooms_marks[6] = '6+'
 max_floor = 32
@@ -47,7 +47,7 @@ def get_page_menu():
     return dbc.DropdownMenu([dbc.DropdownMenuItem("Rent", href="/rent", external_link=True),
                              dbc.DropdownMenuItem("Sale", href="/sale", external_link=True),
                              dbc.DropdownMenuItem("Analytics", href="/analytics", external_link=True)],
-                            label="Menu")  # style=dict(direction="ltr")
+                            label="§")  # style=dict(direction="ltr")
 
 
 def get_layout(default_config):
@@ -79,14 +79,15 @@ def get_table_container():
         page_action="native",
         page_current=0,
         page_size=15,
-        # hidden_columns=["id"],
+        hidden_columns=["id"],
         style_cell={
             # 'overflow': 'hidden',
+            'font-family': 'sans-serif',
+            'font-size': '11pt',
             'textOverflow': 'ellipsis',
-            'minWidth': '30px', 'width': '180px', 'maxWidth': '180px',
+            'minWidth': '30px', 'width': '30px', 'maxWidth': '120px',
             # 'maxWidth': 0
         },
-
         style_data_conditional=None  # cond_styles
     )])
 
@@ -95,6 +96,7 @@ def get_html_range_range_pct(text, element_id, checked=False):
     value = [] if not checked else ["Y"]
     check_mark = dcc.Checklist(options=[{'value': 'Y', 'label': text}], value=value, inline=True,
                                inputClassName="rounded-checkbox",
+                               className="text-rtl",
                                id=f'{element_id}-check')
     return html.Div([check_mark,
                      dcc.RangeSlider(min=-100,
@@ -110,16 +112,6 @@ def get_html_range_range_pct(text, element_id, checked=False):
 
 def get_div_top_bar(config_defaults):
     div_top_bar = html.Div(className="top-toolbar", children=[
-        get_page_menu(),
-        html.Div([dcc.Checklist(options=[{'label': 'עם תיווך', 'value': 'Y'}], value=['Y'], inline=True,
-                                inputClassName="rounded-checkbox",
-                                id='agency-check'),
-                  dcc.Checklist(options=[{'label': 'חניה', 'value': 'Y'}], value=[], inline=True,
-                                inputClassName="rounded-checkbox",
-                                id='parking-check'),
-                  dcc.Checklist(options=[{'label': 'מרפסת', 'value': 'Y'}], value=[], inline=True,
-                                inputClassName="rounded-checkbox",
-                                id='balconies-check')], className="dash-options"),
         dbc.DropdownMenu([
             html.Div([
                 html.Div([price_text, dcc.RangeSlider(min=config_defaults["price-min"],
@@ -133,6 +125,45 @@ def get_div_top_bar(config_defaults):
                                                       allowCross=False,
                                                       tooltip=slider_tooltip)],
                          className="slider-container-drop"),
+                dbc.DropdownMenuItem(divider=True),
+                html.Div(
+                    [html.Div([html.Span(n_rooms_txt),
+                               html.Div(dcc.RangeSlider(1, 6, 1, value=[3, 4], marks=rooms_marks, id='rooms-slider',
+                                                        tooltip=slider_tooltip))],
+                              className='slider-container-drop'),
+                     html.Div([html.Span(n_floor_txt),
+                               html.Div(dcc.RangeSlider(0, max_floor, 4, value=[0, max_floor],
+                                                        marks=floor_marks, id='floor-slider',
+                                                        tooltip=slider_tooltip,
+                                                        ))],
+                              className='slider-container-drop'),
+                     dcc.Dropdown(
+                         asset_status_cols,
+                         [],
+                         placeholder="מצב הנכס",
+                         multi=True,
+                         searchable=False,
+                         id='asset-status',
+                         className="asset-dropdown"),
+                     dcc.Dropdown(
+                         asset_type_cols,
+                         [],
+                         placeholder="סוג",
+                         multi=True,
+                         searchable=False,
+                         id='asset-type',
+                         className="asset-dropdown"),
+                     ], className=""),
+                html.Div([dcc.Checklist(options=[{'label': 'עם תיווך', 'value': 'Y'}], value=['Y'], inline=True,
+                                        inputClassName="rounded-checkbox",
+                                        id='agency-check'),
+                          dcc.Checklist(options=[{'label': 'חניה', 'value': 'Y'}], value=[], inline=True,
+                                        inputClassName="rounded-checkbox",
+                                        id='parking-check'),
+                          dcc.Checklist(options=[{'label': 'מרפסת', 'value': 'Y'}], value=[], inline=True,
+                                        inputClassName="rounded-checkbox",
+                                        id='balconies-check')], className="dash-options"),
+                dbc.DropdownMenuItem(divider=True),
                 html.Div([
                     "תצוגה לפי",
                     dbc.RadioItems(
@@ -144,69 +175,36 @@ def get_div_top_bar(config_defaults):
                 ], style={"margin-bottom": "10px"}),
                 get_html_range_range_pct(median_price_txt, 'price-median-pct-slider'),
                 get_html_range_range_pct(price_pct_txt, 'price-discount-pct-slider'),
-                get_html_range_range_pct(ai_pct_txt, 'ai-price-pct-slider')],
-                className="dropdown-container")], label='F'),
-        dbc.DropdownMenu(
-            html.Div(
-                [html.Div([html.Span(n_rooms_txt),
-                           html.Div(dcc.RangeSlider(1, 6, 1, value=[3, 4], marks=rooms_marks, id='rooms-slider',
-                                                    tooltip=slider_tooltip))],
-                          className='slider-container-drop'),
-                 html.Div([html.Span(n_floor_txt),
-                           html.Div(dcc.RangeSlider(0, max_floor, 4, value=[0, max_floor],
-                                                    marks=floor_marks, id='floor-slider',
-                                                    tooltip=slider_tooltip,
-                                                    ))],
-                          className='slider-container-drop'),
-                 dcc.Dropdown(
-                     asset_status_cols,
-                     [],
-                     placeholder="מצב הנכס",
-                     multi=True,
-                     searchable=False,
-                     id='asset-status',
-                     className="asset-dropdown"),
-                 dcc.Dropdown(
-                     asset_type_cols,
-                     [],
-                     placeholder="סוג",
-                     multi=True,
-                     searchable=False,
-                     id='asset-type',
-                     className="asset-dropdown"),
-                 ], className="dropdown-container"), label="חדרים קומה"),
-
-        # dbc.DropdownMenu([dcc.Checklist(className="labels-multiselect", id="asset-status",
-        #                                 options=asset_status_cols, value=[]), dbc.Button("X")], label="מצב"),
-        # dbc.DropdownMenu([dcc.Checklist(className="labels-multiselect", id="asset-type",
-        #                                 options=asset_type_cols, value=[]), dbc.Button("X")], label="סוג"),
-        dbc.DropdownMenu([
-            dbc.DropdownMenuItem([date_added_txt, dcc.Input(
-                id="date-added",
-                type="number",
-                placeholder=date_added_txt,
-                value=300,
-                debounce=True,
-                className="input-ltr"
-            )], header=True),
-            # dbc.DropdownMenuItem(divider=True),
-            dbc.DropdownMenuItem([date_updated_text, dcc.Input(
-                id="date-updated",
-                type="number",
-                placeholder=date_updated_text,
-                value=14,
-                debounce=True,
-                className="input-ltr"
-            )], header=True),
-            dbc.DropdownMenuItem(dcc.Checklist(options=[{'value': 'Y', 'label': "Cluster"}], value=['Y'], inline=True,
-                                               inputClassName="rounded-checkbox",
-                                               id='cluster-check'), header=False),
-        ],
-            label="עוד"),
+                get_html_range_range_pct(ai_pct_txt, 'ai-price-pct-slider'),
+                dbc.DropdownMenuItem(divider=True),
+                html.Div([dbc.Row([dbc.Col(date_added_txt),
+                                   dbc.Col(dcc.Input(
+                                       id="date-added",
+                                       type="number",
+                                       placeholder=date_added_txt,
+                                       value=300,
+                                       debounce=True,
+                                       className="input-ltr"))]),
+                          dbc.Row([dbc.Col(date_updated_text),
+                                   dbc.Col(dcc.Input(
+                                       id="date-updated",
+                                       type="number",
+                                       placeholder=date_updated_text,
+                                       value=14,
+                                       debounce=True,
+                                       className="input-ltr"
+                                   ))]),
+                          dbc.Row(dcc.Checklist(options=[{'value': 'Y', 'label': "Cluster"}], value=['Y'], inline=True,
+                                                inputClassName="rounded-checkbox",
+                                                id='cluster-check'))], className="text-rtl"),
+            ],
+                className="dropdown-container")], label='F'),  # align_end=True,
         dbc.Button("איזור", id="button-around"),
         dbc.Button("נקה", id="button-clear"),
         # dbc.Button("סנן", id='button-return'),
-        dbc.Button("TBL", id="table-toggle", color="success")
+        dbc.Button("TBL", id="table-toggle", color="success"),
+        get_page_menu(),
+
     ])
     return div_top_bar
 
@@ -233,7 +231,7 @@ div_left_off_canvas = dbc.Offcanvas(
     get_table_container(),
     id="table-modal",
     scrollable=True,
-    title="Scrollable Offcanvas",
+    title=False,
     backdrop=False,
     is_open=False
 )
@@ -314,13 +312,13 @@ def get_interactive_table(df):
     percentage = FormatTemplate.percentage(2)
     # Format().symbol(Symbol.yes).symbol_prefix('₪ ')._specifier(',.0f')d
     price_format = Format(scheme=Scheme.decimal_si_prefix,
-                          precision=3,
+                          precision=2,
                           group=Group.yes,
                           groups=3,
                           group_delimiter=',',
                           decimal_delimiter='.',
                           symbol=Symbol.yes,
-                          symbol_prefix=u'₪ ')
+                          symbol_prefix=u'₪')
     columns_output_comb = {"price": dict(id='price', name='Price', type='numeric', format=price_format),
                            "rooms": dict(id='rooms', name='R', type='numeric'),
                            # "parking": dict(id='parking', name='Parking', type='numeric'),
@@ -330,7 +328,8 @@ def get_interactive_table(df):
                                              format=FormatTemplate.percentage(0)),
                            pct_cols[0]: dict(id=pct_cols[0], name='%D', type='numeric',
                                              format=FormatTemplate.percentage(0)),
-                           # "avg_price_m": dict(id='price', name='Price', type='numeric', format=price_format),
+                           'square_meters': dict(id='square_meters', name='SM', type='numeric'),
+                           "avg_price_m": dict(id='avg_price_m', name='PM', type='numeric', format=price_format),
                            "id": dict(id="id", name='id'),
                            "city": dict(id='city', name='city')}
     cond_styles, legend = _discrete_background_color_bins(df, columns=pct_cols, reverse=True)
