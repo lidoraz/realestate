@@ -18,3 +18,4 @@ colorlover
 colour
 tqdm
 gunicorn
+gevent
