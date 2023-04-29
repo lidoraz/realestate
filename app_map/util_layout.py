@@ -173,9 +173,9 @@ def get_div_top_bar(config_defaults):
                         inline=True,
                     ),
                 ], style={"margin-bottom": "10px"}),
-                get_html_range_range_pct(median_price_txt, 'price-median-pct-slider'),
-                get_html_range_range_pct(price_pct_txt, 'price-discount-pct-slider'),
                 get_html_range_range_pct(ai_pct_txt, 'ai-price-pct-slider'),
+                get_html_range_range_pct(price_pct_txt, 'price-discount-pct-slider'),
+                get_html_range_range_pct(median_price_txt, 'price-median-pct-slider'),
                 dbc.DropdownMenuItem(divider=True),
                 html.Div([dbc.Row([dbc.Col(date_added_txt),
                                    dbc.Col(dcc.Input(
@@ -197,12 +197,14 @@ def get_div_top_bar(config_defaults):
                           dbc.Row(dcc.Checklist(options=[{'value': 'Y', 'label': "Cluster"}], value=['Y'], inline=True,
                                                 inputClassName="rounded-checkbox",
                                                 id='cluster-check'))], className="text-rtl"),
+                dbc.Button("נקה", id="button-clear", color="secondary"),
             ],
-                className="dropdown-container")], label='F'),  # align_end=True,
-        dbc.Button("איזור", id="button-around"),
-        dbc.Button("נקה", id="button-clear"),
+                className="dropdown-container")], label='אפשרויות'),  # align_end=True,
+        dbc.Input(id="search-input", value="", debounce=True, type="text", placeholder="חיפוש"),
+        html.P(id="output"),
+        dbc.Button("טבלה", id="table-toggle", color="success"),
+        dbc.Button("איזור", id="button-around", color="secondary"),
         # dbc.Button("סנן", id='button-return'),
-        dbc.Button("TBL", id="table-toggle", color="success"),
         get_page_menu(),
 
     ])
@@ -213,9 +215,13 @@ def get_div_top_bar(config_defaults):
 # https://leaflet-extras.github.io/leaflet-providers/preview/
 # more Here:
 # https://github.com/geopandas/xyzservices/blob/main/provider_sources/leaflet-providers-parsed.json
+url = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+url_bright = "https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png"
+url_dark = "https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png"
+
 
 def get_main_map():
-    return dl.Map(children=[dl.TileLayer(url="https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png"),
+    return dl.Map(children=[dl.TileLayer(url=url_bright),
                             dl.GeoJSON(data=None, id="geojson", zoomToBounds=False, cluster=False,
                                        superClusterOptions=dict(maxZoom=CLUSTER_MAX_ZOOM),  # radius=50,
                                        options=dict(pointToLayer=POINT_TO_LAYER_FUN),
@@ -328,8 +334,8 @@ def get_interactive_table(df):
                                              format=FormatTemplate.percentage(0)),
                            pct_cols[0]: dict(id=pct_cols[0], name='%D', type='numeric',
                                              format=FormatTemplate.percentage(0)),
-                           'square_meters': dict(id='square_meters', name='SM', type='numeric'),
-                           "avg_price_m": dict(id='avg_price_m', name='PM', type='numeric', format=price_format),
+                           'square_meters': dict(id='square_meters', name='Sq', type='numeric'),
+                           "avg_price_m": dict(id='avg_price_m', name='AvgSq₪', type='numeric', format=price_format),
                            "id": dict(id="id", name='id'),
                            "city": dict(id='city', name='city')}
     cond_styles, legend = _discrete_background_color_bins(df, columns=pct_cols, reverse=True)

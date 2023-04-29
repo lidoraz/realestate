@@ -104,6 +104,12 @@ def get_dash(server):
 
     app.layout = html.Div(
         [
+            # dcc.Loading(
+            #     id="loading-1",
+            #     type="default",
+            #     fullscreen=True,
+            #     children=html.Div(id="loading-output-1")
+            # ),
             dbc.Row([dbc.Col(get_page_menu()),
                      dbc.Col(html.H1("Real Estate Analytics"), width=8, style=dict(direction="ltr"))]),
             dbc.Row(dbc.Col(html.H6(f"מעודכן ל-{get_stats_data()['date_updated']}"))),

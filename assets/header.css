@@ -212,7 +212,7 @@ p.rtl {
     width: 220px;
     direction: ltr;
     min-width: 150px;
-    text-align: center;
+    text-align: right;
 }
 
 .rounded-checkbox {
@@ -289,6 +289,7 @@ p.rtl {
     /*width: 7%;*/
     font-size: smaller;
     min-width: 100px;
+    direction: rtl;
 }
 
 .span-color-pct {

@@ -38,7 +38,7 @@ config_defaults = dict()
 
 def get_context_by_rule():
     name = request.url_rule.endpoint.split('/')[1]
-    LOGGER.info(f"context => {name}")
+    LOGGER.debug(f"context => {name}")
     return config_defaults[name]
 
 
@@ -146,12 +146,13 @@ def show_assets(price_range,
     if active_cell:
         return dash.no_update
     price_from = price_range[0] * conf["price_mul"]
+    df = conf['func_data']()
     # when max price is at limits, allow prices above it
     price_to = np.inf if price_range[0] == conf['price-max'] else price_range[1] * conf["price_mul"]
     if n_clicks_around:
-        df_f = get_asset_points(conf['func_data'](), -np.inf, np.inf, map_bounds=map_bounds, limit=True)
+        df_f = get_asset_points(df, -np.inf, np.inf, map_bounds=map_bounds, limit=True)
     else:
-        df_f = get_asset_points(conf['func_data'](), price_from, price_to,
+        df_f = get_asset_points(df, price_from, price_to,
                                 price_median_pct_range, price_discount_pct_range, price_ai_pct_range,
                                 is_price_median_pct_range, is_price_discount_pct_range, is_price_ai_pct_range,
                                 date_added, date_updated, rooms_range, floor_range,
@@ -162,7 +163,7 @@ def show_assets(price_range,
     #                                 [is_price_median_pct_range, is_price_discount_pct_range, is_price_ai_pct_range])
     deal_points = get_geojsons(df_f, marker_type)
     columns, data, style_data_conditional = get_interactive_table(df_f)
-    days_b = conf['func_data']()["date_updated_d"].min()
+    days_b = df["date_updated_d"].min()
     bot_html = f'({len(df_f)}){"" if (-1 if np.isnan(days_b) else days_b) == 0 else ", notUpdated"}'
     return deal_points, columns, data, style_data_conditional, bot_html, None
 
@@ -192,20 +193,32 @@ focus_on_asset_input_outputs = [Output("big-map", "center"),
                                 Output("big-map", "zoom"),
                                 Output("map-marker", "opacity"),
                                 Output("map-marker", "position"),
+                                Output("search-input", "invalid"),
+                                Input("search-input", "value"),
                                 Input("datatable-interactivity", "active_cell"),
                                 State("datatable-interactivity", "data"),
                                 ]
 
 
 # dl.Marker(position=[31.7, 32.7], opacity=0, id='map-marker')
-def focus_on_asset(table_active_cell, table_data):
-    if table_active_cell is None:
+def focus_on_asset(keyword, table_active_cell, table_data):
+    if not len(keyword) and table_active_cell is None:
         return dash.no_update
-    id_ = [x for x in table_data if x['id'] == table_active_cell['row_id']][0]['id']
     conf = get_context_by_rule()
-    item = get_asset_points(conf['func_data'](), id_=id_).squeeze()
-    position = [item['lat'], item['long']]
-    return position, CLUSTER_MAX_ZOOM + 1, 0.75, position
+    df = conf['func_data']()
+    if table_active_cell:
+        id_ = [x for x in table_data if x['id'] == table_active_cell['row_id']][0]['id']
+        item = get_asset_points(df, id_=id_).squeeze()
+        position = [item['lat'], item['long']]
+        return position, CLUSTER_MAX_ZOOM + 1, 0.75, position, dash.no_update
+    if len(keyword):
+        dff = df.query(f'city.str.contains("{keyword}") or neighborhood.str.contains("{keyword}")')
+        if dff.empty:
+            return [dash.no_update for _ in range(4)] + [True]
+        lat = dff['lat'].mean()
+        long = dff['long'].mean()
+        pos = [lat, long]
+        return pos, 14, dash.no_update, dash.no_update, False
 
 
 show_table_input_output = [Output("table-toggle", "n_clicks"),
