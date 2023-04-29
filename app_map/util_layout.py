@@ -114,6 +114,16 @@ def get_div_top_bar(config_defaults):
     div_top_bar = html.Div(className="top-toolbar", children=[
         dbc.DropdownMenu([
             html.Div([
+                html.Div([dbc.Label("עיר"),
+                          dbc.Row([
+                              dbc.Col(dbc.Button("X", id="search-clear", color="secondary",
+                                                 style=dict(margin=0, padding=0)), width=1),
+                              dbc.Col(dbc.Input(id="search-input", value="", debounce=True, type="text",
+                                                placeholder="חיפוש לפי עיר", style=dict(width="89.5%")), width=11),
+                          ], style={"flex-wrap": "inherit"})
+                          ],
+                         className="slider-container-drop"),
+
                 html.Div([price_text, dcc.RangeSlider(min=config_defaults["price-min"],
                                                       max=config_defaults["price-max"],
                                                       step=config_defaults['price_step'],
@@ -173,9 +183,17 @@ def get_div_top_bar(config_defaults):
                         inline=True,
                     ),
                 ], style={"margin-bottom": "10px"}),
+                # dbc.DropdownMenu([
+                #     dbc.DropdownMenuItem("סינון לפי מחירים", header=True),
                 get_html_range_range_pct(ai_pct_txt, 'ai-price-pct-slider'),
                 get_html_range_range_pct(price_pct_txt, 'price-discount-pct-slider'),
-                get_html_range_range_pct(median_price_txt, 'price-median-pct-slider'),
+                get_html_range_range_pct(median_price_txt, 'price-median-pct-slider')
+                # ]
+                ,
+                    # className="dropdown-container",
+                    # direction="up",
+                    # label="סינון לפי מחירים"),
+
                 dbc.DropdownMenuItem(divider=True),
                 html.Div([dbc.Row([dbc.Col(date_added_txt),
                                    dbc.Col(dcc.Input(
@@ -200,7 +218,6 @@ def get_div_top_bar(config_defaults):
                 dbc.Button("נקה", id="button-clear", color="secondary"),
             ],
                 className="dropdown-container")], label='אפשרויות'),  # align_end=True,
-        dbc.Input(id="search-input", value="", debounce=True, type="text", placeholder="חיפוש"),
         html.P(id="output"),
         dbc.Button("טבלה", id="table-toggle", color="success"),
         dbc.Button("איזור", id="button-around", color="secondary"),

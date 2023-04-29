@@ -82,7 +82,18 @@ def _multi_str_filter(multi_choice, col_name):
     return sql_state_asset
 
 
-def get_asset_points(df_all, price_from=-np.inf, price_to=np.inf,
+def find_center(df, city, err_th=0.1):
+    dff = df.query(f'(city.str.contains("{city}") or neighborhood.str.contains("{city}"))')
+    if dff.empty:
+        return None
+    if max(dff['lat'].std(), dff['long'].std()) > err_th:
+        return None
+    lat = dff['lat'].mean()
+    long = dff['long'].mean()
+    return [lat, long]
+
+
+def get_asset_points(df_all, price_from=-np.inf, price_to=np.inf, city=None,
                      price_median_pct_range=None, price_discount_pct_range=None, price_ai_pct_range=None,
                      is_price_median_pct_range=False, is_price_discount_pct_range=False, is_price_ai_pct_range=False,
                      date_added_days=None, date_updated=None,
@@ -102,6 +113,7 @@ def get_asset_points(df_all, price_from=-np.inf, price_to=np.inf,
     floor_from = floor_range[0] if floor_range[0] is not None else 0
     floor_to = 9999 if floor_range[1] == 32 else floor_range[1] or 9999
     sql_cond = dict(
+        sql_city=f'(city.str.contains("{city}") or neighborhood.str.contains("{city}"))' if city else "",
         sql_rooms_range=f"{rooms_from} <= rooms <= {rooms_to}.5",
         sql_floor_range=f"{floor_from} <= floor <= {floor_to}",
         sql_price=f"{price_from} <= price <= {price_to}",

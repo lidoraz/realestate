@@ -4,7 +4,7 @@ import dash
 import time
 import pandas as pd
 from app_map.util_layout import get_interactive_table, CLUSTER_MAX_ZOOM, marker_type_options
-from app_map.utils import get_asset_points, preprocess_to_str_deals, get_geojsons, build_sidebar, get_similar_deals
+from app_map.utils import get_asset_points, find_center, get_geojsons, build_sidebar, get_similar_deals
 import logging
 from flask import request
 
@@ -120,6 +120,7 @@ show_assets_input_output = [Output("geojson", "data"),
                             Input('asset-status', "value"), Input('asset-type', "value"),
                             Input("button-around", "n_clicks"),
                             Input('marker-type', 'value'),
+                            Input('search-input', 'value'),
                             Input('big-map', 'bounds'), State('big-map', 'zoom'),
                             State("datatable-interactivity", "active_cell")]
 
@@ -130,9 +131,10 @@ def show_assets(price_range,
                 date_added, date_updated,
                 rooms_range, floor_range,
                 with_agency, with_parking, with_balconies, asset_status, asset_type, n_clicks_around,
-                marker_type,
+                marker_type, search_input,
                 map_bounds, map_zoom, active_cell=None):
     conf = get_context_by_rule()
+
     if limit_refresh(map_zoom):
         return dash.no_update
     LOGGER.debug("marker_type", marker_type)
@@ -142,6 +144,8 @@ def show_assets(price_range,
     is_price_median_pct_range = len(is_price_median_pct_range) > 0
     is_price_discount_pct_range = len(is_price_discount_pct_range) > 0
     is_price_ai_pct_range = len(is_price_ai_pct_range) > 0
+    city = search_input if len(search_input) else None
+    map_bounds = map_bounds if city is None else None
 
     if active_cell:
         return dash.no_update
@@ -152,7 +156,7 @@ def show_assets(price_range,
     if n_clicks_around:
         df_f = get_asset_points(df, -np.inf, np.inf, map_bounds=map_bounds, limit=True)
     else:
-        df_f = get_asset_points(df, price_from, price_to,
+        df_f = get_asset_points(df, price_from, price_to, city,
                                 price_median_pct_range, price_discount_pct_range, price_ai_pct_range,
                                 is_price_median_pct_range, is_price_discount_pct_range, is_price_ai_pct_range,
                                 date_added, date_updated, rooms_range, floor_range,
@@ -194,14 +198,21 @@ focus_on_asset_input_outputs = [Output("big-map", "center"),
                                 Output("map-marker", "opacity"),
                                 Output("map-marker", "position"),
                                 Output("search-input", "invalid"),
+                                Output("search-input", "value"),
+                                Output("search-clear", "n_clicks"),
                                 Input("search-input", "value"),
+                                Input("search-clear", "n_clicks"),
                                 Input("datatable-interactivity", "active_cell"),
                                 State("datatable-interactivity", "data"),
                                 ]
 
-
+# This has 2 properties:
+#  1. Focus on asset that has been selected with the table using the map center function
+#  2. handles the search bar for a city and its reset button
 # dl.Marker(position=[31.7, 32.7], opacity=0, id='map-marker')
-def focus_on_asset(keyword, table_active_cell, table_data):
+def focus_on_asset(keyword, n_clicks, table_active_cell, table_data):
+    if n_clicks:
+        return [dash.no_update for _ in range(4)] + [False, "", 0]
     if not len(keyword) and table_active_cell is None:
         return dash.no_update
     conf = get_context_by_rule()
@@ -212,13 +223,11 @@ def focus_on_asset(keyword, table_active_cell, table_data):
         position = [item['lat'], item['long']]
         return position, CLUSTER_MAX_ZOOM + 1, 0.75, position, dash.no_update
     if len(keyword):
-        dff = df.query(f'city.str.contains("{keyword}") or neighborhood.str.contains("{keyword}")')
-        if dff.empty:
-            return [dash.no_update for _ in range(4)] + [True]
-        lat = dff['lat'].mean()
-        long = dff['long'].mean()
-        pos = [lat, long]
-        return pos, 14, dash.no_update, dash.no_update, False
+        pos = find_center(df, keyword)
+        if pos:
+            return pos, 14, dash.no_update, dash.no_update, False, keyword, 0
+        else:
+            return [dash.no_update for _ in range(4)] + [True, keyword, 0]
 
 
 show_table_input_output = [Output("table-toggle", "n_clicks"),
