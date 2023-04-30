@@ -101,8 +101,7 @@ def get_asset_points(df_all, price_from=-np.inf, price_to=np.inf, city=None,
                      with_agency=True, with_parking=None, with_balconies=None,
                      asset_status=(),
                      asset_type=(),
-                     map_bounds=None,
-                     limit=True, id_=None):
+                     map_bounds=None, id_=None):
     if id_ is not None:
         df_f = df_all.query(f'id == "{id_}"')
         return df_f
@@ -133,8 +132,6 @@ def get_asset_points(df_all, price_from=-np.inf, price_to=np.inf, city=None,
     q = "1==1 and " + ' and '.join(list([v for v in sql_cond.values() if len(v)]))
     LOGGER.info(q)
     df_f = df_all.query(q)
-    if limit:
-        df_f = df_f[:FETCH_LIMIT]
 
     LOGGER.info(f"{datetime.now()} Triggerd, Fetched: {len(df_f)} rows")
     return df_f

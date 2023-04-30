@@ -154,21 +154,24 @@ def show_assets(price_range,
     # when max price is at limits, allow prices above it
     price_to = np.inf if price_range[0] == conf['price-max'] else price_range[1] * conf["price_mul"]
     if n_clicks_around:
-        df_f = get_asset_points(df, -np.inf, np.inf, map_bounds=map_bounds, limit=True)
+        df_f = get_asset_points(df, -np.inf, np.inf, map_bounds=map_bounds)
     else:
         df_f = get_asset_points(df, price_from, price_to, city,
                                 price_median_pct_range, price_discount_pct_range, price_ai_pct_range,
                                 is_price_median_pct_range, is_price_discount_pct_range, is_price_ai_pct_range,
                                 date_added, date_updated, rooms_range, floor_range,
                                 with_agency, with_parking, with_balconies, map_bounds=map_bounds,
-                                asset_status=asset_status, asset_type=asset_type, limit=True)
+                                asset_status=asset_status, asset_type=asset_type)
     # Can keep a list of points, if after fetch there was no new, no need to build new points, just keep them to save resources
     # out_marker = handle_marker_type(marker_type,
     #                                 [is_price_median_pct_range, is_price_discount_pct_range, is_price_ai_pct_range])
+    n_rows = len(df_f)
+    FETCH_LIMIT = 250
+    df_f = df_f[:FETCH_LIMIT]
     deal_points = get_geojsons(df_f, marker_type)
     columns, data, style_data_conditional = get_interactive_table(df_f)
     days_b = df["date_updated_d"].min()
-    bot_html = f'({len(df_f)}){"" if (-1 if np.isnan(days_b) else days_b) == 0 else ", notUpdated"}'
+    bot_html = f'נמצאו {n_rows:,.0f} נכסים {"" if (-1 if np.isnan(days_b) else days_b) == 0 else " .."}'
     return deal_points, columns, data, style_data_conditional, bot_html, None
 
 
@@ -205,6 +208,7 @@ focus_on_asset_input_outputs = [Output("big-map", "center"),
                                 Input("datatable-interactivity", "active_cell"),
                                 State("datatable-interactivity", "data"),
                                 ]
+
 
 # This has 2 properties:
 #  1. Focus on asset that has been selected with the table using the map center function

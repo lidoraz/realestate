@@ -29,10 +29,10 @@
 }
 
 #fetched-assets{
-    position: absolute;
-    z-index: 999;
-    left:10px;
-    bottom:0;
+    /*position: absolute;*/
+    /*z-index: 999;*/
+    /*left:10px;*/
+    /*bottom:0;*/
 }
 
 .top-toolbar button {

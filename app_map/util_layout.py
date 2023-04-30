@@ -53,7 +53,7 @@ def get_page_menu():
 def get_layout(default_config):
     layout = html.Div(children=[
         html.Header(className="top-container", children=get_div_top_bar(default_config)),
-        html.Span("", id="fetched-assets"),
+        # html.Span("", id="fetched-assets"),
         html.Div(className="grid-container", children=get_main_map()),
         html.Div(className="table-container", children=[div_left_off_canvas]),
         html.Div(className="modal-container", children=[div_offcanvas]),
@@ -114,6 +114,7 @@ def get_div_top_bar(config_defaults):
     div_top_bar = html.Div(className="top-toolbar", children=[
         dbc.DropdownMenu([
             html.Div([
+                dbc.Row(dbc.Label(id="fetched-assets")),
                 html.Div([dbc.Label("עיר"),
                           dbc.Row([
                               dbc.Col(dbc.Button("X", id="search-clear", color="secondary",
@@ -216,6 +217,7 @@ def get_div_top_bar(config_defaults):
                                                 inputClassName="rounded-checkbox",
                                                 id='cluster-check'))], className="text-rtl"),
                 dbc.Button("נקה", id="button-clear", color="secondary"),
+                dbc.Row(dbc.Label("Made with ❤️"))
             ],
                 className="dropdown-container")], label='אפשרויות'),  # align_end=True,
         html.P(id="output"),
