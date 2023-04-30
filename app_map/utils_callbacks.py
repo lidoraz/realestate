@@ -12,7 +12,7 @@ LOGGER = logging.getLogger()
 
 clear_filter_input_outputs = [
     Output('button-clear', "n_clicks"),
-    # Output("price-slider", "value"),
+    Output("price-slider", "value"),
     Output("price-median-pct-slider", "value"),
     Output("price-discount-pct-slider", "value"),
     Output("ai-price-pct-slider", "value"),
@@ -28,7 +28,7 @@ clear_filter_input_outputs = [
 
 def clear_filter(n_clicks):
     if n_clicks:
-        return 0, [-100, 0], [-100, 0], [-100, 0], [], [], [], None, (1, 6), [], []
+        return 0, [0, 10_000], [-100, 0], [-100, 0], [-100, 0], [], [], [], None, (1, 6), [], []
     return dash.no_update
 
 
@@ -144,13 +144,13 @@ def show_assets(price_range,
     is_price_median_pct_range = len(is_price_median_pct_range) > 0
     is_price_discount_pct_range = len(is_price_discount_pct_range) > 0
     is_price_ai_pct_range = len(is_price_ai_pct_range) > 0
-    city = search_input if len(search_input) else None
+    df = conf['func_data']()
+    city = search_input if len(search_input) and find_center(df, search_input) else None
     map_bounds = map_bounds if city is None else None
 
     if active_cell:
         return dash.no_update
     price_from = price_range[0] * conf["price_mul"]
-    df = conf['func_data']()
     # when max price is at limits, allow prices above it
     price_to = np.inf if price_range[0] == conf['price-max'] else price_range[1] * conf["price_mul"]
     if n_clicks_around:
@@ -226,8 +226,8 @@ def focus_on_asset(keyword, n_clicks_clear_search, n_clicks_clear_marker, table_
         return [dash.no_update for _ in range(7)] + [False, "", 0]
     if n_clicks_clear_marker or (not table_modal_is_open and table_active_cell):
         return [dash.no_update, dash.no_update, 0, dash.no_update] + [[], None, 0] + [dash.no_update for _ in range(3)]
-    if not len(keyword) and table_active_cell is None:
-        return dash.no_update
+    # if not len(keyword) and table_active_cell is None:
+    #     return dash.no_update
     conf = get_context_by_rule()
     df = conf['func_data']()
     if table_active_cell:

@@ -5,7 +5,6 @@ import dash_leaflet as dl
 from dash import html
 from app_map.marker import POINT_TO_LAYER_FUN
 
-price_text = "מחיר"
 date_added_txt = 'הועלה עד'
 date_updated_text = 'עודכן לפני'
 n_rooms_txt = 'חדרים'
@@ -131,7 +130,7 @@ def get_div_top_bar(config_defaults):
                           ],
                          className="slider-container-drop"),
 
-                html.Div([price_text, dcc.RangeSlider(min=config_defaults["price-min"],
+                html.Div([config_defaults['price_label'], dcc.RangeSlider(min=config_defaults["price-min"],
                                                       max=config_defaults["price-max"],
                                                       step=config_defaults['price_step'],
                                                       value=[config_defaults['price-from'],

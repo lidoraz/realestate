@@ -15,11 +15,12 @@ def get_dash(server):
     # df_all.query('-0.89 <price_pct < -0.05').to_csv('df_forsale.csv')
 
     forsale_config_default = {"price-from": 500, "price-to": 10_000, "median-price-pct": -0.2,
-                              "price-min": 500, "price-max": 10_000,
+                              "price-min": 100, "price-max": 10_000,
                               "switch-median": True,
                               "discount-price-pct": None,
                               "ai_pct": None,
-                              "price_step": 50,
+                              "price_label": "מחיר מכירה (א׳)",
+                              "price_step": 100,
                               "price_mul": 1e3,  # 1e6,
                               "with_nadlan": True,
                               "name": BASE_URL,

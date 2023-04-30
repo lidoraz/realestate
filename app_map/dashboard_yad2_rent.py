@@ -8,11 +8,12 @@ BASE_URL = "rent"
 
 def get_dash(server):
     from app_map.persistance_utils import get_rent_data
-    rent_config_default = {"price-from": 1_000, "price-to": 10_000, "median-price-pct": None,
+    rent_config_default = {"price-from": 500, "price-to": 10_000, "median-price-pct": None,
                            "price-min": 500, "price-max": 10_000,
                            "switch-median": False,
                            "discount-price-pct": -0.05,
                            "ai_pct": None,
+                           "price_label": "מחיר שכירות",
                            "price_step": 500,
                            "price_mul": 1,  # 1e3,
                            "with_nadlan": False,  # Work around for missing nadlan db in remote
