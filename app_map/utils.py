@@ -48,9 +48,8 @@ def preprocess_to_str_deals(df):
     return df
 
 
-meta_data_cols = ['lat', 'long', 'price', 'price_s', 'asset_status', 'floor', 'square_meters', 'rooms_s', 'price_pct',
-                  'ai_price_pct',
-                  'pct_diff_median', 'pct_diff_median_s', 'price_pct_s']
+meta_data_cols = ['lat', 'long', 'price', 'price_s', 'asset_status', 'floor', 'square_meters', 'rooms', 'price_pct',
+                  'ai_price_pct', 'pct_diff_median']
 
 
 def get_geojsons(df, marker_metric):
@@ -82,8 +81,12 @@ def _multi_str_filter(multi_choice, col_name):
     return sql_state_asset
 
 
-def find_center(df, city, err_th=0.1):
-    dff = df.query(f'(city.str.contains("{city}") or neighborhood.str.contains("{city}"))')
+def find_center(df, search, err_th=0.1):
+    dff = df.query(f'id == "{search}"')
+    if len(dff):
+        r = dff.squeeze()
+        return [r['lat'], r['long']]
+    dff = df.query(f'(city.str.contains("{search}") or neighborhood.str.contains("{search}"))')
     if dff.empty:
         return None
     if max(dff['lat'].std(), dff['long'].std()) > err_th:
@@ -111,6 +114,7 @@ def get_asset_points(df_all, price_from=-np.inf, price_to=np.inf, city=None,
     rooms_to = rooms_range[1] or 100
     floor_from = floor_range[0] if floor_range[0] is not None else 0
     floor_to = 9999 if floor_range[1] == 32 else floor_range[1] or 9999
+
     sql_cond = dict(
         sql_city=f'(city.str.contains("{city}") or neighborhood.str.contains("{city}"))' if city else "",
         sql_rooms_range=f"{rooms_from} <= rooms <= {rooms_to}.5",

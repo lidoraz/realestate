@@ -145,6 +145,8 @@ def show_assets(price_range,
     is_price_discount_pct_range = len(is_price_discount_pct_range) > 0
     is_price_ai_pct_range = len(is_price_ai_pct_range) > 0
     df = conf['func_data']()
+    df_id = df.query(f'id == "{search_input}"').squeeze()
+    asset_id = search_input if len(df_id) else None
     city = search_input if len(search_input) and find_center(df, search_input) else None
     map_bounds = map_bounds if city is None else None
 
@@ -161,13 +163,19 @@ def show_assets(price_range,
                                 is_price_median_pct_range, is_price_discount_pct_range, is_price_ai_pct_range,
                                 date_added, date_updated, rooms_range, floor_range,
                                 with_agency, with_parking, with_balconies, map_bounds=map_bounds,
-                                asset_status=asset_status, asset_type=asset_type)
+                                asset_status=asset_status, asset_type=asset_type, id_=asset_id)
     # Can keep a list of points, if after fetch there was no new, no need to build new points, just keep them to save resources
     # out_marker = handle_marker_type(marker_type,
     #                                 [is_price_median_pct_range, is_price_discount_pct_range, is_price_ai_pct_range])
     n_rows = len(df_f)
     FETCH_LIMIT = 250
     df_f = df_f[:FETCH_LIMIT]
+    # Fix overlapping points
+    # TODO: Add fix for duplicated points here, add some noise to both x and y if duplicated
+    # df_f[df_f[['lat', 'long']].duplicated]
+    # df_f['lat'].astype(str) + df_f['long'].astype(str)
+
+
     deal_points = get_geojsons(df_f, marker_type)
     columns, data, style_data_conditional = get_interactive_table(df_f)
     days_b = df["date_updated_d"].min()

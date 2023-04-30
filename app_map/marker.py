@@ -110,12 +110,13 @@ def create_tooltip(deal):
     m = deal['metadata']
     tr_ai_price = _row_table_if_pct_ok(m['ai_price_pct'], "AI")
     tr_chg_price = _row_table_if_pct_ok(m['price_pct'], "%")
+    rooms_s = str(int(m['rooms'])) if (m['rooms'] * 10) % 10 == 0 else f"{m['rooms']:0.1f}"
     floor_s = "קרקע"[::-1] if m['floor'] == 0 else f"{m['floor']:.0f}"
     html_tp = f"""
     <table class="">    
     <tr><td class="text-ltr">{m['price']:,.0f}</td>      <td class="text-rtl">מחיר</td>   </tr>
     <tr><td class="text-rtl" colspan="2"><b>{m['asset_status']}</b></td>  </tr>
-    <tr><td class="text-ltr">{m['rooms_s']}</td>          <td class="text-rtl">חדרים</td>  </tr>
+    <tr><td class="text-ltr">{rooms_s}</td>          <td class="text-rtl">חדרים</td>  </tr>
     <tr><td class="text-ltr">{floor_s}</td>          <td class="text-rtl">קומה</td>  </tr>
     <tr><td class="text-ltr">{m['square_meters']:,.0f}</td>          <td class="text-rtl">מ״ר</td>  </tr>
     {tr_ai_price}
