@@ -108,8 +108,8 @@ def _row_table_if_pct_ok(pct, text):
 
 def create_tooltip(deal):
     m = deal['metadata']
-    tr_ai_price = _row_table_if_pct_ok(m['price_pct'], "AI")
-    tr_chg_price = _row_table_if_pct_ok(m['ai_price_pct'], "%")
+    tr_ai_price = _row_table_if_pct_ok(m['ai_price_pct'], "AI")
+    tr_chg_price = _row_table_if_pct_ok(m['price_pct'], "%")
     floor_s = "קרקע"[::-1] if m['floor'] == 0 else f"{m['floor']:.0f}"
     html_tp = f"""
     <table class="">    
