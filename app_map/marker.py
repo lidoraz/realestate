@@ -100,23 +100,26 @@ def gen_color(x):
     return 'black'
 
 
+def _row_table_if_pct_ok(pct, text):
+    if np.isnan(pct):
+        return ""
+    return f"""<tr><td class="text-ltr" style="color:{gen_color(pct)}">{pct:0.1%}</td><td class="text-rtl">{text}</td></tr>"""
+
+
 def create_tooltip(deal):
     m = deal['metadata']
-    #  <img src="{icon_05}" class="tooltip-icon"/>
-    # f"{deal['deal_id']}</br>
-    style_color_pct_med = f"""style="color:{gen_color(m['pct_diff_median'])}" """
-    style_color_pct = f"""style="color:{gen_color(m['price_pct'])}" """
-    # print(style_color_pct)
+    tr_ai_price = _row_table_if_pct_ok(m['price_pct'], "AI")
+    tr_chg_price = _row_table_if_pct_ok(m['ai_price_pct'], "%")
+    floor_s = "קרקע"[::-1] if m['floor'] == 0 else f"{m['floor']:.0f}"
     html_tp = f"""
     <table class="">    
-    <tr><td class="text-ltr">{m['price_s']}</td>      <td class="text-rtl">מחיר</td>   </tr>
+    <tr><td class="text-ltr">{m['price']:,.0f}</td>      <td class="text-rtl">מחיר</td>   </tr>
     <tr><td class="text-ltr"></td> <td class="text-rtl" colspan="2"><b>{m['asset_status']}</b></td>  </tr>
     <tr><td class="text-ltr">{m['rooms_s']}</td>          <td class="text-rtl">חדרים</td>  </tr>
-    <tr><td class="text-ltr">{m['floor']:.0f}</td>          <td class="text-rtl">קומה</td>  </tr>
+    <tr><td class="text-ltr">{floor_s}</td>          <td class="text-rtl">קומה</td>  </tr>
     <tr><td class="text-ltr">{m['square_meters']:,.0f}</td>          <td class="text-rtl">מ״ר</td>  </tr>
-    <tr><td class="text-ltr">₪{m['price'] / m['square_meters']:,.0f}</td>          <td class="text-rtl">למ״ר</td>  </tr>
-    <tr><td class="text-ltr" {style_color_pct_med}>{m['pct_diff_median_s']}</td><td class="text-rtl">חציון</td>  </tr>
-    <tr><td class="text-ltr" {style_color_pct}>{m['price_pct_s']}</td>       <td class="text-rtl">הנחה</td>   </tr>
+    {tr_ai_price}
+    {tr_chg_price}
     </table>"""
     return html_tp
 

@@ -192,7 +192,7 @@ def build_sidebar(deal):
          html.P([html.Span(f"מחיר הנכס ממודל AI : "),
                  html.Span(f"{deal['ai_price']:,.0f} (±{deal['ai_std_pct']:.1%})", className="text-ltr"),
                  get_html_span_pct(deal['ai_price_pct'])]),
-
+         html.Span(f" מחיר למטר ₪{deal['price'] / deal['square_meters']:,.0f}"),
          html.H6(f"הועלה בתאריך {date_added.date()}, (לפני {days_online / 7:0.1f} שבועות)"),
          html.Span(f"מתי עודכן: {deal['date_updated']}, ({days_str_txt(days_updated)})"),
          html.Div(df_price_hist, className='text-ltr'),
@@ -208,7 +208,6 @@ def build_sidebar(deal):
                  f"{deal['asset_type']}, {deal['city']},{deal['street']}",
                  html.Br(),
                  f"{deal['square_meters']:,.0f} מטר",
-
                  html.A(href=maps_url, children=html.Img(src=icon_maps, style=dict(width=32, height=32)),
                         target="_blank"),
                  html.A(href=f"https://www.yad2.co.il/item/{deal['id']}",
@@ -218,7 +217,7 @@ def build_sidebar(deal):
          html.Div(children=[carousel], className="asset-images"),
          html.Span(info_text, className='sidebar-info-text'),
          # html.Br(),
-         html.Table(children=add_info_text, style={"font-size": "0.8vw"}),
+         html.Table(children=add_info_text, style={"font-size": "0.95vw"}),
          # html.P("\n".join([f"{k}: {v}" for k, v in res_get_add_info(deal.name).items()])),
          ])
     return title_html, txt_html
