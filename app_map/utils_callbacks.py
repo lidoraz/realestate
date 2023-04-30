@@ -200,11 +200,18 @@ focus_on_asset_input_outputs = [Output("big-map", "center"),
                                 Output("big-map", "zoom"),
                                 Output("map-marker", "opacity"),
                                 Output("map-marker", "position"),
+                                Output("datatable-interactivity", "selected_cells"),
+                                Output("datatable-interactivity", "active_cell"),
+                                Output("clear-cell-button", "n_clicks"),
+                                ##
                                 Output("search-input", "invalid"),
                                 Output("search-input", "value"),
                                 Output("search-clear", "n_clicks"),
+
                                 Input("search-input", "value"),
                                 Input("search-clear", "n_clicks"),
+                                Input("clear-cell-button", "n_clicks"),
+                                Input("table-modal", "is_open"),
                                 Input("datatable-interactivity", "active_cell"),
                                 State("datatable-interactivity", "data"),
                                 ]
@@ -214,9 +221,11 @@ focus_on_asset_input_outputs = [Output("big-map", "center"),
 #  1. Focus on asset that has been selected with the table using the map center function
 #  2. handles the search bar for a city and its reset button
 # dl.Marker(position=[31.7, 32.7], opacity=0, id='map-marker')
-def focus_on_asset(keyword, n_clicks, table_active_cell, table_data):
-    if n_clicks:
-        return [dash.no_update for _ in range(4)] + [False, "", 0]
+def focus_on_asset(keyword, n_clicks_clear_search, n_clicks_clear_marker, table_modal_is_open, table_active_cell, table_data):
+    if n_clicks_clear_search:
+        return [dash.no_update for _ in range(7)] + [False, "", 0]
+    if n_clicks_clear_marker or (not table_modal_is_open and table_active_cell):
+        return [dash.no_update, dash.no_update, 0, dash.no_update] + [[], None, 0] + [dash.no_update for _ in range(3)]
     if not len(keyword) and table_active_cell is None:
         return dash.no_update
     conf = get_context_by_rule()
@@ -225,20 +234,19 @@ def focus_on_asset(keyword, n_clicks, table_active_cell, table_data):
         id_ = [x for x in table_data if x['id'] == table_active_cell['row_id']][0]['id']
         item = get_asset_points(df, id_=id_).squeeze()
         position = [item['lat'], item['long']]
-        return [position, CLUSTER_MAX_ZOOM + 1, 0.75, position] + [dash.no_update for _ in range(3)]
+        return [position, CLUSTER_MAX_ZOOM + 1, 0.75, position] + [dash.no_update for _ in range(6)]
     if len(keyword):
         pos = find_center(df, keyword)
         if pos:
-            return pos, 14, dash.no_update, dash.no_update, False, keyword, 0
+            return pos, 14, *[dash.no_update for _ in range(5)], False, keyword, 0
         else:
-            return [dash.no_update for _ in range(4)] + [True, keyword, 0]
+            return [dash.no_update for _ in range(7)] + [True, keyword, 0]
 
 
 show_table_input_output = [Output("table-toggle", "n_clicks"),
                            Output("table-modal", "is_open"),
                            Input("table-toggle", "n_clicks"),
-                           State("table-modal", "is_open")
-                           ]
+                           State("table-modal", "is_open")]
 
 
 def show_table_modal(n_clicks, is_open):
@@ -247,19 +255,21 @@ def show_table_modal(n_clicks, is_open):
     return dash.no_update
 
 
-clear_table_selecetd_input_output = [
-    # Output("map-marker", "opacity"), # already being used, need to rework this part
-    Output("datatable-interactivity", "selected_cells"),
-    Output("datatable-interactivity", "active_cell"),
-    Output("clear-cell-button", "n_clicks"),
-    Input("clear-cell-button", "n_clicks"),
-    Input("table-modal", "is_open")]
-
-
-def clear_selected_if_closed(n_clicks, is_open):
-    if not is_open or n_clicks:
-        return [], None, 0
-    return dash.no_update
+#
+# clear_table_selected_input_output = [
+#     # Output("map-marker", "opacity"), # already being used, need to rework this part
+#     Output("datatable-interactivity", "selected_cells"),
+#     Output("datatable-interactivity", "active_cell"),
+#     Input("clear-cell-button", "n_clicks"),
+#     # Input("table-modal", "is_open")
+# ]
+#
+#
+# def clear_selected_if_closed(is_open, n_clicks):
+#     print("clear_selected_if_closed", n_clicks, is_open)
+#     # if not is_open or n_clicks:
+#     #     return [], None#, 0
+#     # return dash.no_update
 
 
 disable_range_input_outputs = [Output("price-median-pct-slider", "disabled"),
@@ -300,5 +310,4 @@ def add_callbacks(app, config):
     app.callback(disable_range_input_outputs)(disable_range_sliders)
     app.callback(show_table_input_output)(show_table_modal)
     app.callback(toggle_cluster_input_outputs)(toggle_cluster)
-    app.callback(clear_table_selecetd_input_output)(clear_selected_if_closed)
-    # app.callback(clear_cell_input_output)(clear_cell)
+    # app.callback(clear_table_selected_input_output)(clear_selected_if_closed)

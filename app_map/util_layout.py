@@ -10,7 +10,7 @@ date_added_txt = 'הועלה עד'
 date_updated_text = 'עודכן לפני'
 n_rooms_txt = 'חדרים'
 n_floor_txt = "קומה"
-median_price_txt = '% מהחציון'
+median_price_txt = '% מהממוצע'
 ai_pct_txt = '% ממחיר AI'
 price_pct_txt = '% הורדה במחיר'
 rooms_marks = {r: str(r) for r in range(7)}
@@ -31,12 +31,16 @@ asset_type_cols = ['דירה', 'יחידת דיור', 'דירת גן', 'סאבל
                    'סטודיו/לופט', 'דופלקס', 'דירת נופש', 'משק חקלאי/נחלה', 'טריפלקס', 'החלפת דירות']
 
 marker_type_options = [
-
-    {'label': 'M', 'value': 'pct_diff_median'},
-    {'label': '%', 'value': 'price_pct'},
-    {'label': 'AI', 'value': 'ai_price_pct'},
+    {'label': 'M', 'value': 'pct_diff_median', 'label_id': 'pct_diff_median'},
+    {'label': '%', 'value': 'price_pct', 'label_id': 'price_pct'},
+    {'label': 'AI', 'value': 'ai_price_pct', 'label_id': 'ai_price_pct'},
 ]
+tooltips = [dbc.Tooltip("הצג לפי ממוצע המחיר של נכסים עם אותו מספר חדרים באיזור", target="pct_diff_median"),
+            dbc.Tooltip("הצג את השינוי במחיר הנכס מרגע העלאה עד היום", target="price_pct"),
+            dbc.Tooltip("הצג את המחיר לעומת חיזוי של בינה מלאכותית AI🚀 ", target="ai_price_pct")]
 marker_type_default = 'ai_price_pct'
+btn_size = 'md'
+btn_color = 'primary'
 
 
 # https://stackoverflow.com/questions/34775308/leaflet-how-to-add-a-text-label-to-a-custom-marker-icon
@@ -47,7 +51,7 @@ def get_page_menu():
     return dbc.DropdownMenu([dbc.DropdownMenuItem("Rent", href="/rent", external_link=True),
                              dbc.DropdownMenuItem("Sale", href="/sale", external_link=True),
                              dbc.DropdownMenuItem("Analytics", href="/analytics", external_link=True)],
-                            label="§")  # style=dict(direction="ltr")
+                            label="§עוד", color=btn_color, size=btn_size)  # style=dict(direction="ltr")
 
 
 def get_layout(default_config):
@@ -63,35 +67,35 @@ def get_layout(default_config):
 
 def get_table_container():
     return html.Div(className="left-container", children=[
-        dbc.Button("Clear Marker", id="clear-cell-button", color="secondary"),
+        dbc.Button("Clear Marker", id="clear-cell-button", color="secondary", size='sm'),
         DataTable(
-        id='datatable-interactivity',
-        columns=None,
-        data=None,
-        editable=False,
-        filter_action="native",
-        sort_action="native",
-        sort_mode="multi",
-        column_selectable="single",
-        row_selectable=False,  # 'single',  # "multi",
-        row_deletable=False,
-        # active_cell=False,
-        selected_columns=[],
-        selected_rows=[],
-        page_action="native",
-        page_current=0,
-        page_size=15,
-        hidden_columns=["id"],
-        style_cell={
-            # 'overflow': 'hidden',
-            'font-family': 'sans-serif',
-            'font-size': '11pt',
-            'textOverflow': 'ellipsis',
-            'minWidth': '30px', 'width': '30px', 'maxWidth': '120px',
-            # 'maxWidth': 0
-        },
-        style_data_conditional=None  # cond_styles
-    )])
+            id='datatable-interactivity',
+            columns=None,
+            data=None,
+            editable=False,
+            filter_action="native",
+            sort_action="native",
+            sort_mode="multi",
+            column_selectable="single",
+            row_selectable=False,  # 'single',  # "multi",
+            row_deletable=False,
+            # active_cell=False,
+            selected_columns=[],
+            selected_rows=[],
+            page_action="native",
+            page_current=0,
+            page_size=15,
+            hidden_columns=["id"],
+            style_cell={
+                # 'overflow': 'hidden',
+                'font-family': 'sans-serif',
+                'font-size': '11pt',
+                'textOverflow': 'ellipsis',
+                'minWidth': '30px', 'width': '30px', 'maxWidth': '120px',
+                # 'maxWidth': 0
+            },
+            style_data_conditional=None  # cond_styles
+        )])
 
 
 def get_html_range_range_pct(text, element_id, checked=False):
@@ -185,6 +189,7 @@ def get_div_top_bar(config_defaults):
                         id='marker-type',
                         inline=True,
                     ),
+                    *tooltips
                 ], style={"margin-bottom": "10px"}),
                 # dbc.DropdownMenu([
                 #     dbc.DropdownMenuItem("סינון לפי מחירים", header=True),
@@ -193,9 +198,9 @@ def get_div_top_bar(config_defaults):
                 get_html_range_range_pct(median_price_txt, 'price-median-pct-slider')
                 # ]
                 ,
-                    # className="dropdown-container",
-                    # direction="up",
-                    # label="סינון לפי מחירים"),
+                # className="dropdown-container",
+                # direction="up",
+                # label="סינון לפי מחירים"),
 
                 dbc.DropdownMenuItem(divider=True),
                 html.Div([dbc.Row([dbc.Col(date_added_txt),
@@ -221,13 +226,12 @@ def get_div_top_bar(config_defaults):
                 dbc.Button("נקה", id="button-clear", color="secondary"),
                 dbc.Row(dbc.Label("Made with ❤️"))
             ],
-                className="dropdown-container")], label='אפשרויות'),  # align_end=True,
-        html.P(id="output"),
-        dbc.Button("טבלה", id="table-toggle", color="success"),
-        dbc.Button("איזור", id="button-around", color="secondary"),
+                className="dropdown-container")], label='אפשרויות', color=btn_color, size=btn_size),  # align_end=True,
+        dbc.Button("טבלה", id="table-toggle", color=btn_color, size=btn_size),
+        dbc.Button("איזור", id="button-around", color=btn_color, size=btn_size),
         # dbc.Button("סנן", id='button-return'),
         get_page_menu(),
-
+        html.H2(config_defaults['name'].capitalize(), style={"margin": "5px 5px 0px 5px"}),
     ])
     return div_top_bar
 
