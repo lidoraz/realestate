@@ -14,7 +14,7 @@ def get_dash(server):
     # df_all = app_preprocess_df(df_all)
     # df_all.query('-0.89 <price_pct < -0.05').to_csv('df_forsale.csv')
 
-    forsale_config_default = {"price-from": 500, "price-to": 3_000, "median-price-pct": -0.2,
+    forsale_config_default = {"price-from": 500, "price-to": 10_000, "median-price-pct": -0.2,
                               "price-min": 500, "price-max": 10_000,
                               "switch-median": True,
                               "discount-price-pct": None,

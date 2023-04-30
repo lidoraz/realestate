@@ -62,7 +62,9 @@ def get_layout(default_config):
 
 
 def get_table_container():
-    return html.Div(className="left-container", children=[DataTable(
+    return html.Div(className="left-container", children=[
+        dbc.Button("Clear Marker", id="clear-cell-button", color="secondary"),
+        DataTable(
         id='datatable-interactivity',
         columns=None,
         data=None,

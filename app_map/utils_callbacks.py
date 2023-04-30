@@ -225,7 +225,7 @@ def focus_on_asset(keyword, n_clicks, table_active_cell, table_data):
         id_ = [x for x in table_data if x['id'] == table_active_cell['row_id']][0]['id']
         item = get_asset_points(df, id_=id_).squeeze()
         position = [item['lat'], item['long']]
-        return position, CLUSTER_MAX_ZOOM + 1, 0.75, position, dash.no_update
+        return [position, CLUSTER_MAX_ZOOM + 1, 0.75, position] + [dash.no_update for _ in range(3)]
     if len(keyword):
         pos = find_center(df, keyword)
         if pos:
@@ -248,15 +248,17 @@ def show_table_modal(n_clicks, is_open):
 
 
 clear_table_selecetd_input_output = [
-    # Output("map-marker", "opacity"),
+    # Output("map-marker", "opacity"), # already being used, need to rework this part
     Output("datatable-interactivity", "selected_cells"),
     Output("datatable-interactivity", "active_cell"),
+    Output("clear-cell-button", "n_clicks"),
+    Input("clear-cell-button", "n_clicks"),
     Input("table-modal", "is_open")]
 
 
-def clear_selected_if_closed(is_open):
-    if not is_open:
-        return [], None
+def clear_selected_if_closed(n_clicks, is_open):
+    if not is_open or n_clicks:
+        return [], None, 0
     return dash.no_update
 
 
@@ -299,3 +301,4 @@ def add_callbacks(app, config):
     app.callback(show_table_input_output)(show_table_modal)
     app.callback(toggle_cluster_input_outputs)(toggle_cluster)
     app.callback(clear_table_selecetd_input_output)(clear_selected_if_closed)
+    # app.callback(clear_cell_input_output)(clear_cell)

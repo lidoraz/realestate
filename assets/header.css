@@ -27,7 +27,9 @@
 .previous-next-container{
     width:300px;
 }
-
+#datatable-interactivity{
+    width: 420px;
+}
 #fetched-assets{
     /*position: absolute;*/
     /*z-index: 999;*/
