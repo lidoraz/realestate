@@ -221,7 +221,7 @@ def build_sidebar(deal):
          html.Div(children=[carousel], className="asset-images"),
          html.Span(info_text, className='sidebar-info-text'),
          # html.Br(),
-         html.Table(children=add_info_text, style={"font-size": "0.95vw"}),
+         html.Table(children=add_info_text, style={"font-size": "10pt"}),
          # html.P("\n".join([f"{k}: {v}" for k, v in res_get_add_info(deal.name).items()])),
          ])
     return title_html, txt_html
