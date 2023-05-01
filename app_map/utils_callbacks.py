@@ -170,12 +170,6 @@ def show_assets(price_range,
     n_rows = len(df_f)
     FETCH_LIMIT = 250
     df_f = df_f[:FETCH_LIMIT]
-    # Fix overlapping points
-    # TODO: Add fix for duplicated points here, add some noise to both x and y if duplicated
-    # df_f[df_f[['lat', 'long']].duplicated]
-    # df_f['lat'].astype(str) + df_f['long'].astype(str)
-
-
     deal_points = get_geojsons(df_f, marker_type)
     columns, data, style_data_conditional = get_interactive_table(df_f)
     days_b = df["date_updated_d"].min()
@@ -229,7 +223,8 @@ focus_on_asset_input_outputs = [Output("big-map", "center"),
 #  1. Focus on asset that has been selected with the table using the map center function
 #  2. handles the search bar for a city and its reset button
 # dl.Marker(position=[31.7, 32.7], opacity=0, id='map-marker')
-def focus_on_asset(keyword, n_clicks_clear_search, n_clicks_clear_marker, table_modal_is_open, table_active_cell, table_data):
+def focus_on_asset(keyword, n_clicks_clear_search, n_clicks_clear_marker, table_modal_is_open, table_active_cell,
+                   table_data):
     if n_clicks_clear_search:
         return [dash.no_update for _ in range(7)] + [False, "", 0]
     if n_clicks_clear_marker or (not table_modal_is_open and table_active_cell):

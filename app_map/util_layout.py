@@ -18,7 +18,9 @@ max_floor = 32
 floor_marks = {k: str(k) for k in range(0, max_floor + 1, 4)}
 floor_marks.update({0: "קרקע", 32: "32+"})
 slider_tooltip = {'always_visible': True, 'placement': 'bottom'}
-CLUSTER_MAX_ZOOM = 15
+# best practice to avoid overlap points
+CLUSTER_MAX_ZOOM = 18
+CLUSTER_RADIUS = 30  # px
 
 asset_status_cols = [
                         'חדש מקבלן (לא גרו בנכס)',
@@ -131,15 +133,15 @@ def get_div_top_bar(config_defaults):
                          className="slider-container-drop"),
 
                 html.Div([config_defaults['price_label'], dcc.RangeSlider(min=config_defaults["price-min"],
-                                                      max=config_defaults["price-max"],
-                                                      step=config_defaults['price_step'],
-                                                      value=[config_defaults['price-from'],
-                                                             config_defaults['price-to']],
-                                                      id='price-slider',
-                                                      marks={config_defaults["price-max"]: '+',
-                                                             config_defaults["price-min"]: '-'},
-                                                      allowCross=False,
-                                                      tooltip=slider_tooltip)],
+                                                                          max=config_defaults["price-max"],
+                                                                          step=config_defaults['price_step'],
+                                                                          value=[config_defaults['price-from'],
+                                                                                 config_defaults['price-to']],
+                                                                          id='price-slider',
+                                                                          marks={config_defaults["price-max"]: '+',
+                                                                                 config_defaults["price-min"]: '-'},
+                                                                          allowCross=False,
+                                                                          tooltip=slider_tooltip)],
                          className="slider-container-drop"),
                 dbc.DropdownMenuItem(divider=True),
                 html.Div(
@@ -247,7 +249,8 @@ url_dark = "https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r
 def get_main_map():
     return dl.Map(children=[dl.TileLayer(url=url_bright),
                             dl.GeoJSON(data=None, id="geojson", zoomToBounds=False, cluster=False,
-                                       superClusterOptions=dict(maxZoom=CLUSTER_MAX_ZOOM),  # radius=50,
+                                       superClusterOptions=dict(maxZoom=CLUSTER_MAX_ZOOM, radius=CLUSTER_RADIUS),
+                                       # radius=50,
                                        options=dict(pointToLayer=POINT_TO_LAYER_FUN),
                                        ),
                             dl.Marker(position=[31.7, 32.7], opacity=0, id='map-marker')
