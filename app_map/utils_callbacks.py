@@ -244,7 +244,8 @@ def focus_on_asset(keyword, n_clicks_clear_search, n_clicks_clear_marker, table_
             return pos, 14, *[dash.no_update for _ in range(5)], False, keyword, 0
         else:
             return [dash.no_update for _ in range(7)] + [True, keyword, 0]
-    raise dash.exceptions.PreventUpdate
+    # return dash.no_update # this stuck in production,
+    return ValueError()  # must be used as no update keeps Updating... in dash
 
 
 show_table_input_output = [Output("table-toggle", "n_clicks"),
@@ -257,23 +258,6 @@ def show_table_modal(n_clicks, is_open):
     if n_clicks:
         return 0, not is_open
     return dash.no_update
-
-
-#
-# clear_table_selected_input_output = [
-#     # Output("map-marker", "opacity"), # already being used, need to rework this part
-#     Output("datatable-interactivity", "selected_cells"),
-#     Output("datatable-interactivity", "active_cell"),
-#     Input("clear-cell-button", "n_clicks"),
-#     # Input("table-modal", "is_open")
-# ]
-#
-#
-# def clear_selected_if_closed(is_open, n_clicks):
-#     print("clear_selected_if_closed", n_clicks, is_open)
-#     # if not is_open or n_clicks:
-#     #     return [], None#, 0
-#     # return dash.no_update
 
 
 disable_range_input_outputs = [Output("price-median-pct-slider", "disabled"),
