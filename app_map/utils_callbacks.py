@@ -244,7 +244,7 @@ def focus_on_asset(keyword, n_clicks_clear_search, n_clicks_clear_marker, table_
             return pos, 14, *[dash.no_update for _ in range(5)], False, keyword, 0
         else:
             return [dash.no_update for _ in range(7)] + [True, keyword, 0]
-    return dash.no_update
+    raise dash.exceptions.PreventUpdate
 
 
 show_table_input_output = [Output("table-toggle", "n_clicks"),
