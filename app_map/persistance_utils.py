@@ -81,7 +81,7 @@ def get_updated_at():
         except Exception as e:
             return False
     else:
-        LOGGER.debug(f"Using cache {_updated_at=}")
+        LOGGER.debug(f"Using cache {str(_updated_at)}")
         return _updated_at
 
 

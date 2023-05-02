@@ -137,7 +137,7 @@ def show_assets(price_range,
 
     if limit_refresh(map_zoom):
         return dash.no_update
-    LOGGER.debug("marker_type", marker_type)
+    LOGGER.debug(f"{marker_type=}")
     with_agency = True if len(with_agency) else False
     with_parking = True if len(with_parking) else None
     with_balconies = True if len(with_balconies) else None
@@ -244,6 +244,7 @@ def focus_on_asset(keyword, n_clicks_clear_search, n_clicks_clear_marker, table_
             return pos, 14, *[dash.no_update for _ in range(5)], False, keyword, 0
         else:
             return [dash.no_update for _ in range(7)] + [True, keyword, 0]
+    return dash.no_update
 
 
 show_table_input_output = [Output("table-toggle", "n_clicks"),

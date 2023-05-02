@@ -142,6 +142,7 @@ def get_asset_points(df_all, price_from=-np.inf, price_to=np.inf, city=None,
 
 
 def build_sidebar(deal):
+    # THIS NEEDS REWORK - to DBC usage and better design
     maps_url = f"http://maps.google.com/maps?z=12&t=m&q=loc:{deal['lat']}+{deal['long']}&hl=iw"  # ?hl=iw, t=k sattalite
     days_online = (datetime.today() - pd.to_datetime(deal['date_added'])).days
     days_updated = (datetime.today() - pd.to_datetime(deal['date_updated'])).days
@@ -187,9 +188,9 @@ def build_sidebar(deal):
     def get_html_span_pct(pct):
         pct = 0 if np.isnan(pct) else pct
         return html.Span(f"{pct:.1%}", style={"background-color": get_color(pct)}, className="span-color-pct text-ltr")
-
     title_html = html.Div([html.Span(f"{deal['price']:,.0f}₪"),
                            get_html_span_pct(deal['price_pct'])])
+    street = deal['street'] if deal['street'] else deal['neighborhood'] if deal['neighborhood'] else ""
     txt_html = html.Div(
         [html.Span(f"מחיר הנכס מהחציון באיזור: "),
          get_html_span_pct(deal['pct_diff_median']),
@@ -209,7 +210,7 @@ def build_sidebar(deal):
          html.P([f" {deal['rooms']} חדרים",
                  f" קומה  {round(deal['floor']) if deal['floor'] > 0 else 'קרקע'} ",
                  html.Br(),
-                 f"{deal['asset_type']}, {deal['city']},{deal['street']}",
+                 f"{deal['asset_type']}, {deal['city']}, {street}",
                  html.Br(),
                  f"{deal['square_meters']:,.0f} מטר",
                  html.A(href=maps_url, children=html.Img(src=icon_maps, style=dict(width=32, height=32)),
