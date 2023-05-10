@@ -106,11 +106,15 @@ def _row_table_if_pct_ok(pct, text):
     return f"""<tr><td class="text-ltr" style="color:{gen_color(pct)}">{pct:0.1%}</td><td class="text-rtl">{text}</td></tr>"""
 
 
+def convert_rooms_str(rooms: float):
+    return str(int(rooms)) if (rooms * 10) % 10 == 0 else f"{rooms:0.1f}"
+
+
 def create_tooltip(deal):
     m = deal['metadata']
     tr_ai_price = _row_table_if_pct_ok(m['ai_price_pct'], "AI")
     tr_chg_price = _row_table_if_pct_ok(m['price_pct'], "%")
-    rooms_s = str(int(m['rooms'])) if (m['rooms'] * 10) % 10 == 0 else f"{m['rooms']:0.1f}"
+    rooms_s = convert_rooms_str(m['rooms'])
     floor_s = "קרקע"[::-1] if m['floor'] == 0 else f"{m['floor']:.0f}"
     html_tp = f"""
     <table class="">    

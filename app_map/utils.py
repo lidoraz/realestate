@@ -1,7 +1,7 @@
 import pandas as pd
 from datetime import datetime
 import numpy as np
-from app_map.marker import get_marker_tooltip, icon_maps, icon_real_estate, get_color
+from app_map.marker import get_marker_tooltip, icon_maps, icon_real_estate, get_color, convert_rooms_str
 from app_map.util_layout import *
 from scrape_yad2.utils import _get_parse_item_add_info
 from fetch_data.utils import filter_by_dist, get_nadlan_trans
@@ -188,6 +188,7 @@ def build_sidebar(deal):
     def get_html_span_pct(pct):
         pct = 0 if np.isnan(pct) else pct
         return html.Span(f"{pct:.1%}", style={"background-color": get_color(pct)}, className="span-color-pct text-ltr")
+
     title_html = html.Div([html.Span(f"{deal['price']:,.0f}₪"),
                            get_html_span_pct(deal['price_pct'])])
     street = deal['street'] if deal['street'] else deal['neighborhood'] if deal['neighborhood'] else ""
@@ -209,7 +210,7 @@ def build_sidebar(deal):
              html.Br(),
              f"מצב הנכס: ",
              html.B(deal['asset_status'])]),
-         html.P([f" {deal['rooms']} חדרים,",
+         html.P([f" {convert_rooms_str(deal['rooms'])} חדרים,",
                  f" קומה  {round(deal['floor']) if deal['floor'] > 0 else 'קרקע'} ",
                  n_floors_building_str,
                  html.Br(),
@@ -226,7 +227,7 @@ def build_sidebar(deal):
                         children=html.Img(src=icon_real_estate, style=dict(width=32, height=32)),
                         target="_blank"),
                  ]),
-         html.Div(children=[carousel], className="asset-images"),
+         html.Div(children=[carousel], className="asset-images", style={"display": "block" if image_urls else "none"}),
          html.Span(info_text, className='sidebar-info-text'),
          html.Span(deal['id'], style={"display": "block", "font-size": "8pt"}),
          html.P("עסקאות עם מספר חדרים זהה בסביבה:", style=dict(display="block", margin="0px 5px 0px")),
