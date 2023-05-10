@@ -311,15 +311,16 @@ p.rtl {
 }
 
 .asset-images {
-    /*width: 360px;*/
-    /*height: 240px;*/
+    width: 450px;
+    height: 300px;
     margin: 5px;
-    /*display: flex;*/
+    direction: ltr;
+    /*float: right;*/
 }
 
 .asset-images-img {
-    width: 400px;
-    height: 266px;
+    width: 450px;
+    height: 300px;
     /*max-height: 220px;*/
     /*object-fit: contain;*/
     object-fit: cover;

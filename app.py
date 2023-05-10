@@ -11,7 +11,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from app_map.persistance_utils import download_remote, is_cache_ok
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[
         logging.FileHandler("debug.log"),

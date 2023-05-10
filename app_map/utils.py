@@ -171,9 +171,9 @@ def build_sidebar(deal):
             items=[{"key": f"{idx + 1}", "src": url, "href": "https://google.com", "img_class_name": "asset-images-img"}
                    for idx, url in
                    enumerate(image_urls)],
-            controls=False,
+            controls=True,
             indicators=True,
-            interval=2000,
+            interval=2500,
             ride="carousel",
             # style="sidebar-carousel"
         )
@@ -191,6 +191,8 @@ def build_sidebar(deal):
     title_html = html.Div([html.Span(f"{deal['price']:,.0f}₪"),
                            get_html_span_pct(deal['price_pct'])])
     street = deal['street'] if deal['street'] else deal['neighborhood'] if deal['neighborhood'] else ""
+    n_floors_building = round(deal['number_of_floors']) if deal['number_of_floors'] > 0 else None
+    n_floors_building_str = f', (מתוך {n_floors_building})' if n_floors_building else ""
     txt_html = html.Div(
         [html.Span(f"מחיר הנכס מהחציון באיזור: "),
          get_html_span_pct(deal['pct_diff_median']),
@@ -207,12 +209,17 @@ def build_sidebar(deal):
              html.Br(),
              f"מצב הנכס: ",
              html.B(deal['asset_status'])]),
-         html.P([f" {deal['rooms']} חדרים",
+         html.P([f" {deal['rooms']} חדרים,",
                  f" קומה  {round(deal['floor']) if deal['floor'] > 0 else 'קרקע'} ",
+                 n_floors_building_str,
                  html.Br(),
                  f"{deal['asset_type']}, {deal['city']}, {street}",
                  html.Br(),
                  f"{deal['square_meters']:,.0f} מטר",
+                 html.Br(),
+                 f" חנייה: {deal['parking'] if deal['parking'] else 'ללא'} ",
+                 html.Br(),
+                 f"{'עם מרפסת' if deal['balconies'] else 'ללא מרפסת'}",
                  html.A(href=maps_url, children=html.Img(src=icon_maps, style=dict(width=32, height=32)),
                         target="_blank"),
                  html.A(href=f"https://www.yad2.co.il/item/{deal['id']}",
@@ -221,8 +228,10 @@ def build_sidebar(deal):
                  ]),
          html.Div(children=[carousel], className="asset-images"),
          html.Span(info_text, className='sidebar-info-text'),
+         html.Span(deal['id'], style={"display": "block", "font-size": "8pt"}),
+         html.P("עסקאות עם מספר חדרים זהה בסביבה:", style=dict(display="block", margin="0px 5px 0px")),
          # html.Br(),
-         html.Table(children=add_info_text, style={"font-size": "10pt"}),
+         # html.Table(children=add_info_text, style={"font-size": "10pt"}),
          # html.P("\n".join([f"{k}: {v}" for k, v in res_get_add_info(deal.name).items()])),
          ])
     return title_html, txt_html
@@ -234,6 +243,7 @@ from plotly import graph_objects as go
 def plot_deal_vs_sale_sold(other_close_deals, df_tax, deal):
     # When the hist becomes square thats because there a huge anomaly in terms of extreme value
     sale_items = other_close_deals['price']
+    str_txt = "עסקאות בסביבה"
     # .hist(bins=min(70, len(sale_items)), legend=True, alpha=0.8)
     fig = go.Figure()
     tr_1 = go.Histogram(x=sale_items, name=f'Total #{len(sale_items)}', opacity=0.75, nbinsx=len(sale_items))
@@ -249,11 +259,12 @@ def plot_deal_vs_sale_sold(other_close_deals, df_tax, deal):
     fig.add_vline(x=deal['price'], line_width=2,
                   line_color='red', line_dash='dash',
                   name=f"{deal['price']:,.0f}")
-    fig.update_layout(  # title_text=str_txt,
+    fig.update_layout(
+        # title_text=str_txt,
         # barmode='stack',
         width=450,
         height=250,
-        margin=dict(l=0, r=0, b=0, t=0),
+        margin=dict(l=0, r=0, b=0, t=0.0),
         legend=dict(x=0.0, y=1),
         dragmode=False)
     # fig['layout']['yaxis'].update(autorange=True)

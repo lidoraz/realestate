@@ -215,7 +215,7 @@ focus_on_asset_input_outputs = [Output("big-map", "center"),
                                 Input("clear-cell-button", "n_clicks"),
                                 Input("table-modal", "is_open"),
                                 Input("datatable-interactivity", "active_cell"),
-                                State("datatable-interactivity", "data"),
+                                State("datatable-interactivity", "data")
                                 ]
 
 
@@ -245,7 +245,7 @@ def focus_on_asset(keyword, n_clicks_clear_search, n_clicks_clear_marker, table_
         else:
             return [dash.no_update for _ in range(7)] + [True, keyword, 0]
     # return dash.no_update # this stuck in production,
-    return ValueError()  # must be used as no update keeps Updating... in dash
+    raise dash.exceptions.CallbackException  # [center, zoom] + [dash.no_update for _ in range(8)]#ValueError()  # must be used as no update keeps Updating... in dash
 
 
 show_table_input_output = [Output("table-toggle", "n_clicks"),

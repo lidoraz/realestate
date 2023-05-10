@@ -125,12 +125,11 @@ def _preprocess_and_load():
     #
     sale = dict(df_forsale_all=df_forsale_all)
     rent = dict(df_rent_all=df_rent_all)
-    global cache_dict
     cache_dict.update(dict(sale=sale, rent=rent, stats=stats))
 
 
 def download_remote(block=False):
-    global is_downloading, cache_dict
+    global is_downloading
     if not is_downloading:
         import threading
         is_downloading = True
@@ -141,12 +140,12 @@ def download_remote(block=False):
             LOGGER.info("Started downloading with thread")
             threading.Thread(target=download_files, args=(filenames,)).start()
         # Reset cache, forces reload
-        cache_dict = {}
 
 
 def load_dataframes():
     if not is_cache_ok():
         download_remote()
+        cache_dict.clear()
     if len(cache_dict) == 0:
         _preprocess_and_load()
     return cache_dict
