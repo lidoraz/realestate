@@ -101,6 +101,7 @@ def download_files(filenames):
     global is_downloading
     is_downloading = False
     LOGGER.info("Finished downloading")
+    cache_dict.clear()   # needed to force reload the datasets
 
 
 def _preprocess_and_load():
@@ -145,7 +146,6 @@ def download_remote(block=False):
 def load_dataframes():
     if not is_cache_ok():
         download_remote()
-        cache_dict.clear()
     if len(cache_dict) == 0:
         _preprocess_and_load()
     return cache_dict
