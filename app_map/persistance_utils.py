@@ -96,12 +96,12 @@ def download_files(filenames):
     LOGGER.info(txt)
     for filename in filenames:
         download_from_remote(session.client('s3'), filename)
-    with open(updated_path, "w") as f:
-        json.dump({"updatedAt": dt_modified}, f)
     global is_downloading
     is_downloading = False
     LOGGER.info("Finished downloading")
     cache_dict.clear()   # needed to force reload the datasets
+    with open(updated_path, "w") as f:
+        json.dump({"updatedAt": dt_modified}, f)
 
 
 def _preprocess_and_load():
