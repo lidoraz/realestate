@@ -10,6 +10,7 @@ from scrape_nadlan.Scraper.utils import get_missing_combinations, generate_job_c
     copy_csv_files_to_db
 import threading
 import time
+
 TIMEOUT_SEC = 120
 
 
@@ -94,6 +95,29 @@ def start_routine(use_proxy):
         time.sleep(5)
 
 
+def start_routine1(scraper_params):
+    _dt = os.environ.get("SCRAPE_DATE")
+    proxy = scraper_params["proxy"]
+    ocr = scraper_params["ocr"]
+    driver_path = scraper_params["driver_path"]
+    scraper = Scraper(silent=True, proxy_ip=proxy, driver_path=driver_path, ocr=ocr)
+    scrapers.append(scraper)
+    while True:
+        params = task_queue.get()
+        try:
+            print(f"Started job: {params}, {proxy=}, {task_queue.qsize()}")
+            res = get_daily_filtered_rooms_years(scraper, *params)
+            if res['status_code'] == 1:  # task failed
+                task_queue.put(params)
+            else:
+                print(res, task_queue.qsize())
+        except Exception as e:
+            print("Caught an exception", os.getpid(), e)
+            task_queue.put(params)
+        task_queue.task_done()
+        time.sleep(5)
+
+
 def run_multiple(jobs_list):
     task_queue.queue.clear()
     print(f" THERE ARE {len(jobs_list)} combinations!")
@@ -163,6 +187,18 @@ def run_custom_job(date_range, filter_exists, use_proxy=False):
     else:
         jobs_list = generate_job_comb(date_range)
     # jobs_list = jobs_list[:1]
+    run_multiple(jobs_list)
+    close_scrapers()
+
+
+def run_single_proxy(date_range, filter_exists, scraper_params):
+    if filter_exists:
+        date_range = date_range.tolist()[::-1]  # Reverse them
+        jobs_list = get_missing_combinations(date_range)
+    else:
+        jobs_list = generate_job_comb(date_range)
+
+    threading.Thread(target=start_routine1, daemon=True, args=(scraper_params,)).start()
     run_multiple(jobs_list)
     close_scrapers()
 

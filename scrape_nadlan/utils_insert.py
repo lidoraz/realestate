@@ -1,7 +1,9 @@
 import argparse
 import json
 import os
-
+import requests
+import time
+from requests.exceptions import RequestException
 from sqlalchemy import Column, Table, MetaData, create_engine
 
 
@@ -53,10 +55,18 @@ def get_telegram_creds():
     return bot_id, channel_id
 
 
+def safe_send(url, params=None, tries=10):
+    for _ in range(tries):
+        try:
+            res = requests.get(url, params=params)
+            print(f"Sent with code: {res.status_code}")
+            return
+        except RequestException as e:
+            time.sleep(1)
+    print("Failed to send msg after {}".format(tries))
+
+
 def send_telegram_msg(msg):
     bot_id, channel_id = get_telegram_creds()
-    import requests
     url = f"https://api.telegram.org/bot{bot_id}/sendMessage?chat_id={channel_id}&text={msg}&parse_mode=HTML"
-    res = requests.get(url)
-    print(f"Sent with code: {res.status_code}")
-
+    safe_send(url)

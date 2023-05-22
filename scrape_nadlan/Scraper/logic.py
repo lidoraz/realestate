@@ -6,7 +6,6 @@ from selenium.common.exceptions import NoSuchElementException
 import pandas as pd
 from datetime import datetime
 from scrape_nadlan.Scraper.DB import columns
-from scrape_nadlan.Scraper.ocr import OCR1
 from pyproj import Transformer
 import logging
 import tempfile
@@ -15,8 +14,8 @@ import os
 import random
 from scrape_nadlan.Scraper.utils import sleep
 
-PATH = "resources/geckodriver.exe"
-print(f"GECKO DRIVER IS SER TO: '{PATH}'")
+# PATH = "resources/geckodriver.exe"
+# print(f"GECKO DRIVER IS SER TO: '{PATH}'")
 
 logging.basicConfig(
     format='%(asctime)s %(levelname)-8s %(message)s',
@@ -67,7 +66,7 @@ def convert_wgs84_to_itm(lat, long):
 
 
 class Scraper:
-    def __init__(self, proxy_ip=None, silent=None):
+    def __init__(self, proxy_ip=None, silent=None, driver_path="resources/geckodriver.exe", ocr="TESSERACT"):
         self.proxy_ip = proxy_ip
         profile = webdriver.FirefoxProfile()
         if proxy_ip:
@@ -86,9 +85,14 @@ class Scraper:
         import random
         # old = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36"
         profile.set_preference("general.useragent.override", f"{random.choice(user_agents)} {str(uuid.uuid4())}")
-        self.driver = webdriver.Firefox(executable_path=PATH, options=firefox_options)  # , firefox_profile=profile
+        self.driver = webdriver.Firefox(executable_path=driver_path, options=firefox_options)  # , firefox_profile=profile
         self.driver.minimize_window()
-        self.ocr = OCR1()
+        if ocr == "TESSERACT":
+            from scrape_nadlan.Scraper.ocr_tesseract import OCR
+            self.ocr = OCR()
+        elif ocr == "GOOGLE":
+            from scrape_nadlan.Scraper.ocr_google import OCR
+            self.ocr = OCR()
         self.url = "https://nadlan.taxes.gov.il/svinfonadlan2010/startpageNadlanNewDesign.aspx"
         # FIND GUSH HELKA: https://www.gov.il/apps/mapi/parcel_address/parcel_address.html
         # self.url = "https://mylocation.org/"
