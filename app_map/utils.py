@@ -14,11 +14,6 @@ LOGGER = logging.getLogger()
 
 FETCH_LIMIT = 250
 PORT = os.getenv("PORT", 8050)
-try:
-    res = requests.get("http://localhost/")
-    PORT = 80
-except:
-    PORT = 8050
 
 
 def app_preprocess_df(df_all):
