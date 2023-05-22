@@ -1,3 +1,5 @@
+import os
+
 import pandas as pd
 from datetime import datetime
 import numpy as np
@@ -6,17 +8,17 @@ from app_map.util_layout import *
 from scrape_yad2.utils import _get_parse_item_add_info
 from fetch_data.utils import filter_by_dist, get_nadlan_trans
 import logging
+import requests
 
 LOGGER = logging.getLogger()
 
 FETCH_LIMIT = 250
-import requests
-
-try:
-    res = requests.get("http://localhost/")
-    PORT = 80
-except:
-    PORT = 8050
+PORT = os.getenv("PORT", 8050)
+# try:
+#     res = requests.get("http://localhost/")
+#     PORT = 80
+# except:
+#     PORT = 8050
 
 
 def app_preprocess_df(df_all):
@@ -149,7 +151,6 @@ def get_asset_points(df_all, price_from=-np.inf, price_to=np.inf, city=None,
 
 
 def genereate_plots(deal):
-    import requests
     from datetime import timedelta
     def plot_line(df, x, y, hover_data, color='Blue'):
         fig = px.line(df, x, y, hover_data=hover_data, line_shape='spline')  # labels={'x': 'Month', 'y': 'Prices'}
