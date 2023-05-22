@@ -62,6 +62,7 @@ def get_layout(default_config):
         html.Div(className="grid-container", children=get_main_map()),
         html.Div(className="table-container", children=[div_left_off_canvas]),
         html.Div(className="modal-container", children=[div_offcanvas]),
+        dcc.Store(id='data-store'),
     ])
     return layout
 
@@ -88,14 +89,14 @@ def get_table_container():
             page_size=15,
             hidden_columns=["id"],
             style_cell={
-                # 'overflow': 'hidden',
+                'padding': '3px',
                 'font-family': 'sans-serif',
-                'font-size': '11pt',
+                'font-size': '10pt',
                 'textOverflow': 'ellipsis',
-                'minWidth': '30px', 'width': '30px', 'maxWidth': '120px',
-                # 'maxWidth': 0
+                'text-align': 'center',
+                'maxWidth': '90px',
             },
-            style_data_conditional=None  # cond_styles
+            style_data_conditional=None
         )])
 
 
@@ -255,8 +256,8 @@ def get_main_map():
                                        ),
                             dl.Marker(position=[31.7, 32.7], opacity=0, id='map-marker')
                             ],
-                  zoom=3, id='big-map', zoomControl=True,
-                  bounds=[[31.7, 32.7], [32.5, 37.3]]
+                  zoom=10, id='big-map', zoomControl=True,
+                  center=[32.0682705686074,	34.81262190627366]
                   )
 
 
@@ -271,9 +272,6 @@ div_left_off_canvas = dbc.Offcanvas(
 
 div_offcanvas = html.Div([dbc.Offcanvas(
     children=[dbc.ModalTitle(id="modal-title"), html.Div(id='country'), html.Div(id='marker'),
-              dcc.Graph(id='histogram', figure={},
-                        config={'displayModeBar': False,
-                                'scrollZoom': False}),
               html.Div(id='Country info pane')],
     id="modal",
     placement="end",
@@ -336,7 +334,6 @@ def _discrete_background_color_bins(df, n_bins=10, columns='all', reverse=False)
 
 
 def get_interactive_table(df):
-    table_price_col = 'ai_price_pct'
     pct_cols = ['price_pct',
                 'pct_diff_median',
                 'ai_price_pct']
@@ -352,8 +349,7 @@ def get_interactive_table(df):
                           decimal_delimiter='.',
                           symbol=Symbol.yes,
                           symbol_prefix=u'₪')
-    columns_output_comb = {"price": dict(id='price', name='Price', type='numeric', format=price_format),
-                           "rooms": dict(id='rooms', name='R', type='numeric'),
+    columns_output_comb = {"price": dict(id='price', name='₪', type='numeric', format=price_format),
                            # "parking": dict(id='parking', name='Parking', type='numeric'),
                            pct_cols[2]: dict(id=pct_cols[2], name='AI', type='numeric',
                                              format=FormatTemplate.percentage(0)),
@@ -361,8 +357,9 @@ def get_interactive_table(df):
                                              format=FormatTemplate.percentage(0)),
                            pct_cols[0]: dict(id=pct_cols[0], name='%D', type='numeric',
                                              format=FormatTemplate.percentage(0)),
+                           "rooms": dict(id='rooms', name='R', type='numeric'),
                            'square_meters': dict(id='square_meters', name='Sq', type='numeric'),
-                           "avg_price_m": dict(id='avg_price_m', name='AvgSq₪', type='numeric', format=price_format),
+                           "avg_price_m": dict(id='avg_price_m', name='ØSq₪', type='numeric', format=price_format),
                            "id": dict(id="id", name='id'),
                            "city": dict(id='city', name='city')}
     cond_styles, legend = _discrete_background_color_bins(df, columns=pct_cols, reverse=True)

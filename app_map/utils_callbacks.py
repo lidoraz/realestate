@@ -2,10 +2,10 @@ import numpy as np
 from dash import html, Output, Input, State, ctx
 import dash
 import time
-import pandas as pd
 from app_map.util_layout import get_interactive_table, CLUSTER_MAX_ZOOM, marker_type_options
 from app_map.utils import get_asset_points, find_center, get_geojsons, build_sidebar, get_similar_deals
 import logging
+import json
 from flask import request
 
 LOGGER = logging.getLogger()
@@ -181,7 +181,7 @@ toggle_model_input_outputs = [Output("geojson", "click_feature"),  # output none
                               Output("modal", "is_open"),
                               Output("modal-title", "children"),
                               Output("marker", "children"),
-                              Output("histogram", "figure"),
+                              Output('data-store', 'data'),
                               Input("geojson", "click_feature")]
 
 
@@ -192,11 +192,27 @@ def toggle_modal(feature):
             conf = get_context_by_rule()
             deal_id = feature['properties']['deal_id']
             deal = conf['func_data']().loc[deal_id]
-            title_modal, str_html = build_sidebar(deal)
             fig = get_similar_deals(conf['func_data'](), deal, with_nadlan=conf['with_nadlan'])
-            return None, True, title_modal, str_html, fig
+            import time
+            t0 = time.time()
+            title_modal, str_html = build_sidebar(deal, fig)
+            # title_modal = ""; str_html=""
+            print("TIME   ---->", time.time() - t0)
+            return None, True, title_modal, str_html, dict(deal_data=deal.to_json())
     return dash.no_update
 
+
+def gen_plots_lazy(data_store):
+    deal = data_store.get("deal_data")
+    if deal:
+        from app_map.utils import genereate_plots
+        html_plots = genereate_plots(json.loads(deal))
+        return [html_plots]
+    return dash.no_update
+
+
+gen_plots_lazy_input_outputs = [Output("modal-plots-cont", "children"),
+                                Input("data-store", 'data')]
 
 focus_on_asset_input_outputs = [Output("big-map", "center"),
                                 Output("big-map", "zoom"),
@@ -298,4 +314,5 @@ def add_callbacks(app, config):
     app.callback(disable_range_input_outputs)(disable_range_sliders)
     app.callback(show_table_input_output)(show_table_modal)
     app.callback(toggle_cluster_input_outputs)(toggle_cluster)
+    app.callback(gen_plots_lazy_input_outputs)(gen_plots_lazy)
     # app.callback(clear_table_selected_input_output)(clear_selected_if_closed)

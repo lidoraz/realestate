@@ -28,7 +28,7 @@
     width:300px;
 }
 #datatable-interactivity{
-    width: 420px;
+    /*width: 420px;*/
 }
 #fetched-assets{
     /*position: absolute;*/
@@ -111,6 +111,9 @@ p.rtl {
     font-size: small;
 
 }
+.modal-time-graphs{
+    margin-top:30px;
+}
 
 /* Problematic, needs fix*/
 .asset-dropdown .Select-control {
@@ -140,7 +143,7 @@ p.rtl {
 
 .left-container {
     float: left;
-    width: 22%;
+    /*width: 22%;*/
     /*overflow: scroll;*/
 }
 

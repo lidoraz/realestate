@@ -10,6 +10,13 @@ import logging
 LOGGER = logging.getLogger()
 
 FETCH_LIMIT = 250
+import requests
+
+try:
+    res = requests.get("http://localhost/")
+    PORT = 80
+except:
+    PORT = 8050
 
 
 def app_preprocess_df(df_all):
@@ -141,7 +148,71 @@ def get_asset_points(df_all, price_from=-np.inf, price_to=np.inf, city=None,
     return df_f
 
 
-def build_sidebar(deal):
+def genereate_plots(deal):
+    import requests
+    from datetime import timedelta
+    def plot_line(df, x, y, hover_data, color='Blue'):
+        fig = px.line(df, x, y, hover_data=hover_data, line_shape='spline')  # labels={'x': 'Month', 'y': 'Prices'}
+        # time_back = timedelta(days=7) if x == 'week' else timedelta(days=30)
+        fig.add_annotation(x=df[x].iloc[-1], y=df[y].iloc[-1],
+                           text=format_number(df[y].iloc[-1]),
+                           showarrow=True, ax=-10, ay=30)
+        fig.update_layout(
+            #     title='Plotly Figure with Traces',
+            # yaxis_visible=False,
+            # xaxis_visible=False,
+            margin=dict(l=1, r=1, t=1, b=1),
+            width=450,
+            height=250,
+            dragmode=False,
+            legend=dict(x=0, y=1))
+        fig.update_yaxes(rangemode="tozero")
+        fig.update_traces(
+            line_color=color,
+            line_width=2)
+        return fig
+
+    def read_preprocess(data, time_col):
+        df = pd.DataFrame(data)
+        df[time_col] = pd.to_datetime(df[time_col])
+        return df
+
+    dist_km = 1.0
+    res = requests.post(f"http://localhost:{PORT}/get_data",
+                        # backend runs on local, fetches data from remote server #TODO: might need to change port
+                        json=dict(lat=deal['lat'], long=deal['long'], dist_km=dist_km)).json()
+    if 'error' in res:
+        return []
+    import plotly.express as px
+    print(res.keys())
+    df = read_preprocess(res['data_recent'], 'week')
+    fig1 = plot_line(df, 'week', 'price', 'cnt')
+    df = read_preprocess(res['data_recent_rent'], 'week')
+    fig1_ = plot_line(df, 'week', 'price', 'cnt', 'orange')
+    df = read_preprocess(res['data_nadlan'], 'month')
+    fig2 = plot_line(df, 'month', 'median_avg_meter_price', 'cnt')
+    fig3 = plot_line(df, 'month', 'median_price', 'cnt')
+    config = {'displayModeBar': False, 'scrollZoom': False}
+    return [
+        html.Div([
+            html.H4("חציון מחירים לאורך זמן בסביבה הקרובה"),
+            html.Div([html.H5("בטווח הארוך (מתוך הלמ״ס)"),
+                      dcc.Graph(id='g1', figure=fig3, config=config)]),
+            html.Div([html.H5("מכירה טווח קצר"),
+                      dcc.Graph(id='g2', figure=fig1, config=config), ]),
+            html.Div([html.H5("שכירות טווח קצר"),
+                      dcc.Graph(id='g2_', figure=fig1_, config=config)]),
+            html.Div([html.H5("מכירה מחיר למטר (מתוך הלמ״ס)"),
+                      dcc.Graph(id='g3', figure=fig2, config=config)])],
+            className="modal-time-graphs")]
+    # fig3 = go.Figure([
+    #     go.Scatter(x=df['month'], y=df['median_price'], name="Price"),
+    #     # go.Scatter(x=df['month'], y=df['old_median_price'], name="OLD_Price"),
+    #     # go.Scatter(x=df['month'], y=df['new_median_price'], name="NEW_Price")
+    #                   ])
+
+
+def build_sidebar(deal, fig):
     # THIS NEEDS REWORK - to DBC usage and better design
     maps_url = f"http://maps.google.com/maps?z=12&t=m&q=loc:{deal['lat']}+{deal['long']}&hl=iw"  # ?hl=iw, t=k sattalite
     days_online = (datetime.today() - pd.to_datetime(deal['date_added'])).days
@@ -149,17 +220,15 @@ def build_sidebar(deal):
     days_str_txt = lambda x: 'היום' if x == 0 else 'אתמול' if x == 1 else f'{x} ימים'
     date_added = pd.to_datetime(deal['date_added'])
     add_info = _get_parse_item_add_info(deal['id'])
-    # add_info = res_get_add_info(deal.name)
-    IMG_LIMIT = None
     if add_info:
         image_urls = add_info.pop('image_urls')
         image_urls = image_urls if image_urls is not None else []
         info_text = add_info.pop('info_text')
-        add_info_text = [html.Tr(html.Td(f"{k}: {v}")) for k, v in add_info.items()]
+        # add_info_text = [html.Tr(html.Td(f"{k}: {v}")) for k, v in add_info.items()]
     else:
         image_urls = []
         info_text = deal['info_text']
-        add_info_text = None
+        # add_info_text = None
     df_price_hist = None
     if isinstance(deal['price_hist'], list):
         df_hist = pd.DataFrame([deal['dt_hist'], [f"{x:0,.0f}" for x in deal['price_hist']]])
@@ -178,13 +247,6 @@ def build_sidebar(deal):
             # style="sidebar-carousel"
         )
 
-    # txt_html = html.Div([dbc.Row(
-    #     [html.Span(f"{deal['price']:,.0f}₪", style={"font-size": "1.5vw"}),
-    #      html.Span(str_price_pct, className="text-ltr")]
-    # ),
-    #     dbc.Row([dbc.Col([html.Span(f"מחיר הנכס מהחציון באיזור: "),
-    #                       html.Span(f"{deal['pct_diff_median']:0.2%}", className="text-ltr")])])
-    # ])
     def get_html_span_pct(pct):
         pct = 0 if np.isnan(pct) else pct
         return html.Span(f"{pct:.1%}", style={"background-color": get_color(pct)}, className="span-color-pct text-ltr")
@@ -230,7 +292,13 @@ def build_sidebar(deal):
          html.Div(children=[carousel], className="asset-images", style={"display": "block" if image_urls else "none"}),
          html.Span(info_text, className='sidebar-info-text'),
          html.Span(deal['id'], style={"display": "block", "font-size": "8pt"}),
-         html.P("עסקאות עם מספר חדרים זהה בסביבה:", style=dict(display="block", margin="0px 5px 0px")),
+         html.H5("פילוח מס׳ עסקאות עם מספר חדרים זהה בסביבה:", style=dict(display="block", margin="0px 5px 0px")),
+         # TODO: Move this graph to the loading too, but a bit problem because it uses massive dataframe, maybe agg it and send it via state to front
+         dcc.Graph(id='histogram', figure=fig,
+                   config={'displayModeBar': False,
+                           'scrollZoom': False}),
+         dcc.Loading(children=[html.Div(id="modal-plots-cont")], type='circle', color='blue', fullscreen=False),
+
          # html.Br(),
          # html.Table(children=add_info_text, style={"font-size": "10pt"}),
          # html.P("\n".join([f"{k}: {v}" for k, v in res_get_add_info(deal.name).items()])),
@@ -242,11 +310,11 @@ from plotly import graph_objects as go
 
 
 def plot_deal_vs_sale_sold(other_close_deals, df_tax, deal):
-    # When the hist becomes square thats because there a huge anomaly in terms of extreme value
     sale_items = other_close_deals['price']
-    str_txt = "עסקאות בסביבה"
-    # .hist(bins=min(70, len(sale_items)), legend=True, alpha=0.8)
     fig = go.Figure()
+    # When the hist becomes square thats because there a huge anomaly in terms of extreme value
+    max_price_th = sale_items.median() + sale_items.std() * 3
+    sale_items = sale_items[sale_items < max_price_th]
     tr_1 = go.Histogram(x=sale_items, name=f'Total #{len(sale_items)}', opacity=0.75, nbinsx=len(sale_items))
     fig.add_trace(tr_1)
     if df_tax is not None:
@@ -261,6 +329,8 @@ def plot_deal_vs_sale_sold(other_close_deals, df_tax, deal):
                   line_color='red', line_dash='dash',
                   name=f"{deal['price']:,.0f}")
     fig.update_layout(
+        xaxis_title="מחיר",
+        yaxis_title="# מס עסקאות",
         # title_text=str_txt,
         # barmode='stack',
         width=450,
@@ -268,11 +338,8 @@ def plot_deal_vs_sale_sold(other_close_deals, df_tax, deal):
         margin=dict(l=0, r=0, b=0, t=0.0),
         legend=dict(x=0.0, y=1),
         dragmode=False)
-    # fig['layout']['yaxis'].update(autorange=True)
-    # fig['layout']['xaxis'].update(autorange=True)
-    fig.update_xaxes(range=[deal['price'] // 2, deal['price'] * 2.5])
+    # fig.update_xaxes(rangemode="tozero")
     return fig
-    # plt.legend()
 
 
 def get_similar_deals(df_all, deal, days_back=99, dist_km=1, with_nadlan=True):
@@ -283,7 +350,15 @@ def get_similar_deals(df_all, deal, days_back=99, dist_km=1, with_nadlan=True):
         df_open_deals = df_open_deals[df_open_deals['rooms'].astype(float).astype(int) == int(float(deal['rooms']))]
     df_tax = None
     if with_nadlan:
-        df_tax = get_nadlan_trans(deal, days_back, dist_km, filter_rooms)
+        from app_map.api import create_connection
+        from app_map.sql_scripts import sql_similar_deals
+        conn = create_connection()
+        n_months = 6
+        q = sql_similar_deals.format(table_name="nadlan_trans", lat=deal['lat'], long=deal['long'],
+                                     n_rooms=deal['rooms'], n_months=n_months)
+        df_tax = pd.read_sql(q, conn)
+        df_tax.attrs['days_back'] = n_months * 30
+        # df_tax = get_nadlan_trans(deal, days_back, dist_km, filter_rooms)
     fig = plot_deal_vs_sale_sold(df_open_deals, df_tax, deal)
     return fig
 
