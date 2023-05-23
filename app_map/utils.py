@@ -174,7 +174,7 @@ def genereate_plots(deal):
         return df
 
     dist_km = 1.0
-    res = requests.post(f"http://localhost:{PORT}/get_data",
+    res = requests.post(os.getenv("REAL_ESTATE_API"),
                         # backend runs on local, fetches data from remote server #TODO: might need to change port
                         json=dict(lat=deal['lat'], long=deal['long'], dist_km=dist_km)).json()
     if 'error' in res:
