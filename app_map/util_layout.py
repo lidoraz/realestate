@@ -271,8 +271,8 @@ div_left_off_canvas = dbc.Offcanvas(
 )
 
 div_offcanvas = html.Div([dbc.Offcanvas(
-    children=[dbc.ModalTitle(id="modal-title"), html.Div(id='country'), html.Div(id='marker'),
-              html.Div(id='Country info pane')],
+    children=[dbc.ModalTitle(id="modal-title"), html.Div(id='modal-body'),
+              dcc.Loading(children=[html.Div(id="modal-plots-cont")], type='circle', color='blue', fullscreen=False)],
     id="modal",
     placement="end",
     is_open=False,

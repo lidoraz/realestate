@@ -180,7 +180,7 @@ def show_assets(price_range,
 toggle_model_input_outputs = [Output("geojson", "click_feature"),  # output none to reset button for re-click
                               Output("modal", "is_open"),
                               Output("modal-title", "children"),
-                              Output("marker", "children"),
+                              Output("modal-body", "children"),
                               Output('data-store', 'data'),
                               Input("geojson", "click_feature")]
 

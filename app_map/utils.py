@@ -293,8 +293,6 @@ def build_sidebar(deal, fig):
          dcc.Graph(id='histogram', figure=fig,
                    config={'displayModeBar': False,
                            'scrollZoom': False}),
-         dcc.Loading(children=[html.Div(id="modal-plots-cont")], type='circle', color='blue', fullscreen=False),
-
          # html.Br(),
          # html.Table(children=add_info_text, style={"font-size": "10pt"}),
          # html.P("\n".join([f"{k}: {v}" for k, v in res_get_add_info(deal.name).items()])),
