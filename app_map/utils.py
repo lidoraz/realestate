@@ -174,8 +174,7 @@ def genereate_plots(deal):
         return df
 
     dist_km = 1.0
-    res = requests.post(os.getenv("REAL_ESTATE_API"),
-                        # backend runs on local, fetches data from remote server #TODO: might need to change port
+    res = requests.post(f'{os.getenv("REAL_ESTATE_API")}/timeseries',
                         json=dict(lat=deal['lat'], long=deal['long'], dist_km=dist_km)).json()
     if 'error' in res:
         return []
@@ -344,15 +343,14 @@ def get_similar_deals(df_all, deal, days_back=99, dist_km=1, with_nadlan=True):
         df_open_deals = df_open_deals[df_open_deals['rooms'].astype(float).astype(int) == int(float(deal['rooms']))]
     df_tax = None
     if with_nadlan:
-        from app_map.api import create_connection
-        from app_map.sql_scripts import sql_similar_deals
-        conn = create_connection()
         n_months = 6
-        q = sql_similar_deals.format(table_name="nadlan_trans", lat=deal['lat'], long=deal['long'],
-                                     n_rooms=deal['rooms'], n_months=n_months)
-        df_tax = pd.read_sql(q, conn)
+        res = requests.post(f'{os.getenv("REAL_ESTATE_API")}/histogram',
+                            json=dict(lat=deal['lat'],
+                                      long=deal['long'],
+                                      dist_km=dist_km, n_months=n_months,
+                                      n_rooms=deal['rooms'])).json()
+        df_tax = pd.DataFrame.from_dict(res)
         df_tax.attrs['days_back'] = n_months * 30
-        # df_tax = get_nadlan_trans(deal, days_back, dist_km, filter_rooms)
     fig = plot_deal_vs_sale_sold(df_open_deals, df_tax, deal)
     return fig
 

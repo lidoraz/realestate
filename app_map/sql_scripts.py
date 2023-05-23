@@ -48,7 +48,7 @@ ORDER BY 1;"""
 
 sql_similar_deals = f"""
 {_sql_dist_part}
-select * from t0_dist where 1=1
+select price_declared from t0_dist where 1=1
 and deal_part = 1
 and trans_date  > (Now() - interval '{{n_months}} Month')::date
 and round(n_rooms) = round({{n_rooms}}) 
