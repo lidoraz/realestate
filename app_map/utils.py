@@ -158,7 +158,7 @@ def genereate_plots(deal):
             # yaxis_visible=False,
             # xaxis_visible=False,
             margin=dict(l=1, r=1, t=1, b=1),
-            width=450,
+            # width=450,
             height=250,
             dragmode=False,
             legend=dict(x=0, y=1))
@@ -175,9 +175,10 @@ def genereate_plots(deal):
 
     dist_km = 1.0
     res = requests.post(f'{os.getenv("REAL_ESTATE_API")}/timeseries',
-                        json=dict(lat=deal['lat'], long=deal['long'], dist_km=dist_km)).json()
-    if 'error' in res:
+                        json=dict(lat=deal['lat'], long=deal['long'], dist_km=dist_km))
+    if res.status_code != 200:
         return []
+    res = res.json()
     import plotly.express as px
     print(res.keys())
     df = read_preprocess(res['data_recent'], 'week')
@@ -232,7 +233,7 @@ def build_sidebar(deal, fig):
     carousel = None
     if len(image_urls):
         carousel = dbc.Carousel(
-            items=[{"key": f"{idx + 1}", "src": url, "href": "https://google.com", "img_class_name": "asset-images-img"}
+            items=[{"key": f"{idx + 1}", "src": url, "href": "https://google.com", "img_class_name": "asset-images-img", "loading": "lazy"}
                    for idx, url in
                    enumerate(image_urls)],
             controls=True,
@@ -334,6 +335,20 @@ def plot_deal_vs_sale_sold(other_close_deals, deal, past_sales=None):
     return fig
 
 
+def get_remote_past_sales(deal, dist_km, n_months=6):
+    res = requests.post(f'{os.getenv("REAL_ESTATE_API")}/histogram',
+                        json=dict(lat=deal['lat'],
+                                  long=deal['long'],
+                                  dist_km=dist_km, n_months=n_months,
+                                  n_rooms=deal['rooms']))
+    if res.status_code == 200:
+        past_sales = res.json()
+        past_sales = dict(data_histogram=past_sales['data_histogram']['price_declared'],
+                          days_back=n_months * 30)
+        return past_sales
+    return None
+
+
 def get_similar_deals(df_all, deal, days_back=99, dist_km=1, with_nadlan=True):
     filter_rooms = True
     df_open_deals = filter_by_dist(df_all, deal, dist_km)
@@ -342,14 +357,7 @@ def get_similar_deals(df_all, deal, days_back=99, dist_km=1, with_nadlan=True):
         df_open_deals = df_open_deals[df_open_deals['rooms'].astype(float).astype(int) == int(float(deal['rooms']))]
     past_sales = None
     if with_nadlan:
-        n_months = 6
-        past_sales = requests.post(f'{os.getenv("REAL_ESTATE_API")}/histogram',
-                                   json=dict(lat=deal['lat'],
-                                             long=deal['long'],
-                                             dist_km=dist_km, n_months=n_months,
-                                             n_rooms=deal['rooms'])).json()
-        past_sales = dict(data_histogram=past_sales['data_histogram']['price_declared'],
-                          days_back=n_months * 30)
+        past_sales = get_remote_past_sales(deal, dist_km)
     fig = plot_deal_vs_sale_sold(df_open_deals, deal, past_sales)
     return fig
 
