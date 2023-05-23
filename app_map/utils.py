@@ -302,7 +302,7 @@ def build_sidebar(deal, fig):
 from plotly import graph_objects as go
 
 
-def plot_deal_vs_sale_sold(other_close_deals, df_tax, deal):
+def plot_deal_vs_sale_sold(other_close_deals, deal, past_sales=None):
     sale_items = other_close_deals['price']
     fig = go.Figure()
     # When the hist becomes square thats because there a huge anomaly in terms of extreme value
@@ -310,13 +310,12 @@ def plot_deal_vs_sale_sold(other_close_deals, df_tax, deal):
     sale_items = sale_items[sale_items < max_price_th]
     tr_1 = go.Histogram(x=sale_items, name=f'Total #{len(sale_items)}', opacity=0.75, nbinsx=len(sale_items))
     fig.add_trace(tr_1)
-    if df_tax is not None:
-        sold_items = df_tax['price_declared']
-        days_back = df_tax.attrs['days_back']
+    if past_sales is not None:
+        sold_items = past_sales['data_histogram']
+        days_back = past_sales['days_back']
         if len(sold_items):
-            sold_items = sold_items.rename(
-                f'realPrice{days_back}D #{len(sold_items)}')  # .hist(bins=min(70, len(sold_items)), legend=True,alpha=0.8)
-            tr_2 = go.Histogram(x=sold_items, name=sold_items.name, opacity=0.75, nbinsx=len(sold_items))
+            tr_2 = go.Histogram(x=sold_items, name=f'realPrice{days_back}D #{len(sold_items)}', opacity=0.75,
+                                nbinsx=len(sold_items))
             fig.add_trace(tr_2)
     fig.add_vline(x=deal['price'], line_width=2,
                   line_color='red', line_dash='dash',
@@ -341,17 +340,17 @@ def get_similar_deals(df_all, deal, days_back=99, dist_km=1, with_nadlan=True):
     if filter_rooms:
         df_open_deals = df_open_deals.dropna(subset='rooms')
         df_open_deals = df_open_deals[df_open_deals['rooms'].astype(float).astype(int) == int(float(deal['rooms']))]
-    df_tax = None
+    past_sales = None
     if with_nadlan:
         n_months = 6
-        res = requests.post(f'{os.getenv("REAL_ESTATE_API")}/histogram',
-                            json=dict(lat=deal['lat'],
-                                      long=deal['long'],
-                                      dist_km=dist_km, n_months=n_months,
-                                      n_rooms=deal['rooms'])).json()
-        df_tax = pd.DataFrame.from_dict(res)
-        df_tax.attrs['days_back'] = n_months * 30
-    fig = plot_deal_vs_sale_sold(df_open_deals, df_tax, deal)
+        past_sales = requests.post(f'{os.getenv("REAL_ESTATE_API")}/histogram',
+                                   json=dict(lat=deal['lat'],
+                                             long=deal['long'],
+                                             dist_km=dist_km, n_months=n_months,
+                                             n_rooms=deal['rooms'])).json()
+        past_sales = dict(data_histogram=past_sales['data_histogram']['price_declared'],
+                          days_back=n_months * 30)
+    fig = plot_deal_vs_sale_sold(df_open_deals, deal, past_sales)
     return fig
 
 

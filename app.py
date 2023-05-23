@@ -46,12 +46,12 @@ def hello_world():
     return redirect("/sale")
 
 
-from app_map.api import get_data
-
-
-@app.route('/get_data', methods=['POST'])
-def _get_data():
-    return get_data()
+# from app_map.api import get_data
+#
+#
+# @app.route('/get_data', methods=['POST'])
+# def _get_data():
+#     return get_data()
 
 
 if __name__ == '__main__':
