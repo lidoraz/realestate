@@ -64,6 +64,8 @@ def get_geojsons(df, marker_metric):
 
 
 def format_number(num):
+    if num is None:
+        return "?"
     def safe_num(num):
         if isinstance(num, str):
             num = float(num)
@@ -146,12 +148,18 @@ def get_asset_points(df_all, price_from=-np.inf, price_to=np.inf, city=None,
 
 
 def genereate_plots(deal):
-    from datetime import timedelta
-    def plot_line(df, x, y, hover_data, color='Blue'):
-        fig = px.line(df, x, y, hover_data=hover_data, line_shape='spline')  # labels={'x': 'Month', 'y': 'Prices'}
-        # time_back = timedelta(days=7) if x == 'week' else timedelta(days=30)
+    import plotly.graph_objects as go
+    def plot_line(df, x, y, y2, hover_data, color='Blue'):
+        df = df.ffill()
+        fig = go.Figure([
+            go.Scatter(x=df[x], y=df[y], name="all", hovertext=df[hover_data], line_shape='spline', mode='lines', opacity=0.5),
+            go.Scatter(x=df[x], y=df[y2], name="rooms", line_shape='spline', mode='lines+markers')
+        ])
         fig.add_annotation(x=df[x].iloc[-1], y=df[y].iloc[-1],
                            text=format_number(df[y].iloc[-1]),
+                           showarrow=True, ax=-10, ay=30)
+        fig.add_annotation(x=df[x].iloc[-1], y=df[y2].iloc[-1],
+                           text=format_number(df[y2].iloc[-1]),
                            showarrow=True, ax=-10, ay=30)
         fig.update_layout(
             #     title='Plotly Figure with Traces',
@@ -174,20 +182,22 @@ def genereate_plots(deal):
         return df
 
     dist_km = 1.0
-    res = requests.post(f'{os.getenv("REAL_ESTATE_API")}/timeseries',
-                        json=dict(lat=deal['lat'], long=deal['long'], dist_km=dist_km))
+    data = dict(lat=deal['lat'],
+                long=deal['long'],
+                rooms=deal['rooms'],
+                dist_km=dist_km)
+    res = requests.post(f'{os.getenv("REAL_ESTATE_API")}/timeseries', json=data)
     if res.status_code != 200:
         return []
     res = res.json()
-    import plotly.express as px
     print(res.keys())
     df = read_preprocess(res['data_recent'], 'week')
-    fig1 = plot_line(df, 'week', 'price', 'cnt')
+    fig1 = plot_line(df, 'week', 'price', 'price_room', 'cnt')
     df = read_preprocess(res['data_recent_rent'], 'week')
-    fig1_ = plot_line(df, 'week', 'price', 'cnt', 'orange')
+    fig1_ = plot_line(df, 'week', 'price', 'price_room', 'cnt', 'orange')
     df = read_preprocess(res['data_nadlan'], 'month')
-    fig2 = plot_line(df, 'month', 'median_avg_meter_price', 'cnt')
-    fig3 = plot_line(df, 'month', 'median_price', 'cnt')
+    fig2 = plot_line(df, 'month', 'median_avg_meter_price', 'median_avg_meter_price_room', 'cnt')
+    fig3 = plot_line(df, 'month', 'median_price', 'median_price_room', 'cnt')
     config = {'displayModeBar': False, 'scrollZoom': False}
     return [
         html.Div([
@@ -233,7 +243,8 @@ def build_sidebar(deal, fig):
     carousel = None
     if len(image_urls):
         carousel = dbc.Carousel(
-            items=[{"key": f"{idx + 1}", "src": url, "href": "https://google.com", "img_class_name": "asset-images-img", "loading": "lazy"}
+            items=[{"key": f"{idx + 1}", "src": url, "href": "https://google.com", "img_class_name": "asset-images-img",
+                    "loading": "lazy"}
                    for idx, url in
                    enumerate(image_urls)],
             controls=True,
@@ -336,11 +347,12 @@ def plot_deal_vs_sale_sold(other_close_deals, deal, past_sales=None):
 
 
 def get_remote_past_sales(deal, dist_km, n_months=6):
-    res = requests.post(f'{os.getenv("REAL_ESTATE_API")}/histogram',
-                        json=dict(lat=deal['lat'],
-                                  long=deal['long'],
-                                  dist_km=dist_km, n_months=n_months,
-                                  n_rooms=deal['rooms']))
+    data = dict(lat=deal['lat'],
+                long=deal['long'],
+                dist_km=dist_km,
+                n_months=n_months,
+                rooms=deal['rooms'])
+    res = requests.post(f'{os.getenv("REAL_ESTATE_API")}/histogram', json=data)
     if res.status_code == 200:
         past_sales = res.json()
         past_sales = dict(data_histogram=past_sales['data_histogram']['price_declared'],

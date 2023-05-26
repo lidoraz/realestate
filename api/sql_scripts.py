@@ -12,6 +12,7 @@ price_declared,
 sq_m_net,
 year_built,
 deal_part,
+n_rooms,
 trans_date
 from {table_name}
 where deal_part = 1
@@ -20,6 +21,8 @@ SELECT
     DATE_TRUNC('month', trans_date)::date::VARCHAR AS month,
     count(*) as cnt,
     percentile_cont(0.5) WITHIN GROUP (ORDER BY CASE WHEN sq_m_net > 0 THEN price_declared / sq_m_net END) AS median_avg_meter_price,
+    percentile_cont(0.5) WITHIN GROUP (ORDER BY CASE WHEN round(n_rooms) = {rooms} AND sq_m_net > 0 THEN price_declared / sq_m_net END) AS median_avg_meter_price_room,
+    percentile_cont(0.5) WITHIN GROUP (ORDER BY CASE WHEN round(n_rooms) = {rooms} THEN price_declared END) AS median_price_room,
     percentile_cont(0.5) WITHIN GROUP (ORDER BY price_declared) AS median_price--,
   --  percentile_cont(0.5) WITHIN GROUP (ORDER BY CASE WHEN trans_date >= (MAKE_DATE(year_built, 1, 1) + INTERVAL '2 years') and sq_m_net > 0  THEN price_declared / sq_m_net END) AS old_median_avg_meter_price,
   --  percentile_cont(0.5) WITHIN GROUP (ORDER BY CASE WHEN trans_date <= (MAKE_DATE(year_built, 1, 1) + INTERVAL '2 years') and sq_m_net > 0 THEN price_declared / sq_m_net END) AS new_median_avg_meter_price,
@@ -39,6 +42,7 @@ SELECT
 )) AS distance_in_km,
 price,
 square_meters,
+rooms,
 processing_date
 from {table_name}
 where active = False
@@ -49,6 +53,7 @@ SELECT
     DATE_TRUNC('week', processing_date)::date::varchar AS week,
     count(*) as cnt,
     percentile_cont(0.5) WITHIN GROUP (ORDER BY CASE WHEN square_meters > 0 THEN price / square_meters END) AS avg_price,
+    percentile_cont(0.5) WITHIN GROUP (ORDER BY CASE WHEN round(rooms) = 3 THEN price END) AS price_room,
     percentile_cont(0.5) WITHIN GROUP (ORDER by price) AS price--,
   --  count(*) FILTER (WHERE asset_status in ('במצב שמור', 'דרוש שיפוץ', 'משופץ')) AS old_cnt,
   --  percentile_cont(0.5) WITHIN GROUP (ORDER by case when asset_status in ('במצב שמור', 'דרוש שיפוץ', 'משופץ') then price end) AS old_prices,
@@ -76,7 +81,7 @@ from {table_name}
 where 1=1 
 and deal_part = 1
 and trans_date  > (Now() - interval '{n_months} Month')::date
-and round(n_rooms) = round({n_rooms}) 
+and round(n_rooms) = round({rooms}) 
 )
 select price_declared from t0_dist where distance_in_km < {dist_km}
 """

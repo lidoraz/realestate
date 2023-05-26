@@ -3,8 +3,8 @@ import psycopg2
 import os
 from sql_scripts import *
 
-example_data_histogram = {'lat': 32.1310648182, 'long': 34.8633406364, 'dist_km': 5, 'n_rooms': 4.5, 'n_months': 6}
-example_data_timeseries = {'lat': 32.1310648182, 'long': 34.8633406364, 'dist_km': 1.0}
+example_data_histogram = {'lat': 32.1310648182, 'long': 34.8633406364, 'dist_km': 5, 'rooms': 4.5, 'n_months': 6}
+example_data_timeseries = {'lat': 32.1310648182, 'long': 34.8633406364, 'dist_km': 1.0, 'rooms': 3.5}
 
 
 def query_dict_of_lists(conn, sql_query):
@@ -22,7 +22,11 @@ def query_dict_of_lists(conn, sql_query):
 
 
 def get_dict_of_lists(data, sql_query, conn, table_name):
-    sql_query = sql_query.format(table_name=table_name, lat=data['lat'], long=data['long'], dist_km=data['dist_km'])
+    sql_query = sql_query.format(table_name=table_name,
+                                 lat=data['lat'],
+                                 long=data['long'],
+                                 rooms=data['rooms'],
+                                 dist_km=data['dist_km'])
     dict_of_lists = query_dict_of_lists(conn, sql_query)
     return dict_of_lists
 
@@ -63,10 +67,10 @@ def get_histogram(data):
     table_name = 'nadlan_trans'
     with connect() as conn:
         sql_query = sql_similar_deals.format(table_name=table_name, lat=data['lat'], long=data['long'],
-                                             n_rooms=data['n_rooms'],
+                                             rooms=data['rooms'],
                                              dist_km=data['dist_km'],
                                              n_months=data['n_months'])
-        print(sql_query)
+        # print(sql_query)
         dict_of_lists = query_dict_of_lists(conn, sql_query)
         return dict(data_histogram=dict_of_lists)
 
@@ -94,7 +98,7 @@ def lambda_handler(event, context):
         print(e)
         return {
             'statusCode': 400,
-            'body': json.dumps("Failed")
+            'body': "Failed"
         }
 
 
@@ -111,7 +115,11 @@ def test_api():
     event = _gen_event(example_data_timeseries, '/timeseries')
     res = lambda_handler(event, None)
     res = json.loads(res['body'])
-    print(pd.DataFrame.from_dict(res['data_nadlan']))
+    print(res)
+    for k in res.keys():
+        print(k)
+        df = pd.DataFrame.from_dict(res[k])
+        print(df.ffill())
 
 
 def test_hist():
