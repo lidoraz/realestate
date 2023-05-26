@@ -81,12 +81,15 @@ p.rtl {
     height: calc(100vh - 0vh) !important;
 }
 
+
+.price-diff-table {
+    font-size: 60%;
+    margin: 5px;
+    overflow: auto;
+
+}
 .price-diff-table td, .price-diff-table th {
     border: 1px solid black;
-    direction: ltr;
-    unicode-bidi: bidi-override;
-    /*position: absolute;*/
-    /*display: block;*/
 }
 
 .tooltip-icon {

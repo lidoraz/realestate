@@ -153,14 +153,14 @@ def genereate_plots(deal):
         df = df.ffill()
         fig = go.Figure([
             go.Scatter(x=df[x], y=df[y], name="all", hovertext=df[hover_data], line_shape='spline', mode='lines', opacity=0.5),
-            go.Scatter(x=df[x], y=df[y2], name="rooms", line_shape='spline', mode='lines+markers')
+            go.Scatter(x=df[x], y=df[y2], name="rooms", hovertext=df['cnt_room'], line_shape='spline', mode='lines+markers')
         ])
         fig.add_annotation(x=df[x].iloc[-1], y=df[y].iloc[-1],
                            text=format_number(df[y].iloc[-1]),
                            showarrow=True, ax=-10, ay=30)
         fig.add_annotation(x=df[x].iloc[-1], y=df[y2].iloc[-1],
                            text=format_number(df[y2].iloc[-1]),
-                           showarrow=True, ax=-10, ay=30)
+                           showarrow=True, ax=-10, ay=50)
         fig.update_layout(
             #     title='Plotly Figure with Traces',
             # yaxis_visible=False,
@@ -238,8 +238,7 @@ def build_sidebar(deal, fig):
     df_price_hist = None
     if isinstance(deal['price_hist'], list):
         df_hist = pd.DataFrame([deal['dt_hist'], [f"{x:0,.0f}" for x in deal['price_hist']]])
-        df_price_hist = html.Table([html.Tr([html.Td(v) for v in row.values]) for i, row in df_hist.iterrows()],
-                                   className="price-diff-table")
+        df_price_hist = html.Table([html.Tr([html.Td(v) for v in row.values]) for i, row in df_hist.iterrows()])
     carousel = None
     if len(image_urls):
         carousel = dbc.Carousel(
@@ -271,8 +270,7 @@ def build_sidebar(deal, fig):
                  get_html_span_pct(deal['ai_price_pct'])]),
          html.H6(f"הועלה בתאריך {date_added.date()}, (לפני {days_online / 7:0.1f} שבועות)"),
          html.Span(f"מתי עודכן: {deal['date_updated']}, ({days_str_txt(days_updated)})"),
-         html.Div(df_price_hist, className='text-ltr'),
-         html.Span(),
+         html.Div(df_price_hist, className='price-diff-table text-ltr'),
          html.P([
              'תיווך' if deal['is_agency'] else 'לא תיווך',
              html.Br(),

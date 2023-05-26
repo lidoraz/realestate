@@ -119,7 +119,7 @@ def test_api():
     for k in res.keys():
         print(k)
         df = pd.DataFrame.from_dict(res[k])
-        print(df.ffill())
+        print(df)  # .ffill()
 
 
 def test_hist():
