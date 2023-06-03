@@ -83,7 +83,7 @@ p.rtl {
 
 
 .price-diff-table {
-    font-size: 60%;
+    font-size: 70%;
     margin: 5px;
     overflow: auto;
 
@@ -221,6 +221,7 @@ p.rtl {
     direction: ltr;
     min-width: 150px;
     text-align: right;
+    padding-right:10px;
 }
 
 .rounded-checkbox {

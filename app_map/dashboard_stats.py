@@ -112,7 +112,7 @@ def get_dash(server):
             # ),
             dbc.Row([dbc.Col(get_page_menu()),
                      dbc.Col(html.H1("Real Estate Analytics"), width=8, style=dict(direction="ltr"))]),
-            dbc.Row(dbc.Col(html.H6(f"מעודכן ל-{get_stats_data()['date_updated']}"))),
+            dbc.Row(dbc.Col(html.H6(id="updated-at-line"))),
             dbc.Row(dbc.Col(html.H3("מכירות דירות מול השפעת הריבית"))),
             dbc.Row(dbc.Col(graph_obj)),
 
@@ -251,6 +251,7 @@ def get_dash(server):
         return children
 
     @app.callback(
+        Output("updated-at-line", "children"),
         Output("pct-stats-long-term", "children"),
         Output("longterm-output", "children"),
         Output("alert-auto", "children"),
@@ -289,7 +290,8 @@ def get_dash(server):
         fig.update_layout(template="plotly_dark", dragmode=False)
         graph = dcc.Graph(id=f'graph-long-price-sale', figure=fig,
                           config=config_figure_disable_all)
-        return html_pct_bar, graph, "", False
+        update_at_line = [f"מעודכן ל-{get_stats_data()['date_updated']}"]
+        return update_at_line, html_pct_bar, graph, "", False
 
     @app.callback(
         Output('city-long-term-select-multi', 'multi'),

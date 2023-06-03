@@ -104,6 +104,7 @@ show_assets_input_output = [Output("geojson", "data"),
                             Output("datatable-interactivity", "style_data_conditional"),
                             Output("fetched-assets", "children"),
                             Output("button-around", "n_clicks"),
+                            Output("updated-at", "children"),
                             Input("price-slider", "value"),
                             Input("price-median-pct-slider", "value"),
                             Input("price-discount-pct-slider", "value"),
@@ -174,7 +175,8 @@ def show_assets(price_range,
     columns, data, style_data_conditional = get_interactive_table(df_f)
     days_b = df["date_updated_d"].min()
     bot_html = f'נמצאו {n_rows:,.0f} נכסים {"" if (-1 if np.isnan(days_b) else days_b) == 0 else " .."}'
-    return deal_points, columns, data, style_data_conditional, bot_html, None
+    updated_at_html = [f"מעודכן ל-{df_f['date_updated'].max().date()}"]
+    return deal_points, columns, data, style_data_conditional, bot_html, None, updated_at_html
 
 
 toggle_model_input_outputs = [Output("geojson", "click_feature"),  # output none to reset button for re-click

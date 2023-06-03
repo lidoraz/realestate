@@ -226,6 +226,7 @@ def get_div_top_bar(config_defaults):
                                                 inputClassName="rounded-checkbox",
                                                 id='cluster-check'))], className="text-rtl"),
                 dbc.Button("נקה", id="button-clear", color="secondary"),
+                dbc.Row(dbc.Label(id="updated-at")),
                 dbc.Row(dbc.Label("Made with ❤️"))
             ],
                 className="dropdown-container")], label='אפשרויות', color=btn_color, size=btn_size),  # align_end=True,
