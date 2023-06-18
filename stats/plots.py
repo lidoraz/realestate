@@ -51,6 +51,7 @@ def _update_multi_trace_layout(fig, title):
                           bgcolor="black",
                       ),
                       title=title)
+    fig.update_yaxes(rangemode="tozero")
     return fig
 
 
