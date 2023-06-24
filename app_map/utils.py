@@ -181,8 +181,8 @@ def get_sidebar_plots(deal):
                 fig.add_scatter(x=[d.x[-1]], y=[d.y[-1]],
                                 mode='markers+text',
                                 text=text,
-                                textfont=dict(color='black'),
-                                textposition='top center',
+                                textfont=dict(color='black', size=12),
+                                textposition='middle right',
                                 marker=dict(color=d.line.color, size=10),
                                 name=d.name,
                                 legendgroup=d.legendgroup,
@@ -195,9 +195,9 @@ def get_sidebar_plots(deal):
             # titlefont=dict(color='blue'),
             # tickfont=dict(color='blue')
         ),
-            # xaxis=dict(
-            #     automargin=True
-            # ),
+            xaxis=dict(
+                # automargin=True
+            ),
             yaxis2=dict(
                 # title='Number of Transactions',
                 side='right',
