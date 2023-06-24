@@ -106,6 +106,7 @@ show_assets_input_output = [Output("geojson", "data"),
                             Output("button-around", "n_clicks"),
                             Output("updated-at", "children"),
                             Input("price-slider", "value"),
+                            Input("max-avg-price-meter-slider", "value"),
                             Input("price-median-pct-slider", "value"),
                             Input("price-discount-pct-slider", "value"),
                             Input("ai-price-pct-slider", "value"),
@@ -126,7 +127,7 @@ show_assets_input_output = [Output("geojson", "data"),
                             State("datatable-interactivity", "active_cell")]
 
 
-def show_assets(price_range,
+def show_assets(price_range, max_avg_price_meter,
                 price_median_pct_range, price_discount_pct_range, price_ai_pct_range,
                 is_price_median_pct_range, is_price_discount_pct_range, is_price_ai_pct_range,
                 date_added, date_updated,
@@ -156,10 +157,11 @@ def show_assets(price_range,
     price_from = price_range[0] * conf["price_mul"]
     # when max price is at limits, allow prices above it
     price_to = np.inf if price_range[0] == conf['price-max'] else price_range[1] * conf["price_mul"]
+    max_avg_price_meter = np.inf if max_avg_price_meter == 50_000 else max_avg_price_meter  # remove limits, ADD TO CONF
     if n_clicks_around:
         df_f = get_asset_points(df, -np.inf, np.inf, map_bounds=map_bounds)
     else:
-        df_f = get_asset_points(df, price_from, price_to, city,
+        df_f = get_asset_points(df, price_from, price_to, max_avg_price_meter, city,
                                 price_median_pct_range, price_discount_pct_range, price_ai_pct_range,
                                 is_price_median_pct_range, is_price_discount_pct_range, is_price_ai_pct_range,
                                 date_added, date_updated, rooms_range, floor_range,
@@ -207,8 +209,8 @@ def toggle_modal(feature):
 def gen_plots_lazy(data_store):
     deal = data_store.get("deal_data")
     if deal:
-        from app_map.utils import genereate_plots
-        html_plots = genereate_plots(json.loads(deal))
+        from app_map.utils import get_sidebar_plots
+        html_plots = get_sidebar_plots(json.loads(deal))
         return [html_plots]
     return dash.no_update
 

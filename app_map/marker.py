@@ -120,6 +120,7 @@ def create_tooltip(deal):
     <table class="">    
     <tr><td class="text-ltr">{m['price']:,.0f}</td>      <td class="text-rtl">מחיר</td>   </tr>
     <tr><td class="text-rtl" colspan="2"><b>{m['asset_status']}</b></td>  </tr>
+    <tr><td class="text-ltr">{m['avg_price_m']:,.0f}</td>      <td class="text-rtl">מ. למטר</td>   </tr>
     <tr><td class="text-ltr">{rooms_s}</td>          <td class="text-rtl">חדרים</td>  </tr>
     <tr><td class="text-ltr">{floor_s}</td>          <td class="text-rtl">קומה</td>  </tr>
     <tr><td class="text-ltr">{m['square_meters']:,.0f}</td>          <td class="text-rtl">מ״ר</td>  </tr>

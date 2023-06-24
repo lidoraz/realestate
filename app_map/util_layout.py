@@ -144,6 +144,13 @@ def get_div_top_bar(config_defaults):
                                                                           allowCross=False,
                                                                           tooltip=slider_tooltip)],
                          className="slider-container-drop"),
+                html.Div(["מחיר מקסימלי למטר",
+                         dcc.Slider(min=0, max=50_000, step=1000,
+                                    value=50_000, id="max-avg-price-meter-slider",
+                                    marks=None,
+                                    tooltip=slider_tooltip)],
+                         style={"display": "none"} if config_defaults['name'] != "sale" else None
+                         ),
                 dbc.DropdownMenuItem(divider=True),
                 html.Div(
                     [html.Div([html.Span(n_rooms_txt),

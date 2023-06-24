@@ -52,7 +52,8 @@ def preprocess_to_str_deals(df):
     return df
 
 
-meta_data_cols = ['lat', 'long', 'price', 'price_s', 'asset_status', 'floor', 'square_meters', 'rooms', 'price_pct',
+meta_data_cols = ['lat', 'long', 'price', 'price_s', 'asset_status', 'floor', 'avg_price_m', 'square_meters', 'rooms',
+                  'price_pct',
                   'ai_price_pct', 'pct_diff_median']
 
 
@@ -63,15 +64,17 @@ def get_geojsons(df, marker_metric):
     return deal_points
 
 
+def _safe_num(num):
+    if isinstance(num, str):
+        num = float(num)
+    return float('{:.3g}'.format(abs(num)))
+
+
 def format_number(num):
     if num is None:
         return "?"
-    def safe_num(num):
-        if isinstance(num, str):
-            num = float(num)
-        return float('{:.3g}'.format(abs(num)))
 
-    num = safe_num(num)
+    num = _safe_num(num)
     magnitude = 0
     while abs(num) >= 1000:
         magnitude += 1
@@ -102,7 +105,7 @@ def find_center(df, search, err_th=0.1):
     return [lat, long]
 
 
-def get_asset_points(df_all, price_from=-np.inf, price_to=np.inf, city=None,
+def get_asset_points(df_all, price_from=-np.inf, price_to=np.inf, max_avg_price_meter=np.inf, city=None,
                      price_median_pct_range=None, price_discount_pct_range=None, price_ai_pct_range=None,
                      is_price_median_pct_range=False, is_price_discount_pct_range=False, is_price_ai_pct_range=False,
                      date_added_days=None, date_updated=None,
@@ -126,6 +129,7 @@ def get_asset_points(df_all, price_from=-np.inf, price_to=np.inf, city=None,
         sql_rooms_range=f"{rooms_from} <= rooms <= {rooms_to}.5",
         sql_floor_range=f"{floor_from} <= floor <= {floor_to}",
         sql_price=f"{price_from} <= price <= {price_to}",
+        sql_avg_price_meter=f"avg_price_m <= {max_avg_price_meter}",
         sql_is_agency="is_agency == False" if not with_agency else "",
         sql_is_parking="parking > 0" if with_parking else "",
         sql_is_balcony="balconies == True" if with_balconies else "",
@@ -147,33 +151,73 @@ def get_asset_points(df_all, price_from=-np.inf, price_to=np.inf, city=None,
     return df_f
 
 
-def genereate_plots(deal):
+def get_sidebar_plots(deal):
     import plotly.graph_objects as go
     def plot_line(df, x, y, y2, hover_data, color='Blue'):
         df = df.ffill()
         fig = go.Figure([
-            go.Scatter(x=df[x], y=df[y], name="all", hovertext=df[hover_data], line_shape='spline', mode='lines', opacity=0.5),
-            go.Scatter(x=df[x], y=df[y2], name="rooms", hovertext=df['cnt_room'], line_shape='spline', mode='lines+markers')
+            go.Scatter(x=df[x], y=df[y], name="ALL", hovertext=df[hover_data], line_shape='spline',
+                       legendgroup="ALL",
+                       line_color=color, line_width=2,
+                       mode='lines',
+                       opacity=0.9),
+            go.Scatter(x=df[x], y=df[y2], name="SameRooms", hovertext=df['cnt_room'], line_shape='spline',
+                       legendgroup="SameRooms",
+                       line_color=color, line_width=2,
+                       mode='lines+markers'),  # lines+markers
+            go.Bar(
+                x=df[x],
+                y=df['cnt'],
+                opacity=0.1,
+                name='#Transactions',
+                marker=dict(color=color),
+                yaxis='y2'
+            )
         ])
-        fig.add_annotation(x=df[x].iloc[-1], y=df[y].iloc[-1],
-                           text=format_number(df[y].iloc[-1]),
-                           showarrow=True, ax=-10, ay=30)
-        fig.add_annotation(x=df[x].iloc[-1], y=df[y2].iloc[-1],
-                           text=format_number(df[y2].iloc[-1]),
-                           showarrow=True, ax=-10, ay=50)
+        # Add last value at the end on scatter
+        for i, d in enumerate(fig.data):
+            if d.type == 'scatter':
+                text = str(format_number(d.y[-1]))
+                fig.add_scatter(x=[d.x[-1]], y=[d.y[-1]],
+                                mode='markers+text',
+                                text=text,
+                                textfont=dict(color='black'),
+                                textposition='top center',
+                                marker=dict(color=d.line.color, size=10),
+                                name=d.name,
+                                legendgroup=d.legendgroup,
+                                showlegend=False)
+        fig.update_yaxes(rangemode="tozero")
+        fig.update_layout(yaxis=dict(
+            # title='Price (Same Rooms)',
+            side='left',
+            showgrid=False,
+            # titlefont=dict(color='blue'),
+            # tickfont=dict(color='blue')
+        ),
+            # xaxis=dict(
+            #     automargin=True
+            # ),
+            yaxis2=dict(
+                # title='Number of Transactions',
+                side='right',
+                visible=False,
+                overlaying='y',
+                showgrid=False,
+                # titlefont=dict(color='red'),
+                # tickfont=dict(color='red')
+            ))
         fig.update_layout(
-            #     title='Plotly Figure with Traces',
-            # yaxis_visible=False,
-            # xaxis_visible=False,
             margin=dict(l=1, r=1, t=1, b=1),
-            # width=450,
+            width=450,
             height=250,
             dragmode=False,
-            legend=dict(x=0, y=1))
-        fig.update_yaxes(rangemode="tozero")
-        fig.update_traces(
-            line_color=color,
-            line_width=2)
+            legend=dict(orientation="h",
+                        yanchor="bottom",
+                        y=1.02,
+                        xanchor="left",
+                        x=0)
+        )
         return fig
 
     def read_preprocess(data, time_col):
