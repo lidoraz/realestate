@@ -244,17 +244,18 @@ def run_nadlan_stats(is_local=False):
         df = get_data_nadlan(eng)
     df = add_metrics(df, diff_year=0)
     plot_timeline_new_vs_old_f(df, '30D', get_ir())
-    df_agg_time_line_all, df_agg_time_line_new, df_agg_time_line_old = calc_agg_by_metrics(df)
+    # This CODE IS NOT RELEVANT TO A DAILY JOB!
+    # df_agg_time_line_all, df_agg_time_line_new, df_agg_time_line_old = calc_agg_by_metrics(df)
     # TODO ADD HERE, but first must auth bucket.
-    print_recent(df)
-    df = add_columns(df)
-    get_monthly_counts(df)
+    # print_recent(df)
+    # df = add_columns(df)
+    # get_monthly_counts(df)
 
-    get_n_sales(df)
-    get_pct_change(df)
-    plot_timeline_rooms(df)
-    plot_timeline_rooms_median_prices(df, n_months_back=24)
-    plot_timeline_rooms_city(df, n_months_back=24)
+    # get_n_sales(df)
+    # get_pct_change(df)
+    # plot_timeline_rooms(df)
+    # plot_timeline_rooms_median_prices(df, n_months_back=24)
+    # plot_timeline_rooms_city(df, n_months_back=24)
 
 
 if __name__ == '__main__':
