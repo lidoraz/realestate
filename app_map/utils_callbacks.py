@@ -3,7 +3,8 @@ from dash import html, Output, Input, State, ctx
 import dash
 import time
 from app_map.util_layout import get_interactive_table, CLUSTER_MAX_ZOOM, marker_type_options
-from app_map.utils import get_asset_points, find_center, get_geojsons, build_sidebar, get_similar_deals
+from app_map.utils import get_asset_points, get_cords_by_city, get_cords_by_id, get_geojsons, build_sidebar, get_similar_deals, \
+    address_to_lat_long_google
 import logging
 import json
 from flask import request
@@ -149,7 +150,8 @@ def show_assets(price_range, max_avg_price_meter,
     df = conf['func_data']()
     df_id = df.query(f'id == "{search_input}"').squeeze()
     asset_id = search_input if len(df_id) else None
-    city = search_input if len(search_input) and find_center(df, search_input) else None
+    # Used to filter out points not in the city if input has a city value
+    city = search_input if len(search_input) and get_cords_by_city(df, search_input) else None
     map_bounds = map_bounds if city is None else None
 
     if active_cell:
@@ -259,9 +261,15 @@ def focus_on_asset(keyword, n_clicks_clear_search, n_clicks_clear_marker, table_
         position = [item['lat'], item['long']]
         return [position, CLUSTER_MAX_ZOOM + 1, 0.75, position] + [dash.no_update for _ in range(6)]
     if len(keyword):
-        pos = find_center(df, keyword)
+        pos = get_cords_by_id(df, keyword)
+        if pos is None:
+            pos = get_cords_by_city(df, keyword)
         if pos:
             return pos, 14, *[dash.no_update for _ in range(5)], False, keyword, 0
+        # Use maps api to get location
+        r = address_to_lat_long_google(keyword)
+        if r:
+            return (r['lat'], r['lng']), r['zoom'], *[dash.no_update for _ in range(5)], False, keyword, 0
         else:
             return [dash.no_update for _ in range(7)] + [True, keyword, 0]
     # return dash.no_update # this stuck in production,

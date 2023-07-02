@@ -90,11 +90,14 @@ def _multi_str_filter(multi_choice, col_name):
     return sql_state_asset
 
 
-def find_center(df, search, err_th=0.1):
-    dff = df.query(f'id == "{search}"')
+def get_cords_by_id(df, keyword):
+    dff = df.query(f'id == "{keyword}"')
     if len(dff):
         r = dff.squeeze()
         return [r['lat'], r['long']]
+
+
+def get_cords_by_city(df, search, err_th=0.1):
     dff = df.query(f'(city.str.contains("{search}") or neighborhood.str.contains("{search}"))')
     if dff.empty:
         return None
@@ -178,38 +181,28 @@ def get_sidebar_plots(deal):
         for i, d in enumerate(fig.data):
             if d.type == 'scatter':
                 text = str(format_number(d.y[-1]))
-                fig.add_scatter(x=[d.x[-1]], y=[d.y[-1]],
-                                mode='markers+text',
-                                text=text,
-                                textfont=dict(color='black', size=12),
-                                textposition='middle right',
-                                marker=dict(color=d.line.color, size=10),
-                                name=d.name,
-                                legendgroup=d.legendgroup,
-                                showlegend=False)
+                fig.add_annotation(x=d.x[-1], y=d.y[-1],
+                                   text=text,
+                                   showarrow=False,
+                                   bgcolor='white',
+                                   font=dict(size=10),
+                                   # yshift=10
+                                   )
+
         fig.update_yaxes(rangemode="tozero")
         fig.update_layout(yaxis=dict(
-            # title='Price (Same Rooms)',
             side='left',
             showgrid=False,
-            # titlefont=dict(color='blue'),
-            # tickfont=dict(color='blue')
         ),
-            xaxis=dict(
-                # automargin=True
-            ),
+            xaxis=dict(),
             yaxis2=dict(
-                # title='Number of Transactions',
                 side='right',
                 visible=False,
                 overlaying='y',
                 showgrid=False,
-                # titlefont=dict(color='red'),
-                # tickfont=dict(color='red')
             ))
         fig.update_layout(
-            margin=dict(l=1, r=1, t=1, b=1),
-            # width=450,
+            margin=dict(l=0, r=0, t=0, b=0),
             height=250,
             dragmode=False,
             legend=dict(orientation="h",
@@ -260,6 +253,25 @@ def get_sidebar_plots(deal):
     #     # go.Scatter(x=df['month'], y=df['old_median_price'], name="OLD_Price"),
     #     # go.Scatter(x=df['month'], y=df['new_median_price'], name="NEW_Price")
     #                   ])
+
+
+def address_to_lat_long_google(address):
+    key = os.environ.get("GOOGLE_API_KEY")
+    google_maps_url = "https://maps.googleapis.com/maps/api/geocode/json?address={address}&key={key}"
+    res = requests.get(google_maps_url.format(address=address, key=key)).json()
+    if "error_message" in res:
+        print(f"Error in API {res}")
+    if len(res['results']) == 0:
+        return None
+    geometry = res['results'][0]['geometry']
+    loc = geometry['location']
+    if geometry['location_type'] in ('APPROXIMATE', 'RANGE_INTERPOLATED'):
+        zoom = 14
+    elif geometry['location_type'] in ('ROOFTOP', 'GEOMETRIC_CENTER'):
+        zoom = 18
+    else:
+        return None
+    return dict(lat=loc['lat'], lng=loc['lng'], zoom=zoom)
 
 
 def build_sidebar(deal, fig):
