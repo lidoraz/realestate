@@ -209,7 +209,7 @@ def get_sidebar_plots(deal):
             ))
         fig.update_layout(
             margin=dict(l=1, r=1, t=1, b=1),
-            width=450,
+            # width=450,
             height=250,
             dragmode=False,
             legend=dict(orientation="h",
@@ -379,7 +379,7 @@ def plot_deal_vs_sale_sold(other_close_deals, deal, past_sales=None):
         yaxis_title="# מס עסקאות",
         # title_text=str_txt,
         # barmode='stack',
-        width=450,
+        # width=450,
         height=250,
         margin=dict(l=0, r=0, b=0, t=0.0),
         legend=dict(x=0.0, y=1),
