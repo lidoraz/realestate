@@ -1,8 +1,9 @@
 import os
 import logging
+# from flask_basicauth import BasicAuth
+# Flask-BasicAuth
 
-# FIX for OpenBLAS blas_thread_init: pthread_create: Resource temporarily unavailable
-os.environ['OPENBLAS_NUM_THREADS'] = '1'
+os.environ['OPENBLAS_NUM_THREADS'] = '1'  # fixes OpenBLAS blas_thread_init: pthread_create: Resource temporarily unavailable
 
 from flask import Flask, redirect
 import sys
@@ -39,11 +40,28 @@ def create_app(server):
 
 app = create_app(server)
 
+# app.config['BASIC_AUTH_USERNAME'] = '1'
+# app.config['BASIC_AUTH_PASSWORD'] = '2'
+# app.config['BASIC_AUTH_FORCE'] = True
+# class NotBasicAuth(BasicAuth):
+#     def check_credentials(self, username, password):
+#
+#         return super().check_credentials(username, password)
 
-@app.route("/")
+
+# basic_auth = NotBasicAuth(app)
+#
+#
+@app.route('/')
+# @basic_auth.required
 def hello_world():
-    # return "YES"
     return redirect("/sale")
+#
+#
+# @app.before_request
+# @basic_auth.required
+# def before_request_callback():
+#     print("before request")
 
 
 # from app_map.api import get_data

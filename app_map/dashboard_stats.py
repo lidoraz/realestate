@@ -56,6 +56,7 @@ def _gen_multi_html(figs, n_cols=4):
 
 def _get_multi_price(df, type_):
     days_back = 7
+    # TODO: THIS IS ALSO CAN BE USED BE THE SINGLE API::
     figs = run_for_cities(df, type_, n_cities=8, resample_rule=f'{days_back}D', use_median=True)
     return figs
 
@@ -69,6 +70,7 @@ def _get_single_price(df, type_, city, col_name):
 
 
 def get_single_price(city=None, col_name='price'):
+    # TODO: QUERY DONE , need to add to lambda function handler
     return [dbc.Col(_get_single_price(get_stats_data()['df_log_forsale'], "sale", city, col_name)),
             dbc.Col(_get_single_price(get_stats_data()['df_log_rent'], "rent", city, col_name))]
 

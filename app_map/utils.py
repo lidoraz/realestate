@@ -94,8 +94,10 @@ def get_cords_by_id(df, keyword):
     dff = df.query(f'id == "{keyword}"')
     if len(dff):
         r = dff.squeeze()
+        if np.isnan(r['lat']) or np.isnan(r['long']):
+            return None
         return [r['lat'], r['long']]
-
+    return None
 
 def get_cords_by_city(df, search, err_th=0.1):
     dff = df.query(f'(city.str.contains("{search}") or neighborhood.str.contains("{search}"))')
