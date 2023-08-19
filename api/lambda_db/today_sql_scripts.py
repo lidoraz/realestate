@@ -42,3 +42,36 @@ order by yearly_pct desc
 --and a.city = 'חריש' and a.rooms = 4
 limit {limit}
 """
+
+
+sql_who_sold_and_lost_money = """
+
+with t_pcts as (
+select a.*, price_agg[1] as first_price,
+price_agg[array_upper(price_agg, 1)] as last_price,
+(price_agg[array_upper(price_agg, 1)] / cast(price_agg[1] as float)) - 1 as pct from (
+select gush_full, min(city) as city, array_agg(street), 
+min(trans_date) as date_min, max(trans_date) as date_max,
+array_agg(trans_date order by trans_date) as date_agg,
+array_agg(price_declared order by trans_date) as price_agg,
+count(*) as chain_len
+
+from nadlan_trans where deal_part = 1
+-- get recent trandactions up to to 3 years old
+and trans_date > now() - (interval '3' year + interval '3' month) 
+group by gush_full
+having count(*) between 2 and 10
+) a
+-- interval - sold first last 2 years, sols again last 3 months, 
+where date_max > now() - (interval '3' month + interval '3' month) 
+and date_min < now() - (interval '2' year + interval '3' month) 
+order by date_min
+)
+
+select city,
+sum(case when pct > 0 then 1 else 0 end) as pos,
+sum(case when pct < 0 then 1 else 0 end) as neg,
+sum(case when pct < 0 then 1 else 0 end) / cast(count(*) as float) as ratio,
+count(*) as cnt
+from t_pcts group by city having count(*) > 3 order by ratio desc
+"""

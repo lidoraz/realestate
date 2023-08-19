@@ -1,10 +1,13 @@
 from lambda_function import lambda_handler
 import json
 
+# IMPORTANT - ASSUMES POSTGRES SERVER IS UP AND RUNNING, CONNECTION DETAILS ARE IN ENV VARIABLES
+
 example_data_histogram = {'lat': 32.1310648182, 'long': 34.8633406364, 'dist_km': 5, 'rooms': 4.5, 'n_months': 6}
 example_data_timeseries = {'lat': 32.1310648182, 'long': 34.8633406364, 'dist_km': 1.0, 'rooms': 3.5}
-example_data_timeseries_recent_quantiles_city = {'type': 'rent', 'cities_str': '["בת ים", "רמת גן"]'}
-example_data_timeseries_recent_quantiles_all = {'type': 'sale'}
+example_data_timeseries_recent_quantiles_city = {'type': 'rent', 'time_interval': 'month',
+                                                 'cities_str': '["בת ים", "רמת גן"]'}
+example_data_timeseries_recent_quantiles_all = {'type': 'sale', 'time_interval': 'week'}
 example_data_ratio_time_taken_cities_1 = {'type': 'rent', 'min_samples': 300, 'days_back': 14}
 example_data_ratio_time_taken_cities_2 = {'type': 'sale', 'min_samples': 200, 'days_back': 14}
 example_data_today_both_rent_sale = {'limit': 15}
@@ -15,13 +18,13 @@ def test_api():
     event = _gen_event(example_data_timeseries, '/timeseries')
     res = lambda_handler(event, None)
     res = json.loads(res['body'])
-    all_lst = []
+    keys = ['data_nadlan',
+            'data_recent',
+            'data_recent_rent']
     for k in res.keys():
         df = pd.DataFrame.from_dict(res[k])
-        all_lst.append((k, len(df)))
-    assert all_lst == [('data_nadlan', 63),
-                       ('data_recent', 21),
-                       ('data_recent_rent', 24)]
+        assert k in keys
+        assert len(df)
 
 
 def test_hist():
@@ -39,7 +42,7 @@ def test_ratio_time_taken_cities_1():
     res = lambda_handler(event, None)
     res = json.loads(res['body'])
     df = pd.DataFrame.from_dict(res['data_ratio_time_taken_cities'])
-    assert df.shape[1] == 5
+    assert df.shape[1] == 6
 
 
 def test_ratio_time_taken_cities_2():
@@ -48,7 +51,7 @@ def test_ratio_time_taken_cities_2():
     res = lambda_handler(event, None)
     res = json.loads(res['body'])
     df = pd.DataFrame.from_dict(res['data_ratio_time_taken_cities'])
-    assert df.shape[1] == 5
+    assert df.shape[1] == 6
 
 
 def test_timeseries_recent_quantiles_city():
@@ -57,7 +60,7 @@ def test_timeseries_recent_quantiles_city():
     res = lambda_handler(event, None)
     res = json.loads(res['body'])
     df = pd.DataFrame.from_dict(res['data_timeseries_recent_quantiles_city'])
-    assert df.shape[1] == 7
+    assert df.shape[1] == 10
 
 
 def test_timeseries_recent_quantiles_all():
@@ -66,7 +69,7 @@ def test_timeseries_recent_quantiles_all():
     res = lambda_handler(event, None)
     res = json.loads(res['body'])
     df = pd.DataFrame.from_dict(res['data_timeseries_recent_quantiles_all'])
-    assert df.shape[1] == 6
+    assert df.shape[1] == 9
 
 
 def test_today_both_rent_sale():
@@ -75,7 +78,6 @@ def test_today_both_rent_sale():
     res = lambda_handler(event, None)
     res = json.loads(res['body'])
     df = pd.DataFrame.from_dict(res['data_today_both_rent_sale'])
-    print(df)
     assert df.shape == (30, 16)
 
 

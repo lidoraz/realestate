@@ -2,6 +2,8 @@ import requests
 import pandas as pd
 import os
 
+LIMIT = 100
+
 print("Generating today rent sale")
 url = f"https://{os.environ['REAL_ESTATE_API']}/today_both_rent_sale"
 
@@ -64,7 +66,7 @@ style = """
         }
     """
 
-results = requests.post(url, json={"limit": 50}).json()
+results = requests.post(url, json={"limit": LIMIT}).json()
 df = pd.DataFrame(results['data_today_both_rent_sale'])
 default_img = "https://ateamymm.ca/defaulthouse.jpg"
 df["sale_img"] = df["sale_img"].replace("", default_img)

@@ -22,8 +22,10 @@ filenames = ["df_nadlan_recent.pk",
              "dict_df_agg_nadlan_all.pk",
              "dict_df_agg_nadlan_new.pk",
              "dict_df_agg_nadlan_old.pk",
-             "df_log_rent.pk",
-             "df_log_forsale.pk"]
+             # NO NEED FOR THESE FILES, replaced with an API gateway
+             # "df_log_rent.pk",
+             # "df_log_forsale.pk"
+             ]
 
 
 def get_aws_session():
@@ -101,7 +103,7 @@ def download_files(filenames):
     global is_downloading
     is_downloading = False
     LOGGER.info("Finished downloading")
-    cache_dict.clear()   # needed to force reload the datasets
+    cache_dict.clear()  # needed to force reload the datasets
 
 
 def _preprocess_and_load():
@@ -116,13 +118,14 @@ def _preprocess_and_load():
     dict_combined = dict(ALL=dict_df_agg_nadlan_all,
                          NEW=dict_df_agg_nadlan_new,
                          OLD=dict_df_agg_nadlan_old)
-    df_log_rent = preprocess_stats(read_pk("df_log_rent.pk"))
-    df_log_forsale = preprocess_stats(read_pk("df_log_forsale.pk"))
+    # df_log_rent = preprocess_stats(read_pk("df_log_rent.pk"))
+    # df_log_forsale = preprocess_stats(read_pk("df_log_forsale.pk"))
 
-    date_updated = df_log_forsale['date_updated'].max().date()
-    stats = dict(df_log_forsale=df_log_forsale, df_log_rent=df_log_rent, dict_combined=dict_combined,
-                 fig_timeline_new_vs_old=fig_timeline_new_vs_old,
-                 date_updated=date_updated)
+    date_updated = df_rent_all['date_updated'].max().date()
+    stats = dict(  # df_log_forsale=df_log_forsale, df_log_rent=df_log_rent,
+        dict_combined=dict_combined,
+        fig_timeline_new_vs_old=fig_timeline_new_vs_old,
+        date_updated=date_updated)
     #
     sale = dict(df_forsale_all=df_forsale_all)
     rent = dict(df_rent_all=df_rent_all)

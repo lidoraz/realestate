@@ -3,42 +3,22 @@ import dash_bootstrap_components as dbc
 from dash import dcc
 from dash import html, Output, Input
 from app_map.util_layout import get_page_menu
-from stats.plots import get_fig_quantiles_from_df, get_fig_quantiles_multi_city
-from stats.calc_plots import run_for_cities, create_ratio
-from stats.plots import plot_scatter_f
+from stats.plots import get_fig_quantiles_multi_city, get_fig_quantiles_from_api
+from stats.plots import get_figs_for_cities, get_scatter
+from app_map.persistance_utils import get_stats_data
+from api.gateway.api_stats import req_ratio_time_taken_cities
 
 config_figure_disable_all = {'displayModeBar': False,
                              'scrollZoom': False}
 
-from app_map.persistance_utils import get_stats_data
-
-stats_data = get_stats_data()
-cities = stats_data['df_log_forsale']['city'].value_counts()
-cities = cities[cities > 100].sort_index()
+cities = sorted(req_ratio_time_taken_cities('sale', 100, 14)['city'])
 
 additional_all_key = [dict(label="בכל הארץ", value="ALL")]
-cities_options = additional_all_key + [dict(label=f'{city}', value=city) for city, cnt in
-                                       cities.items()]
+cities_options = additional_all_key + [dict(label=f'{city}', value=city) for city in cities]
 # Removing first key:
-dict_df_agg_nadlan_all = stats_data['dict_combined']['ALL']
+dict_df_agg_nadlan_all = get_stats_data()['dict_combined']['ALL']
 dict_df_agg_keys = sorted([k for k in dict_df_agg_nadlan_all.keys() if k != 'ALL'])
 cities_long_term_options = additional_all_key + [dict(label=f'{city}', value=city) for city in dict_df_agg_keys]
-
-days_back = 30
-min_samples = 200
-
-
-def get_scatter(df, type_, min_samples):
-    res_ratio = create_ratio(df, days_back=days_back, min_samples=min_samples)
-    fig = plot_scatter_f(df, res_ratio, type_)
-    fig.update_layout(template="plotly_dark")
-    modeBarButtonsToRemove = ['select2d', 'lasso2d']
-    return dcc.Graph(id=f'scatter-ratio-{type_}', figure=fig,
-                     config={
-                         'modeBarButtonsToRemove': modeBarButtonsToRemove,
-                         # 'displayModeBar': False,
-                         'scrollZoom': False}
-                     )
 
 
 def _gen_multi_html(figs, n_cols=4):
@@ -54,30 +34,21 @@ def _gen_multi_html(figs, n_cols=4):
     return graphs
 
 
-def _get_multi_price(df, type_):
-    days_back = 7
-    # TODO: THIS IS ALSO CAN BE USED BE THE SINGLE API::
-    figs = run_for_cities(df, type_, n_cities=8, resample_rule=f'{days_back}D', use_median=True)
-    return figs
-
-
-def _get_single_price(df, type_, city, col_name):
-    days_back = 7
-    fig = get_fig_quantiles_from_df(df, city, type_, f'{days_back}D', col_name)
+def _get_single_price(type_, city, col_name="price"):
+    fig = get_fig_quantiles_from_api(type_, city, 'week', col_name)
     fig.update_layout(template="plotly_dark", dragmode=False)
     return dcc.Graph(id=f'graph-single-price-{type_}-{city}', figure=fig,
                      config=config_figure_disable_all)
 
 
 def get_single_price(city=None, col_name='price'):
-    # TODO: QUERY DONE , need to add to lambda function handler
-    return [dbc.Col(_get_single_price(get_stats_data()['df_log_forsale'], "sale", city, col_name)),
-            dbc.Col(_get_single_price(get_stats_data()['df_log_rent'], "rent", city, col_name))]
+    return [dbc.Col(_get_single_price("sale", city, col_name)),
+            dbc.Col(_get_single_price('rent', city, col_name))]
 
 
 def get_multi_price_by_side(n_cols):
-    figs1 = _get_multi_price(get_stats_data()['df_log_forsale'], "forsale")
-    figs2 = _get_multi_price(get_stats_data()['df_log_rent'], "rent")
+    figs1 = get_figs_for_cities("sale")
+    figs2 = get_figs_for_cities("rent")
     figs = [item for pair in zip(figs1, figs2) for item in pair]
     graphs = _gen_multi_html(figs, n_cols)
     cont = [dbc.Row(dbc.Col(html.H3("תנועות בערים נבחרות של המחיר בזמן, לפי אחוזונים"))),
@@ -122,13 +93,7 @@ def get_dash(server):
             dbc.Row(dbc.Col(html.H3("פיזור הביקוש מול ההיצע"))),
             dbc.Row(dbc.Col(html.Span(
                 "פיזור בין הזמן החציוני לדירה להפוך ללא רלוונטית מול מדד ההיצע - כלומר כמה דירות פנויות יש מול דירות שכבר לא רלוונטיות"))),
-            dbc.Row(
-                [dbc.Col(
-                    [html.H4("SALE", style={"background-color": "#1e81b0"}),
-                     get_scatter(get_stats_data()['df_log_forsale'], 'forsale', 300)], width=6, xs=12),
-                    dbc.Col([html.H4("RENT", style={"background-color": "#e28743"}),
-                             get_scatter(get_stats_data()['df_log_rent'], 'rent', 200)], width=6, xs=12)],
-                className="analysis-main-multi-grid"),
+            dbc.Row([], className="analysis-main-multi-grid", id="analysis-row-scatter-plot"),
             # dbc.Row(),
             # dbc.Row(dbc.Col(html.Span("בכל הארץ, כל גרף מייצג אחוזון, כאשר האמצע הוא החציון"))),
             # dbc.Row(get_single_price(None), ),
@@ -248,8 +213,8 @@ def get_dash(server):
             city = None
         if col_name not in ['price', 'price_meter']:
             col_name = 'price'
-        children = [dbc.Col(_get_single_price(get_stats_data()['df_log_forsale'], "sale", city, col_name)),
-                    dbc.Col(_get_single_price(get_stats_data()['df_log_rent'], "rent", city, col_name))]
+        children = [dbc.Col(_get_single_price("sale", city, col_name)),
+                    dbc.Col(_get_single_price("rent", city, col_name))]
         return children
 
     @app.callback(
@@ -311,6 +276,18 @@ def get_dash(server):
         if val_b == value:
             value = dash.no_update
         return switch_val, value
+
+    @app.callback(
+        Output("analysis-row-scatter-plot", 'children'),
+        Input("city-long-term-select-multi-switch", "value")
+    )
+    def get_scatter_plot(_):
+        return [dbc.Col(
+            [html.H4("SALE", style={"background-color": "#1e81b0"}),
+             get_scatter('sale', 300)], width=6, xs=12),
+            dbc.Col([
+                html.H4("RENT", style={"background-color": "#e28743"}),
+                get_scatter('rent', 200)], width=6, xs=12)]
 
     return server, app
 

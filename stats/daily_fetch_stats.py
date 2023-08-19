@@ -6,8 +6,6 @@ import pandas as pd
 from datetime import datetime
 import matplotlib.pyplot as plt
 
-from stats.calc_plots import run_for_cities, create_ratio
-
 plt.style.use('ggplot')
 
 log_tbl_cols = ['a.id', 'a.processing_date', 'date_updated', 'date_added', 'price', 'rooms', 'a.square_meters',
@@ -138,10 +136,6 @@ def run_type_stats(type_):
     pub_object(file_path)
     #
     os.makedirs(f"resources/stats/plots_daily_{type_}", exist_ok=True)
-    res_ratio = create_ratio(df, days_back=30, min_samples=200)
-    # plot_ratio(res_ratio, type_)
-    # plot_scatter(df, res_ratio, type_)
-    run_for_cities(df, type_, n_cities=9, resample_rule='7D')
     get_price_changes(eng, type_)
 
 

@@ -1,7 +1,7 @@
-from datetime import datetime
-
 from plotly import graph_objects as go
 from plotly.subplots import make_subplots
+from api.gateway.api_stats import req_timeseries_recent_quantiles, req_ratio_time_taken_cities
+import pandas as pd
 
 
 def get_heb_type_past(type_):
@@ -10,37 +10,6 @@ def get_heb_type_past(type_):
 
 def get_heb_type_present(type_):
     return "שכירות" if type_ == 'rent' else "מכירה"
-
-
-def plot_ratio_f(res, type_):
-    res_ = res.copy()
-    heb_type = "שהושכרה" if type_ == "rent" else "שנמכרה"
-    title = f"{datetime.today().date()} " + f"יחס הדירות הפנויות לכל דירה {heb_type} בחודש האחרון "
-    fig = go.Figure(data=go.Bar(x=res_.index, y=res_))  # hover text goes here
-    fig.update_layout(title=title).update_xaxes(tickangle=300)
-    fig.show()
-
-
-def plot_scatter_f(df, res_ratio, type_):
-    df['time_alive'] = (datetime.today() - df['date_added']).dt.days
-    df_g = df[~df['active']].groupby('city')['time_alive'].agg(['mean', 'std', 'median', 'size'])
-    df_g = df_g.join(res_ratio, how='inner')
-    # len_b = len(df_g)
-    df_g = df_g[df_g['size'] >= 30]
-    # print(len_b, len(df_g))
-    fig = go.Figure(data=go.Scatter(x=df_g['median'], y=df_g['r'], marker_color=df_g['size'],
-                                    mode='markers+text',
-                                    textposition="bottom center",
-                                    hovertemplate="%{text}<br>Ratio: %{y:.2f}<br>#Days: %{x:,.0f}</br>#Deals: %{marker.color:,.0f}",
-                                    name="",
-                                    text=df_g.index))  # hover text goes here
-    fig.update_layout(
-        xaxis_title="זמן חציוני לדירות באתר מרגע הפרסום עד להורדה",
-        yaxis_title="יחס דירות באתר מול דירות שירדו בחודש האחרון",
-        # template="ggplot2",
-        margin=dict(l=20, r=20, t=20, b=20),
-        dragmode='pan')
-    return fig
 
 
 def _update_multi_trace_layout(fig, title):
@@ -57,9 +26,10 @@ def _update_multi_trace_layout(fig, title):
 
 def _get_trace_scatter(x, perc, name, show_perc_legend=True):
     name = f"{name} ({perc})" if show_perc_legend else name
+    cnt_col = 'cnt' if 'cnt' in x.columns else 'count'  # replace here
     return go.Scatter(x=x.index, y=x[perc].round(),
                       customdata=x[perc].pct_change(),
-                      text=x['count'],
+                      text=x[cnt_col],
                       hovertemplate="%{x} (%{text:,.0f})<br>₪%{y:,.0f} (%{customdata:.2%})",
                       name=name,
                       mode="lines+markers")
@@ -92,32 +62,69 @@ def get_fig_quantiles_multi_city(df_aggs, multi_city, col_name):
     return _update_multi_trace_layout(fig, title)
 
 
-def get_fig_quantiles_from_df(df, city, type_, resample_rule, col_name):
+def get_fig_quantiles_from_api(deal_type, city, time_interval, col_name="price"):
+    assert col_name in ("price", "price_meter")  # price_meter_25
+    data = req_timeseries_recent_quantiles(deal_type, time_interval, cities=city)
     fig = make_subplots()
-    if city is not None:
-        df = df.query(f"city == '{city}' and active == False")
-        title = f'{city} ({get_heb_type_present(type_)})'
+    df = pd.DataFrame.from_dict(data)
+    # TODO: FINISH HERE!
+    if isinstance(city, str):
+        # df[df['city'] == 'רמת גן'].sort_values(time_interval)
+        title = f'{city} ({get_heb_type_present(deal_type)})'
+    elif city is None:
+        title = f'({get_heb_type_present(deal_type)})'
     else:
-        df = df.query(f"active == False")
-        title = f'({get_heb_type_present(type_)})'
-    if not len(df):
-        raise ValueError("Not cities found")
-    x = df.resample(resample_rule, origin='end')[col_name].describe()  # agg(['median', 'mean', 'std', 'size'])
+        raise ValueError("CHECK OPTION HERE FOR mULTI CITY")
+    df = df.set_index(time_interval)
     for perc in ['75%', '50%', '25%']:
-        fig.add_trace(_get_trace_scatter(x, perc, perc, show_perc_legend=False))
+        df[perc] = df[f"{col_name}_{perc[:-1]}"]
+        fig.add_trace(_get_trace_scatter(df, perc, perc, show_perc_legend=False))
     return _update_multi_trace_layout(fig, title)
 
 
-def create_percentiles_per_city_f(df, city, type_, resample_rule, col_name, use_median=True, df_agg=None):
-    pass
-# else:
-#     # USING MEAN AND STD IS REALLY NOISEY, CANT TELL NOTHNIG FROM THIS
-#     fig.add_trace(go.Scatter(x=x.index, y=x["mean"], text=x['count'], mode="lines+markers", name=title))
-#     fig.add_trace(go.Scatter(x=x.index, y=x["mean"] + x['std'], mode='lines', fill=None))
-#     fig.add_trace(go.Scatter(x=x.index, y=x["mean"] - x['std'], mode='lines', fill='tonexty',
-#                              fillcolor="rgba(148, 0, 211, 0.15)"))
-# fig.add_trace(go.Scatter(x=x.index, y=x['count'], name="count",
-#                          mode="lines+markers", opacity=0.1), secondary_y=True)
+CITIES = ('חיפה', 'ירושלים', 'תל אביב יפו', 'רמת גן', 'אשדוד', 'ראשון לציון', 'גבעתיים', 'באר שבע', 'הרצליה',
+          'נתניה')
 
-# fig.show()
-# return fig
+
+def get_figs_for_cities(type_, time_interval='week', selected_cities=CITIES):
+    figs = []
+
+    for city in selected_cities:
+        fig = get_fig_quantiles_from_api(type_, city, time_interval)
+        figs.append(fig)
+    return figs
+
+
+def get_scatter(deal_type, min_samples):
+    from dash import dcc
+    data = req_ratio_time_taken_cities(deal_type, min_samples, days_back=7)
+    df = pd.DataFrame.from_dict(data)
+    fig = _get_scatter_fig(x=df['median_days_to_not_active'],
+                           y=df['ratio'],
+                           marker_color=df['active_cnt'],
+                           text=df['city'])
+    fig.update_layout(template="plotly_dark")
+    modeBarButtonsToRemove = ['select2d', 'lasso2d']
+    return dcc.Graph(id=f'scatter-ratio-{deal_type}', figure=fig,
+                     config={
+                         'modeBarButtonsToRemove': modeBarButtonsToRemove,
+                         # 'displayModeBar': False,
+                         'scrollZoom': False}
+                     )
+
+
+def _get_scatter_fig(x, y, marker_color, text):
+    import plotly.graph_objects as go
+    fig = go.Figure(data=go.Scatter(x=x, y=y, marker_color=marker_color,
+                                    mode='markers+text',
+                                    textposition="bottom center",
+                                    hovertemplate="%{text}<br>Ratio: %{y:.2f}<br>#Days: %{x:,.0f}</br>#Deals: %{marker.color:,.0f}",
+                                    name="",
+                                    text=text))  # hover text goes here
+    fig.update_layout(
+        xaxis_title="זמן חציוני לדירות באתר מרגע הפרסום עד להורדה",
+        yaxis_title="יחס דירות באתר מול דירות שירדו בחודש האחרון",
+        # template="ggplot2",
+        margin=dict(l=20, r=20, t=20, b=20),
+        dragmode='pan')
+    return fig

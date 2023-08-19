@@ -75,20 +75,24 @@ def get_histogram(data):
 
 
 def get_timeseries_recent_quantiles_city(data):
-    validate_data_has_keys(data, ['type', 'cities_str'])
+    validate_data_has_keys(data, ['type', 'cities_str', 'time_interval'])
+    time_interval = _get_validate_time_interval(data)
     assert len(data['cities_str']) > 0
     cities_str = data['cities_str'].replace('[', '(').replace(']', ')').replace('"', "'")
     with connect() as conn:
         sql_query = sql_time_series_recent_quantiles_city.format(table_name=_get_table(data),
+                                                                 time_interval=time_interval,
                                                                  cities_str=cities_str)
         dict_of_lists = query_dict_of_lists(conn, sql_query)
         return dict(data_timeseries_recent_quantiles_city=dict_of_lists)
 
 
 def get_timeseries_recent_quantiles_all(data):
-    validate_data_has_keys(data, ['type'])
+    validate_data_has_keys(data, ['type', 'time_interval'])
+    time_interval = _get_validate_time_interval(data)
     with connect() as conn:
-        sql_query = sql_time_series_recent_quantiles_all.format(table_name=_get_table(data))
+        sql_query = sql_time_series_recent_quantiles_all.format(table_name=_get_table(data),
+                                                                time_interval=time_interval)
         dict_of_lists = query_dict_of_lists(conn, sql_query)
         return dict(data_timeseries_recent_quantiles_all=dict_of_lists)
 
@@ -101,6 +105,12 @@ def _get_table(data):
     else:
         raise ValueError("not valid type")
     return table_name
+
+
+def _get_validate_time_interval(data):
+    time_interval = data['time_interval']
+    assert time_interval in ('month', 'week', 'year')
+    return time_interval
 
 
 def get_ratio_time_taken_cities(data):
