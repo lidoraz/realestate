@@ -13,7 +13,7 @@ protobuf==3.20.0
 dash
 dash-table
 dash-extensions
-dash-leaflet==0.1.23  # not updated will be later updated
+dash-leaflet==0.1.23  # not updated will be later updated .
 dash-bootstrap-components
 colorlover
 colour
