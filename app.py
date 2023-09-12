@@ -1,9 +1,11 @@
 import os
 import logging
+
 # from flask_basicauth import BasicAuth
 # Flask-BasicAuth
 
-os.environ['OPENBLAS_NUM_THREADS'] = '1'  # fixes OpenBLAS blas_thread_init: pthread_create: Resource temporarily unavailable
+os.environ[
+    'OPENBLAS_NUM_THREADS'] = '1'  # fixes OpenBLAS blas_thread_init: pthread_create: Resource temporarily unavailable
 
 from flask import Flask, redirect
 import sys
@@ -34,11 +36,14 @@ def create_app(server):
     server, _ = get_dash_sale(server)
     from app_map.dashboard_stats import get_dash as get_dash_stats
     server, _ = get_dash_stats(server)
+    from app_map.dashboard_neighborhood import get_dash as get_dash_neightbor
+    server, _ = get_dash_neightbor(server)
 
     return server
 
 
 app = create_app(server)
+
 
 # app.config['BASIC_AUTH_USERNAME'] = '1'
 # app.config['BASIC_AUTH_PASSWORD'] = '2'
@@ -56,6 +61,8 @@ app = create_app(server)
 # @basic_auth.required
 def hello_world():
     return redirect("/sale")
+
+
 #
 #
 # @app.before_request

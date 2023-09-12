@@ -5,7 +5,7 @@ import os
 LIMIT = 100
 
 print("Generating today rent sale")
-url = f"https://{os.environ['REAL_ESTATE_API']}/today_both_rent_sale"
+url = f"{os.environ['REAL_ESTATE_API']}/today_both_rent_sale"
 
 style = """
         * {font-family: sans-serif;}
@@ -95,7 +95,7 @@ str_html = f"""
         </style>
         </head><body>
         <div class="main-cont">
-        <h1>Today Rent Sale</h1>
+        <h1>Today Rent Sale, Click on the image to view</h1>
         <script src="https://code.jquery.com/jquery-3.6.0.slim.min.js" integrity="sha256-u7e5khyithlIdTpu22PHhENmPcRdFiHRjhAuHcs05RI=" crossorigin="anonymous"></script>
         <script type="text/javascript" src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
         {out_df}

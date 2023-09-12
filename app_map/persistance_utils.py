@@ -25,6 +25,8 @@ filenames = ["df_nadlan_recent.pk",
              # NO NEED FOR THESE FILES, replaced with an API gateway
              # "df_log_rent.pk",
              # "df_log_forsale.pk"
+             "changes_last_polygon_forsale.json",
+             "changes_last_polygon_rent.json"
              ]
 
 
