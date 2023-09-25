@@ -49,11 +49,11 @@ btn_color = 'primary'
 # Can use text instead of just icon with using DivIcon in JS.
 
 def get_page_menu():
-    return dbc.DropdownMenu([dbc.DropdownMenuItem("Rent", href="/rent", external_link=True),
-                             dbc.DropdownMenuItem("Sale", href="/sale", external_link=True),
-                             dbc.DropdownMenuItem("Analytics", href="/analytics", external_link=True),
-                             dbc.DropdownMenuItem("Neighborhood", href="/neighborhood", external_link=True)],
-                            label="§עוד", color=btn_color, size=btn_size)  # style=dict(direction="ltr")
+    return dbc.DropdownMenu([dbc.DropdownMenuItem("💰Rent", href="/rent", external_link=True),
+                             dbc.DropdownMenuItem("🏠Sale", href="/sale", external_link=True),
+                             dbc.DropdownMenuItem("📊Analytics", href="/analytics", external_link=True),
+                             dbc.DropdownMenuItem("🏘️Neighborhood", href="/neighborhood", external_link=True)],
+                            label="§עוד", color=btn_color, size=btn_size, style=dict(direction="ltr"))
 
 
 def get_layout(default_config):
