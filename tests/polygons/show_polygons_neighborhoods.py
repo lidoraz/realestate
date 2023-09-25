@@ -9,13 +9,13 @@ from dash_extensions.javascript import assign, arrow_function
 # https://leafletjs.com/examples/geojson/  # style
 js_draw_custom = assign("""function(feature) {
         let pct = feature.properties.pct_change;
-        let col = "#C0C0C0";
-        let pctLow = 0.05
+        let col = "#5a5a5a"; //"#C0C0C0";
+        let pctLow = feature.properties.type == "N" ? 0.05 : 0.03;
         if (pct > pctLow){
-            col = "#ff0000" // (pct > 0.07) ? "#ff0000" : "#8B0000";
+            col = "#ff0000";
         }
         else if (pct < -pctLow) {
-            col = "#00ff00" //(pct < -0.07) ? "#00ff00" : "#013220";
+            col = "#00ff00";
         }
         return {color: col};}""")
 
@@ -27,7 +27,8 @@ _html_radio_style = {"position": "absolute", "z-index": "999", "top": "30px", "l
                      "font-family": "sans-serif", "background-color": "#FFFFFFB3", "font-size": "1.2em",
                      "padding": "5px 15px 5px 5px", "border-radius": "20%"}
 app.layout = html.Div([
-    html.Div([html.H2("שׁינויים במחירי הדירות"), html.Small("(רבעון נוכחי מול קודם)")], style=_html_title_style),
+    html.Div([html.H2("שׁינויים במחירי הדירות"),
+              html.Small("(רבעון נוכחי מול קודם)"), dash.dcc.Checklist(["Y"], ["Y"], id="polygon_toggle")], style=_html_title_style),
     dl.Map([
         dl.TileLayer(),
         dl.GeoJSON(data=None, format='geojson',
@@ -58,17 +59,29 @@ app.layout = html.Div([
 
 @app.callback(
     Output(component_id='geogson_', component_property='data'),
-    Input(component_id='radio_', component_property='value')
+    Input(component_id='radio_', component_property='value'),
+    Input("map_", "zoom"),
+    Input("polygon_toggle", "value")
 )
-def change_asset_type(value):
+def change_asset_type(value, zoom, toggle):
+    if not len(toggle):
+        return None
+    prepath = "/Users/lidorazulay/Documents/DS/realestate/notebooks/"
+    print(f"{zoom=}")
+    zoom_cutoff = 13 # ZOOM => 13 ===> go to neighborhood
     if value == "rent":
-        with open("/Users/lidorazulay/Documents/DS/realestate/notebooks/changes_last_polygon_rent.json", "r") as f:
-            d_json = json.load(f)
-        return d_json
+        if zoom >= zoom_cutoff:
+            file_name = prepath + "changes_last_polygon_rent_city_neighborhood.json"
+        else:
+            file_name = prepath + "changes_last_polygon_rent_city.json"
     else:
-        with open("/Users/lidorazulay/Documents/DS/realestate/notebooks/changes_last_polygon_forsale.json", "r") as f:
-            d_json = json.load(f)
-        return d_json
+        if zoom >= zoom_cutoff:
+            file_name = prepath + "changes_last_polygon_forsale_city_neighborhood.json"
+        else:
+            file_name = prepath + "changes_last_polygon_forsale_city.json"
+    with open(file_name, "r") as f:
+        d_json = json.load(f)
+    return d_json
 
 
 if __name__ == '__main__':

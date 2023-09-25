@@ -3,7 +3,8 @@ from dash import html, Output, Input, State, ctx
 import dash
 import time
 from app_map.util_layout import get_interactive_table, CLUSTER_MAX_ZOOM, marker_type_options
-from app_map.utils import get_asset_points, get_cords_by_city, get_cords_by_id, get_geojsons, build_sidebar, get_similar_deals, \
+from app_map.utils import get_asset_points, get_cords_by_city, get_cords_by_id, get_geojsons, build_sidebar, \
+    get_similar_deals, \
     address_to_lat_long_google
 import logging
 import json
@@ -314,6 +315,19 @@ def toggle_cluster(cluster_check):
     return [len(cluster_check) > 0]
 
 
+change_polygons_type_input_outputs = [Output(component_id='geogson_', component_property='data'),
+                                      Input(component_id='polygon-select-radio', component_property='value'),
+                                      Input("big-map", "zoom"),
+                                      Input("polygon_toggle", "value")]
+
+
+def change_polygons_type(value, zoom, toggle):
+    from app_map.dashboard_neighborhood import load_geojson
+    if not len(toggle):
+        return [None]
+    return [load_geojson(value, zoom)]
+
+
 def add_callbacks(app, config):
     # global df_all, config_defaults
     # df_all = df
@@ -327,4 +341,5 @@ def add_callbacks(app, config):
     app.callback(show_table_input_output)(show_table_modal)
     app.callback(toggle_cluster_input_outputs)(toggle_cluster)
     app.callback(gen_plots_lazy_input_outputs)(gen_plots_lazy)
+    app.callback(change_polygons_type_input_outputs)(change_polygons_type) # polygons
     # app.callback(clear_table_selected_input_output)(clear_selected_if_closed)

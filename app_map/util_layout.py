@@ -57,10 +57,19 @@ def get_page_menu():
 
 
 def get_layout(default_config):
+    # ADDED TODO REFORMAT THIS
+    main_map = get_main_map()
+    from app_map.dashboard_neighborhood import get_json_layer, load_geojson
+    asset_type = default_config['name'].lower().replace("sale", "forsale")
+    # neighborhood_data = load_geojson(asset_type, 13)
+    # json_layer = get_json_layer()
+    # json_layer.data = neighborhood_data
+    # main_map.children.append(json_layer)
+
     layout = html.Div(children=[
         html.Header(className="top-container", children=get_div_top_bar(default_config)),
         # html.Span("", id="fetched-assets"),
-        html.Div(className="grid-container", children=get_main_map()),
+        html.Div(className="grid-container", children=main_map),
         html.Div(className="table-container", children=[div_left_off_canvas]),
         html.Div(className="modal-container", children=[div_offcanvas]),
         dcc.Store(id='data-store'),
@@ -120,6 +129,7 @@ def get_html_range_range_pct(text, element_id, checked=False):
 
 
 def get_div_top_bar(config_defaults):
+    asset_type = config_defaults['name'].lower().replace("sale", "forsale")
     div_top_bar = html.Div(className="top-toolbar", children=[
         dbc.DropdownMenu([
             html.Div([
@@ -146,10 +156,10 @@ def get_div_top_bar(config_defaults):
                                                                           tooltip=slider_tooltip)],
                          className="slider-container-drop"),
                 html.Div(["מחיר מקסימלי למטר",
-                         dcc.Slider(min=0, max=50_000, step=1000,
-                                    value=50_000, id="max-avg-price-meter-slider",
-                                    marks=None,
-                                    tooltip=slider_tooltip)],
+                          dcc.Slider(min=0, max=50_000, step=1000,
+                                     value=50_000, id="max-avg-price-meter-slider",
+                                     marks=None,
+                                     tooltip=slider_tooltip)],
                          style={"display": "none"} if config_defaults['name'] != "sale" else None
                          ),
                 dbc.DropdownMenuItem(divider=True),
@@ -230,9 +240,19 @@ def get_div_top_bar(config_defaults):
                                        debounce=True,
                                        className="input-ltr"
                                    ))]),
-                          dbc.Row(dcc.Checklist(options=[{'value': 'Y', 'label': "Cluster"}], value=['Y'], inline=True,
-                                                inputClassName="rounded-checkbox",
-                                                id='cluster-check'))], className="text-rtl"),
+                          dbc.Row([dcc.Checklist(options=[{'value': 'Y', 'label': "Cluster"}], value=['Y'], inline=True,
+                                                 inputClassName="rounded-checkbox",
+                                                 id='cluster-check')]),
+                          html.Hr(),
+                          dbc.Row([dcc.Checklist([{'value': 'Y', 'label': "הצג שכבות"}], [], id="polygon_toggle",
+                                                 inputClassName="rounded-checkbox"),
+                                   dcc.RadioItems([{'label': 'שכירות', 'value': 'rent'},
+                                                   {'label': 'מכירה', 'value': 'forsale'}],
+                                                  asset_type, id="polygon-select-radio",
+                                                  inputClassName="rounded-checkbox", inline=True),
+                                   ])
+
+                          ], className="text-rtl"),
                 dbc.Button("נקה", id="button-clear", color="secondary"),
                 dbc.Row(dbc.Label(id="updated-at")),
                 dbc.Row(dbc.Label("Made with ❤️"))
@@ -257,7 +277,9 @@ url_dark = "https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r
 
 
 def get_main_map():
+    from app_map.dashboard_neighborhood import get_json_layer
     return dl.Map(children=[dl.TileLayer(url=url_bright),
+                            get_json_layer(),
                             dl.GeoJSON(data=None, id="geojson", zoomToBounds=False, cluster=False,
                                        superClusterOptions=dict(maxZoom=CLUSTER_MAX_ZOOM, radius=CLUSTER_RADIUS),
                                        # radius=50,
@@ -266,7 +288,7 @@ def get_main_map():
                             dl.Marker(position=[31.7, 32.7], opacity=0, id='map-marker')
                             ],
                   zoom=10, id='big-map', zoomControl=True,
-                  center=[32.0682705686074,	34.81262190627366]
+                  center=[32.0682705686074, 34.81262190627366]
                   )
 
 

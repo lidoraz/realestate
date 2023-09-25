@@ -12,13 +12,13 @@ from app_map.util_layout import get_page_menu
 # https://leafletjs.com/examples/geojson/  # style
 js_draw_custom = assign("""function(feature) {
         let pct = feature.properties.pct_change;
-        let col = "#C0C0C0";
-        let pctLow = 0.05
+        let col = "#5a5a5a"; //"#C0C0C0";
+        let pctLow = feature.properties.type == "N" ? 0.05 : 0.03;
         if (pct > pctLow){
-            col = "#ff0000" // (pct > 0.07) ? "#ff0000" : "#8B0000";
+            col = "#ff0000";
         }
         else if (pct < -pctLow) {
-            col = "#00ff00" //(pct < -0.07) ? "#00ff00" : "#013220";
+            col = "#00ff00";
         }
         return {color: col};}""")
 
@@ -30,15 +30,32 @@ _html_radio_style = {"position": "absolute", "z-index": "999", "top": "30px", "l
                      "padding": "5px 15px 5px 5px", "border-radius": "20%"}
 
 
-def load_geojson(asset_type):
-    if asset_type == "forsale":
-        with open("resources/changes_last_polygon_forsale.json", "r") as f:
-            return json.load(f)
-    elif asset_type == "rent":
-        with open("resources/changes_last_polygon_rent.json", "r") as f:
-            return json.load(f)
+def get_json_layer():
+    return dl.GeoJSON(data=None, format='geojson',
+                      id="geogson_",
+                      hoverStyle=arrow_function(dict(weight=6, dashArray='')),  # yellow # color='#FFFF00',
+                      options=dict(style=js_draw_custom),
+                      # zoomToBounds=True,
+                      zoomToBoundsOnClick=False)
+
+
+def load_geojson(asset_type, zoom):
+    prepath = "resources/"
+    zoom_cutoff = 13  # ZOOM => 13 ===> go to neighborhood
+    if asset_type == "rent":
+        if zoom >= zoom_cutoff:
+            file_name = prepath + "changes_last_polygon_rent_city_neighborhood.json"
+        else:
+            file_name = prepath + "changes_last_polygon_rent_city.json"
+    elif asset_type == "forsale":
+        if zoom >= zoom_cutoff:
+            file_name = prepath + "changes_last_polygon_forsale_city_neighborhood.json"
+        else:
+            file_name = prepath + "changes_last_polygon_forsale_city.json"
     else:
         return ValueError("Invalid asset_type")
+    with open(file_name, "r") as f:
+        return json.load(f)
 
 
 def get_dash(server):
@@ -49,15 +66,12 @@ def get_dash(server):
     app.layout = html.Div([
         html.Div([
             get_page_menu(),
-            html.H2("שׁינויים במחירי הדירות"), html.Small("(רבעון נוכחי מול קודם)")], style=_html_title_style),
+            html.H2("שׁינויים במחירי הדירות"),
+            html.Small("(רבעון נוכחי מול קודם)"),
+            dash.dcc.Checklist(["Y"], ["Y"], id="polygon_toggle")], style=_html_title_style),
         dl.Map([
             dl.TileLayer(),
-            dl.GeoJSON(data=None, format='geojson',
-                       id="geogson_",
-                       hoverStyle=arrow_function(dict(weight=6, dashArray='')),  # yellow # color='#FFFF00',
-                       options=dict(style=js_draw_custom),
-                       # zoomToBounds=True,
-                       zoomToBoundsOnClick=True)],
+            get_json_layer()],
             id='big-map',
             style={'width': '100%', 'height': '700px'},
             center=(31.87, 35.00),
@@ -78,13 +92,14 @@ def get_dash(server):
 
     @app.callback(
         Output(component_id='geogson_', component_property='data'),
-        Input(component_id='radio_', component_property='value')
+        Input(component_id='radio_', component_property='value'),
+        Input("big-map", "zoom"),
+        Input("polygon_toggle", "value")
     )
-    def change_asset_type(value):
-        if value == "rent":
-            return load_geojson(value)
-        else:
-            return load_geojson(value)
+    def change_asset_type(value, zoom, toggle):
+        if not len(toggle):
+            return None
+        return load_geojson(value, zoom)
 
     return server, app
 

@@ -115,5 +115,7 @@ str_html = f"""
         </html>
 """
 
-with open("real_eastate_deals.html", 'w', encoding="utf-8") as f:
+file_name = "real_estate_deals.html"
+with open(file_name, 'w', encoding="utf-8") as f:
     f.write(str_html)
+print(f"Saved at: '{file_name}'")

@@ -28,12 +28,12 @@ window.dashExtensions = Object.assign({}, window.dashExtensions, {
             ,
         function2: function(feature) {
             let pct = feature.properties.pct_change;
-            let col = "#C0C0C0";
-            let pctLow = 0.05
+            let col = "#5a5a5a"; //"#C0C0C0";
+            let pctLow = feature.properties.type == "N" ? 0.05 : 0.03;
             if (pct > pctLow) {
-                col = "#ff0000" // (pct > 0.07) ? "#ff0000" : "#8B0000";
+                col = "#ff0000";
             } else if (pct < -pctLow) {
-                col = "#00ff00" //(pct < -0.07) ? "#00ff00" : "#013220";
+                col = "#00ff00";
             }
             return {
                 color: col
