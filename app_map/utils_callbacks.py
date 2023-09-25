@@ -322,6 +322,7 @@ change_polygons_type_input_outputs = [Output(component_id='geogson_', component_
 
 
 def change_polygons_type(value, zoom, toggle):
+    # use state to avoid reload json when zoom has not changed enough to pass zoom level
     from app_map.dashboard_neighborhood import load_geojson
     if not len(toggle):
         return [None]

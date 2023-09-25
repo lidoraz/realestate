@@ -244,7 +244,7 @@ def get_div_top_bar(config_defaults):
                                                  inputClassName="rounded-checkbox",
                                                  id='cluster-check')]),
                           html.Hr(),
-                          dbc.Row([dcc.Checklist([{'value': 'Y', 'label': "הצג שכבות"}], [], id="polygon_toggle",
+                          dbc.Row([dcc.Checklist([{'value': 'Y', 'label': "הצג שכבות 🆕"}], [], id="polygon_toggle",
                                                  inputClassName="rounded-checkbox"),
                                    dcc.RadioItems([{'label': 'שכירות', 'value': 'rent'},
                                                    {'label': 'מכירה', 'value': 'forsale'}],
@@ -272,13 +272,14 @@ def get_div_top_bar(config_defaults):
 # more Here:
 # https://github.com/geopandas/xyzservices/blob/main/provider_sources/leaflet-providers-parsed.json
 url = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+url_osm_bright = 'https://tiles.stadiamaps.com/tiles/osm_bright/{z}/{x}/{y}{r}.png' # looks cool
 url_bright = "https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png"
 url_dark = "https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png"
 
 
 def get_main_map():
     from app_map.dashboard_neighborhood import get_json_layer
-    return dl.Map(children=[dl.TileLayer(url=url_bright),
+    return dl.Map(children=[dl.TileLayer(url=url_osm_bright),
                             get_json_layer(),
                             dl.GeoJSON(data=None, id="geojson", zoomToBounds=False, cluster=False,
                                        superClusterOptions=dict(maxZoom=CLUSTER_MAX_ZOOM, radius=CLUSTER_RADIUS),
