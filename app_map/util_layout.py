@@ -57,19 +57,9 @@ def get_page_menu():
 
 
 def get_layout(default_config):
-    # ADDED TODO REFORMAT THIS
-    main_map = get_main_map()
-    from app_map.dashboard_neighborhood import get_json_layer, load_geojson
-    asset_type = default_config['name'].lower().replace("sale", "forsale")
-    # neighborhood_data = load_geojson(asset_type, 13)
-    # json_layer = get_json_layer()
-    # json_layer.data = neighborhood_data
-    # main_map.children.append(json_layer)
-
     layout = html.Div(children=[
         html.Header(className="top-container", children=get_div_top_bar(default_config)),
-        # html.Span("", id="fetched-assets"),
-        html.Div(className="grid-container", children=main_map),
+        html.Div(className="grid-container", children=get_main_map()),
         html.Div(className="table-container", children=[div_left_off_canvas]),
         html.Div(className="modal-container", children=[div_offcanvas]),
         dcc.Store(id='data-store'),
@@ -272,7 +262,7 @@ def get_div_top_bar(config_defaults):
 # more Here:
 # https://github.com/geopandas/xyzservices/blob/main/provider_sources/leaflet-providers-parsed.json
 url = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-url_osm_bright = 'https://tiles.stadiamaps.com/tiles/osm_bright/{z}/{x}/{y}{r}.png' # looks cool
+url_osm_bright = 'https://tiles.stadiamaps.com/tiles/osm_bright/{z}/{x}/{y}{r}.png'  # looks cool
 url_bright = "https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png"
 url_dark = "https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png"
 
