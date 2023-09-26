@@ -7,6 +7,9 @@ from dash_extensions.javascript import assign, arrow_function
 
 # https://www.dash-leaflet.com/components/vector_layers/polyline
 # https://leafletjs.com/examples/geojson/  # style
+# https://leaflet-extras.github.io/leaflet-providers/preview/ # leaflet tiles providers
+# Nice tiles, but the roads looks not very accurate.
+# "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
 js_draw_custom = assign("""function(feature) {
         let pct = feature.properties.pct_change;
         let col = "#5a5a5a"; //"#C0C0C0";
@@ -28,7 +31,8 @@ _html_radio_style = {"position": "absolute", "z-index": "999", "top": "30px", "l
                      "padding": "5px 15px 5px 5px", "border-radius": "20%"}
 app.layout = html.Div([
     html.Div([html.H2("שׁינויים במחירי הדירות"),
-              html.Small("(רבעון נוכחי מול קודם)"), dash.dcc.Checklist(["Y"], ["Y"], id="polygon_toggle")], style=_html_title_style),
+              html.Small("(רבעון נוכחי מול קודם)"), dash.dcc.Checklist(["Y"], ["Y"], id="polygon_toggle")],
+             style=_html_title_style),
     dl.Map([
         dl.TileLayer(),
         dl.GeoJSON(data=None, format='geojson',
@@ -68,7 +72,7 @@ def change_asset_type(value, zoom, toggle):
         return None
     prepath = "/Users/lidorazulay/Documents/DS/realestate/notebooks/"
     print(f"{zoom=}")
-    zoom_cutoff = 13 # ZOOM => 13 ===> go to neighborhood
+    zoom_cutoff = 13  # ZOOM => 13 ===> go to neighborhood
     if value == "rent":
         if zoom >= zoom_cutoff:
             file_name = prepath + "changes_last_polygon_rent_city_neighborhood.json"

@@ -99,6 +99,7 @@ def get_cords_by_id(df, keyword):
         return [r['lat'], r['long']]
     return None
 
+
 def get_cords_by_city(df, search, err_th=0.1):
     dff = df.query(f'(city.str.contains("{search}") or neighborhood.str.contains("{search}"))')
     if dff.empty:
@@ -192,17 +193,13 @@ def get_sidebar_plots(deal):
                                    )
 
         fig.update_yaxes(rangemode="tozero")
-        fig.update_layout(yaxis=dict(
-            side='left',
-            showgrid=False,
-        ),
-            xaxis=dict(),
-            yaxis2=dict(
-                side='right',
-                visible=False,
-                overlaying='y',
-                showgrid=False,
-            ))
+        fig.update_layout(
+            yaxis=dict(side='left',
+                       showgrid=True),
+            yaxis2=dict(side='right',
+                        visible=False,
+                        overlaying='y',
+                        showgrid=False,))
         fig.update_layout(
             margin=dict(l=0, r=0, t=0, b=0),
             height=250,
