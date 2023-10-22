@@ -8,6 +8,7 @@ example_data_timeseries = {'lat': 32.1310648182, 'long': 34.8633406364, 'dist_km
 example_data_timeseries_recent_quantiles_city = {'type': 'rent', 'time_interval': 'month',
                                                  'cities_str': '["בת ים", "רמת גן"]'}
 example_data_timeseries_recent_quantiles_all = {'type': 'sale', 'time_interval': 'week'}
+example_data_timeseries_nadlan_prices = {'time_interval': 'week', 'years_back': 5}
 example_data_ratio_time_taken_cities_1 = {'type': 'rent', 'min_samples': 300, 'days_back': 14}
 example_data_ratio_time_taken_cities_2 = {'type': 'sale', 'min_samples': 200, 'days_back': 14}
 example_data_today_both_rent_sale = {'limit': 15}
@@ -80,6 +81,14 @@ def test_today_both_rent_sale():
     df = pd.DataFrame.from_dict(res['data_today_both_rent_sale'])
     assert df.shape == (30, 16)
 
+def test_timeseries_nadlan_prices():
+    import pandas as pd
+    event = _gen_event(example_data_timeseries_nadlan_prices, '/timeseries_nadlan_prices')
+    res = lambda_handler(event, None)
+    res = json.loads(res['body'])
+    df = pd.DataFrame.from_dict(res['data_timeseries_nadlan_prices'])
+    assert len(df.columns) == 7
+
 
 def _gen_event(data, path):
     event = {}
@@ -97,3 +106,4 @@ if __name__ == '__main__':
     test_timeseries_recent_quantiles_city()
     test_timeseries_recent_quantiles_all()
     test_today_both_rent_sale()
+    test_timeseries_nadlan_prices()

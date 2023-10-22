@@ -159,6 +159,7 @@ def get_asset_points(df_all, price_from=-np.inf, price_to=np.inf, max_avg_price_
 
 def get_sidebar_plots(deal):
     import plotly.graph_objects as go
+    # TODO: EXTRACT THIS OUR OF HERE, should also be used in stats for new price monthly
     def plot_line(df, x, y, y2, hover_data, color='Blue'):
         df = df.ffill()
         fig = go.Figure([

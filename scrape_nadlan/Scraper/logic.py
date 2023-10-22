@@ -81,18 +81,13 @@ class Scraper:
         firefox_options = webdriver.FirefoxOptions()
         if silent:
             firefox_options.headless = True
-            # firefox_options.add_argument("-s")
         import random
         # old = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36"
         profile.set_preference("general.useragent.override", f"{random.choice(user_agents)} {str(uuid.uuid4())}")
-        self.driver = webdriver.Firefox(executable_path=driver_path, options=firefox_options)  # , firefox_profile=profile
+        self.driver = webdriver.Firefox(executable_path=driver_path,
+                                        options=firefox_options)  # , firefox_profile=profile
         self.driver.minimize_window()
-        if ocr == "TESSERACT":
-            from scrape_nadlan.Scraper.ocr_tesseract import OCR
-            self.ocr = OCR()
-        elif ocr == "GOOGLE":
-            from scrape_nadlan.Scraper.ocr_google import OCR
-            self.ocr = OCR()
+        self.ocr = self.get_ocr(ocr)
         self.url = "https://nadlan.taxes.gov.il/svinfonadlan2010/startpageNadlanNewDesign.aspx"
         # FIND GUSH HELKA: https://www.gov.il/apps/mapi/parcel_address/parcel_address.html
         # self.url = "https://mylocation.org/"
@@ -108,6 +103,21 @@ class Scraper:
         self._to_year = None
         self._past_ocr_text = ""
         self.throttle_total_fetched = 0
+
+    @staticmethod
+    def get_ocr(ocr):
+        if ocr == "TESSERACT":
+            from scrape_nadlan.Scraper.ocr_tesseract import OCR
+            ocr = OCR()
+        elif ocr == "GOOGLE":
+            from scrape_nadlan.Scraper.ocr_google import OCR
+            ocr = OCR()
+        elif ocr == "EASYOCR":
+            from scrape_nadlan.Scraper.ocr_easyocr import OCR
+            ocr = OCR()
+        else:
+            raise ValueError("ocr param must be one of (TESSERACT, GOOGLE, EASYOCR)")
+        return ocr
 
     def close(self):
         self.driver.close()

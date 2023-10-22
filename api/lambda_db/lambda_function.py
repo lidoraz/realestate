@@ -97,6 +97,17 @@ def get_timeseries_recent_quantiles_all(data):
         return dict(data_timeseries_recent_quantiles_all=dict_of_lists)
 
 
+def get_timeseries_nadlan_prices(data):
+    validate_data_has_keys(data, ['years_back', 'time_interval'])
+    time_interval = _get_validate_time_interval(data)
+    with connect() as conn:
+        sql_query = sql_timeseries_nadlan_prices.format(table_name="nadlan_trans",
+                                                        year_back=data["years_back"],
+                                                        time_interval=time_interval)
+        dict_of_lists = query_dict_of_lists(conn, sql_query)
+        return dict(data_timeseries_nadlan_prices=dict_of_lists)
+
+
 def _get_table(data):
     if data['type'] == 'rent':
         table_name = 'yad2_rent_log'
@@ -152,17 +163,21 @@ def lambda_handler(event, context):
         method = event['requestContext']['http']['method']
         path = event['requestContext']['http']['path']
         validate_data(data)
-        if method == 'POST' and path == '/timeseries':
+        if method != 'POST':
+            raise ValueError("Must be POST")
+        if path == '/timeseries':
             res = get_timeseries(data)
-        elif method == 'POST' and path == '/histogram':
+        elif path == '/histogram':
             res = get_histogram(data)
-        elif method == 'POST' and path == '/timeseries_recent_quantiles_city':
+        elif path == '/timeseries_recent_quantiles_city':
             res = get_timeseries_recent_quantiles_city(data)
-        elif method == 'POST' and path == '/timeseries_recent_quantiles_all':
+        elif path == '/timeseries_recent_quantiles_all':
             res = get_timeseries_recent_quantiles_all(data)
-        elif method == 'POST' and path == '/ratio_time_taken_cities':
+        elif path == '/timeseries_nadlan_prices':
+            res = get_timeseries_nadlan_prices(data)
+        elif path == '/ratio_time_taken_cities':
             res = get_ratio_time_taken_cities(data)
-        elif method == 'POST' and path == '/today_both_rent_sale':
+        elif path == '/today_both_rent_sale':
             res = get_today_both_rent_sale(data)
         else:
             return _invalid()

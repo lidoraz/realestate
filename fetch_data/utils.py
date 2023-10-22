@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import pandas as pd
 from datetime import datetime
 from scrape_yad2.config import sql_today_dtypes, sql_items_dtypes
@@ -21,15 +20,6 @@ def get_tbl(type, tbl_type):
     type_dict = TABLES.get(type)
     tbl = type_dict.get(tbl_type)
     return tbl
-
-
-# additional_columns_lst = ['parking', 'balconies', 'number_of_floors', 'renovated', 'asset_exclusive_declaration',
-#                           'air_conditioner', 'bars', 'elevator', 'boiler', 'accessibility', 'shelter', 'warhouse',
-#                           'tadiran_c', 'furniture', 'flexible_enter_date', 'kosher_kitchen', 'housing_unit',
-#                           'info_text', 'image_urls']
-# info_cols = ['a.id', 'row_2', 'row_1', 'line_1', 'a.square_meters', 'line_2', 'neighborhood', 'merchant',
-#              'assetclassificationid_text', 'coordinates', 'feed_source', 'address_more', 'date_added',  # 'search_text',
-#              'date']
 
 
 def get_price_hist(type_, conn):
@@ -86,30 +76,6 @@ def get_nadlan_trans(deal, days_back, dist_km, filter_room):
     df_nadlan = filter_by_dist(df_nadlan, deal, dist_km)
     df_nadlan.attrs['days_back'] = days_back
     return df_nadlan
-
-
-def plot_deal_vs_sale_sold(other_close_deals, df_tax, deal, round_rooms=True):
-    # When the hist becomes square thats because there a huge anomaly in terms of extreme value
-    if round_rooms:
-        sale_items = \
-            other_close_deals[other_close_deals['rooms'].astype(float).astype(int) == int(float(deal['rooms']))][
-                'last_price']
-    else:
-        sale_items = other_close_deals[other_close_deals['rooms'] == deal['rooms']]['last_price']
-    sale_items.rename(f'last_price #{len(sale_items)}').hist(bins=min(70, len(sale_items)), legend=True, alpha=0.8)
-    sold_items = df_tax['mcirMorach']
-    days_back = df_tax.attrs['days_back']
-    if len(sold_items):
-        sold_items.rename(f'realPrice{days_back}D #{len(sold_items)}').hist(bins=min(70, len(sold_items)), legend=True,
-                                                                            alpha=0.8)
-    plt.axvline(deal['last_price'], color='red', label=f"{deal['last_price']:,.0f}", linewidth=2)
-    str_txt = f"{'חדרים'[::-1]} {deal['rooms']},{deal['type'][::-1]}, {deal['street'][::-1]}, {deal['city'][::-1]}, {deal['price_pct']:0.2%}"
-    plt.xlim([deal['last_price'] // 2, deal['last_price'] * 3])
-    plt.title(str_txt)
-    plt.legend()
-
-    # plt.show()
-
 
 def haversine(lat1, lon1, lat2, lon2, to_radians=True, earth_radius=6371):
     """

@@ -232,7 +232,7 @@ focus_on_asset_input_outputs = [Output("big-map", "center"),
                                 Output("search-input", "invalid"),
                                 Output("search-input", "value"),
                                 Output("search-clear", "n_clicks"),
-
+                                Input("path-location", "search"),
                                 Input("search-input", "value"),
                                 Input("search-clear", "n_clicks"),
                                 Input("clear-cell-button", "n_clicks"),
@@ -241,13 +241,22 @@ focus_on_asset_input_outputs = [Output("big-map", "center"),
                                 State("datatable-interactivity", "data")
                                 ]
 
+def _parse_search(url):
+    if url is None or not len(url) or '?' not in url:
+        return None
+    return url[1:]
 
-# This has 2 properties:
+# Functions:
 #  1. Focus on asset that has been selected with the table using the map center function
 #  2. handles the search bar for a city and its reset button
+#  3. Parse url search if asset is selected from the url
 # dl.Marker(position=[31.7, 32.7], opacity=0, id='map-marker')
-def focus_on_asset(keyword, n_clicks_clear_search, n_clicks_clear_marker, table_modal_is_open, table_active_cell,
+def focus_on_asset(url_search, keyword, n_clicks_clear_search, n_clicks_clear_marker, table_modal_is_open, table_active_cell,
                    table_data):
+    asset_id = _parse_search(url_search)
+    if asset_id:
+        LOGGER.info(f"Override keyword by search asset_id = {asset_id}")
+        keyword = asset_id
     if n_clicks_clear_search:
         return [dash.no_update for _ in range(7)] + [False, "", 0]
     if n_clicks_clear_marker or (not table_modal_is_open and table_active_cell):
@@ -274,7 +283,7 @@ def focus_on_asset(keyword, n_clicks_clear_search, n_clicks_clear_marker, table_
         else:
             return [dash.no_update for _ in range(7)] + [True, keyword, 0]
     # return dash.no_update # this stuck in production,
-    raise dash.exceptions.CallbackException  # [center, zoom] + [dash.no_update for _ in range(8)]#ValueError()  # must be used as no update keeps Updating... in dash
+    raise dash.exceptions.CallbackException("OK")  # [center, zoom] + [dash.no_update for _ in range(8)]#ValueError()  # must be used as no update keeps Updating... in dash
 
 
 show_table_input_output = [Output("table-toggle", "n_clicks"),

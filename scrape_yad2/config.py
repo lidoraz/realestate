@@ -1,4 +1,4 @@
-from sqlalchemy import Integer, Date, String, Boolean, BigInteger, INTEGER, DateTime, Float
+from sqlalchemy import Integer, Date, String, Boolean, BigInteger, DateTime, Float
 
 history_dtype = {
     "price": Integer,

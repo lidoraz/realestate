@@ -54,3 +54,21 @@ extract(day from avg(CURRENT_DATE - date_added))::int as avg_days_to_not_active
  on a.city = b._city
  order by ratio desc
 """
+
+sql_timeseries_nadlan_prices = """
+with t0 as (
+select
+date_trunc('{time_interval}', trans_date)::date::varchar as {time_interval},
+avg(price_declared)::int as mean_price,
+percentile_cont(0.5) WITHIN GROUP (ORDER by price_declared) AS median_price,
+percentile_cont(0.5) WITHIN GROUP (ORDER BY CASE WHEN sq_m_net > 0 THEN price_declared / sq_m_net END)::int AS median_avg_meter_price,
+count(*) as cnt,
+count(distinct trans_date) as  data_dates
+from {table_name}
+where now() - trans_date < interval '{year_back} year'
+group by 1
+)
+select *
+,(median_price / lag(median_price) over (order by {time_interval}) - 1) * 100 as pct_median
+from t0 order by {time_interval}
+"""

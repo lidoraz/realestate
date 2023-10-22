@@ -28,4 +28,11 @@ def req_timeseries_recent_quantiles(deal_type, time_interval, cities=None):
     return None
 
 
+def req_timeseries_nadlan_prices(time_interval: str = 'month', years_back: int = 5):
+    res = requests.post(f'{os.getenv("REAL_ESTATE_API")}/timeseries_nadlan_prices',
+                        json={'time_interval': time_interval, 'years_back': years_back})
+    if res.status_code == 200:
+        return res.json()['data_timeseries_nadlan_prices']
+    return None
+
 # TODO: ADD get_sidebar_plots api calls in a seperate file here

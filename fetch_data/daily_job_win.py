@@ -10,6 +10,7 @@ from stats.daily_fetch_stats import run_type_stats
 
 from fetch_data.daily_fetch_forsale import daily_forsale
 from fetch_data.daily_fetch_rent import daily_rent
+from fetch_data.daily.neighbors.calc import run_neighbors
 
 from scrape_nadlan.utils_insert import send_telegram_msg
 
@@ -22,6 +23,7 @@ if __name__ == '__main__':
         run_nadlan_stats()
         daily_forsale()
         daily_rent()
+        run_neighbors()
         send_telegram_msg(f"🟢 FINISHED JOB in {job_name}")
     except Exception as e:
         send_telegram_msg(f"🔴 ERROR in {job_name}")

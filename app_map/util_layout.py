@@ -59,6 +59,7 @@ def get_page_menu():
 def get_layout(default_config):
     layout = html.Div(children=[
         html.Header(className="top-container", children=get_div_top_bar(default_config)),
+        dcc.Location(id="path-location"),
         html.Div(className="grid-container", children=get_main_map()),
         html.Div(className="table-container", children=[div_left_off_canvas]),
         html.Div(className="modal-container", children=[div_offcanvas]),

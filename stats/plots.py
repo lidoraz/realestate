@@ -1,6 +1,7 @@
 from plotly import graph_objects as go
 from plotly.subplots import make_subplots
-from api.gateway.api_stats import req_timeseries_recent_quantiles, req_ratio_time_taken_cities
+from api.gateway.api_stats import req_timeseries_recent_quantiles, req_ratio_time_taken_cities, \
+    req_timeseries_nadlan_prices
 import pandas as pd
 
 
@@ -128,3 +129,66 @@ def _get_scatter_fig(x, y, marker_color, text):
         margin=dict(l=20, r=20, t=20, b=20),
         dragmode='pan')
     return fig
+
+
+def plot_timeseries_nadlan_prices(black=True):
+    x = 'month'
+    hover_data = 'pct_median'
+    y = 'median_price'  # 'median_avg_meter_price'
+    color = 'blue'
+    color = None
+    data = req_timeseries_nadlan_prices(x)
+    df = pd.DataFrame.from_dict(data)
+    df[hover_data] = df[hover_data].round(2).astype('str') + '%'  # pct_median error
+
+    fig = go.Figure([
+        go.Bar(
+            x=df[x],
+            y=df['cnt'],
+            opacity=0.7,
+            name='# Transactions',
+            # marker=dict(color=color),
+        ),
+        go.Scatter(x=df[x], y=df[y], name="ALL", hovertext=df[hover_data], line_shape='spline',
+                   # legendgroup="ALL",
+                   line_color=color, line_width=2,
+                   mode='lines+markers',
+                   opacity=1,
+                   yaxis='y2'),
+    ])
+    # fig.update_yaxes(rangemode="tozero")
+    fig.update_layout(
+        margin=dict(l=20, r=20, t=20, b=20),
+        height=400,
+        yaxis=dict(side='left',
+                   visible=False,
+                   showgrid=False),
+        yaxis2=dict(side='right',
+                    visible=True,
+                    overlaying='y',
+                    showgrid=True),
+        dragmode=False)
+    fig.update_yaxes(  # rangemode="tozero"
+        # range=(500_000, None)
+    )
+    fig.update_layout(
+        # dragmode=False,
+        # legend=dict(# orientation="h",
+        #             yanchor="bottom",
+        #             #y=1.02,
+        #             xanchor="left",
+        #             x=0)
+    )
+    if black:
+        fig.update_layout(
+            template="plotly_dark",
+            legend=dict(x=0, y=1),
+            # dragmode=False
+        )
+    return fig
+
+
+if __name__ == '__main__':
+    fig = plot_timeseries_nadlan_prices()
+    fig.show()
+    print(fig)

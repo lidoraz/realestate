@@ -376,3 +376,8 @@ svg {
 .form-group col {
     margin: 25px;
 }
+
+.Select-input {
+    background-color:grey;
+    color: black !important;
+}

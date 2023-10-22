@@ -7,10 +7,11 @@ from stats.plots import get_fig_quantiles_multi_city, get_fig_quantiles_from_api
 from stats.plots import get_figs_for_cities, get_scatter
 from app_map.persistance_utils import get_stats_data
 from api.gateway.api_stats import req_ratio_time_taken_cities
+from flask_caching import Cache
 
 config_figure_disable_all = {'displayModeBar': False,
                              'scrollZoom': False}
-
+CACHE_INTERVAL = 60 * 60 * 12 # 12 hours
 cities = sorted(req_ratio_time_taken_cities('sale', 100, 14)['city'])
 
 additional_all_key = [dict(label="בכל הארץ", value="ALL")]
@@ -58,46 +59,50 @@ def get_multi_price_by_side(n_cols):
 
 # MAIN NADLAN # DEALS
 
-fig = get_stats_data()['fig_timeline_new_vs_old']
-fig.update_layout(legend=dict(x=0, y=1))
 
-modeBarButtonsToRemove = ['select2d', 'lasso2d']
-graph_obj = dcc.Graph(id=f'timeline-new-vs-old', figure=fig,
-                      config={
-                          'modeBarButtonsToRemove': modeBarButtonsToRemove,
-                          # 'displayModeBar': False,
-                          'scrollZoom': False}
-                      )
+def get_main_plots_html():
+    fig1 = get_stats_data()['fig_timeline_new_vs_old']
+    fig1.update_layout(legend=dict(x=0, y=1))
+
+    modeBarButtonsToRemove = ['select2d', 'lasso2d']
+    config = config = {
+        'modeBarButtonsToRemove': modeBarButtonsToRemove,
+        # 'displayModeBar': False,
+        'scrollZoom': False}
+    graph_obj1 = dcc.Graph(id=f'timeline-new-vs-old', figure=fig1, config=config)
+    fig2 = plot_timeseries_nadlan_prices()
+    graph_obj2 = dcc.Graph(id=f'timeline-nadlan-prices', figure=fig2, config=config)
+    res = [
+        dbc.Row(dbc.Col(html.H3("מספר עסקאות דירות מול השפעת הריבית"))),
+        dbc.Row(dbc.Col(graph_obj1)),
+        dbc.Row(dbc.Col(html.H3("מחירי דירות ומספר עסקאות"))),
+        dbc.Row(dbc.Col(graph_obj2))]
+    return res
+
+
+from stats.plots import plot_timeseries_nadlan_prices
 
 
 # https://community.plotly.com/t/how-to-log-client-ip-addresses/6613
 def get_dash(server):
     app = dash.Dash(server=server, external_stylesheets=[dbc.themes.CYBORG],  # dbc.themes.DARKLY
                     title="Analytics", url_base_pathname='/analytics/')
+    cache = Cache(app.server, config={
+        # try 'filesystem' if you don't want to setup redis
+        'CACHE_TYPE': 'SimpleCache',
+    })
 
     app.layout = html.Div(
         [
-            # dcc.Loading(
-            #     id="loading-1",
-            #     type="default",
-            #     fullscreen=True,
-            #     children=html.Div(id="loading-output-1")
-            # ),
             dbc.Row([dbc.Col(get_page_menu()),
                      dbc.Col(html.H1("Real Estate Analytics"), width=8, style=dict(direction="ltr"))]),
             dbc.Row(dbc.Col(html.H6(id="updated-at-line"))),
-            dbc.Row(dbc.Col(html.H3("מכירות דירות מול השפעת הריבית"))),
-            dbc.Row(dbc.Col(graph_obj)),
-
-            dbc.Row(dbc.Col()),
+            # will be populated by callback
+            dcc.Loading(html.Div(id="main-plots", children=None)),
             dbc.Row(dbc.Col(html.H3("פיזור הביקוש מול ההיצע"))),
             dbc.Row(dbc.Col(html.Span(
                 "פיזור בין הזמן החציוני לדירה להפוך ללא רלוונטית מול מדד ההיצע - כלומר כמה דירות פנויות יש מול דירות שכבר לא רלוונטיות"))),
-            dbc.Row([], className="analysis-main-multi-grid", id="analysis-row-scatter-plot"),
-            # dbc.Row(),
-            # dbc.Row(dbc.Col(html.Span("בכל הארץ, כל גרף מייצג אחוזון, כאשר האמצע הוא החציון"))),
-            # dbc.Row(get_single_price(None), ),
-            # dbc.Row(dbc.Col()),
+            dbc.Row(None, className="analysis-main-multi-grid", id="analysis-row-scatter-plot"),
             html.H3("תנועות המחיר בזמן"),
             dbc.Row([
                 dbc.Col([
@@ -190,13 +195,7 @@ def get_dash(server):
             ])),
             dbc.Row(get_single_price(), id="city-output"),
             *get_multi_price_by_side(n_cols=2),
-            # dbc.Row(
-            #     [
-            #         dbc.Col(html.Div("One of three columns")),
-            #         dbc.Col(html.Div("One of three columns")),
-            #         dbc.Col(html.Div("One of three columns")),
-            #     ]
-            # ),
+            dcc.Interval("stats-clock", interval=1000 * 60 * 4)
         ],
         className="analysis-main",
 
@@ -253,8 +252,6 @@ def get_dash(server):
                 df_agg = df_agg[0]  # Take ALL, used for pct_bar
         fig.update_layout(template="plotly_dark", dragmode=False)
         html_pct_bar = create_pct_bar(df_agg, col_name) if show_pct_bar else []
-
-        fig.update_layout(template="plotly_dark", dragmode=False)
         graph = dcc.Graph(id=f'graph-long-price-sale', figure=fig,
                           config=config_figure_disable_all)
         update_at_line = [f"מעודכן ל-{get_stats_data()['date_updated']}"]
@@ -277,17 +274,21 @@ def get_dash(server):
             value = dash.no_update
         return switch_val, value
 
-    @app.callback(
-        Output("analysis-row-scatter-plot", 'children'),
-        Input("city-long-term-select-multi-switch", "value")
-    )
-    def get_scatter_plot(_):
-        return [dbc.Col(
-            [html.H4("SALE", style={"background-color": "#1e81b0"}),
-             get_scatter('sale', 300)], width=6, xs=12),
+
+    @app.callback(Output("main-plots", "children"),
+                  Output("analysis-row-scatter-plot", 'children'),
+                  Input("stats-clock", "n_intervals"))
+    @cache.cached(timeout=CACHE_INTERVAL)
+    def get_main_plots(clock):
+        print("Big function")
+        main_plots_layout = get_main_plots_html()
+        scatter_plot_layout = [
+            dbc.Col([html.H4("SALE", style={"background-color": "#1e81b0"}),
+                     get_scatter('sale', 300)], width=6, xs=12),
             dbc.Col([
                 html.H4("RENT", style={"background-color": "#e28743"}),
                 get_scatter('rent', 200)], width=6, xs=12)]
+        return main_plots_layout, scatter_plot_layout
 
     return server, app
 
