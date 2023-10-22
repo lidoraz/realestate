@@ -9,7 +9,7 @@ class OCR:
         result = self.reader.readtext(img_path, allowlist='0123456789')
         if len(result):
             return result[0][1]
-        return None
+        return ""
 
 
 def test_ocr():
