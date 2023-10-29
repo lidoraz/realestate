@@ -1,0 +1,22 @@
+pandas==1.5.2
+geopandas==0.14
+numpy
+matplotlib
+plotly
+scikit-learn
+catboost
+requests
+sqlalchemy==1.4.46
+psycopg2
+boto3
+protobuf==3.20.0
+dash
+dash-table
+dash-extensions
+dash-leaflet==0.1.23  # not updated will be later updated .
+dash-bootstrap-components
+colorlover
+colour
+tqdm
+gunicorn
+easyocr
