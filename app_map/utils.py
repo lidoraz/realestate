@@ -276,7 +276,7 @@ def address_to_lat_long_google(address):
 
 def build_sidebar(deal, fig):
     # THIS NEEDS REWORK - to DBC usage and better design
-    maps_url = f"http://maps.google.com/maps?z=12&t=m&q=loc:{deal['lat']}+{deal['long']}&hl=iw"  # ?hl=iw, t=k sattalite
+    maps_url = f"http://maps.google.com/maps?z=12&t=m&q={deal['lat']}+{deal['long']}&hl=iw"  # ?hl=iw, t=k sattalite
     days_online = (datetime.today() - pd.to_datetime(deal['date_added'])).days
     days_updated = (datetime.today() - pd.to_datetime(deal['date_updated'])).days
     days_str_txt = lambda x: 'היום' if x == 0 else 'אתמול' if x == 1 else f'{x} ימים'

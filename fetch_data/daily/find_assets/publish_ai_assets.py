@@ -5,29 +5,34 @@ import json
 from scrape_nadlan.utils_insert import safe_send
 
 config_rent = dict(min_price=4000, max_price=8000, min_rooms=3, max_rooms=4,
-                   ai_price_pct_less_than=-0.05,
+                   ai_price_pct_less_than=-0.6,
                    parking=True, balconies=True,  # is_agency=False,
                    asset_status=["משופץ", "חדש (גרו בנכס)", "חדש מקבלן (לא גרו בנכס)"],
+                   cities=[
+                       "תל אביב יפו",
+                       "רמת גן",
+                       "גבעתיים",
+                       "הרצליה", ],
                    ai_std_pct=0.07, asset_type="rent")
 config_sale = dict(min_price=1_000_000, max_price=3_000_000, min_rooms=3, max_rooms=4,
-                   ai_price_pct_less_than=-0.10,
+                   ai_price_pct_less_than=-0.12,
+                   cities=[
+                       "תל אביב יפו",
+                       "ראשון לציון",
+                       "רמת גן",
+                       "אור יהודה",
+                       "גבעתיים",
+                       "הרצליה", ],
                    ai_std_pct=0.07, asset_type="forsale")
-
-cities = [
-    "תל אביב יפו",
-    "ראשון לציון",
-    "רמת גן",
-    "אור יהודה",
-    "גבעתיים",
-    "הרצליה", ]
-
-days_back = 1
 
 
 def filter_assets(c):
+    days_back = 1
     df = pd.read_pickle(f"resources/yad2_{c['asset_type']}_df.pk")
+    yesterday = pd.to_datetime(date.today()) - timedelta(days=days_back)
+    assert pd.to_datetime(df['processing_date'].max()) >= yesterday
     print(f"Starting with {len(df):,.0f} assets with asset_type={c['asset_type']}")
-    df = df[df['city'].isin(cities)]
+    df = df[df['city'].isin(c['cities'])]
     print(df['city'].value_counts().to_dict())
     if c.get('balconies'):
         df = df[df['balconies']]
@@ -38,7 +43,7 @@ def filter_assets(c):
     if c.get('asset_status'):
         df = df[df['asset_status'].isin(c['asset_status'])]
     print(len(df))
-    df = df[pd.to_datetime(df['date_added']) >= pd.to_datetime(date.today()) - timedelta(days=days_back)]
+    df = df[pd.to_datetime(df['date_added']) >= yesterday]
     df = df[df['price'].between(c['min_price'], c['max_price'])]
     df = df[df['rooms'].between(c['min_rooms'], c['max_rooms'])]
     print(len(df))
@@ -72,6 +77,7 @@ def send_to_channel(msg):
     }
     url = "https://api.telegram.org/bot{}/sendMessage"
     safe_send(url.format(token), params=params)
+    # print(msg)
 
 
 def format_telegram(idx, sr, asset_type):
