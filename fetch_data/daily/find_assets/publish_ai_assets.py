@@ -2,7 +2,7 @@ import pandas as pd
 from datetime import date, timedelta
 import os
 import json
-import requests
+from scrape_nadlan.utils_insert import safe_send
 
 config_rent = dict(min_price=4000, max_price=8000, min_rooms=3, max_rooms=4,
                    ai_price_pct_less_than=-0.05,
@@ -71,9 +71,7 @@ def send_to_channel(msg):
         "parse_mode": "HTML",
     }
     url = "https://api.telegram.org/bot{}/sendMessage"
-    res = requests.get(url.format(token), params=params)
-    if res.status_code != 200:
-        print(res.text)
+    safe_send(url.format(token), params=params)
 
 
 def format_telegram(idx, sr, asset_type):
