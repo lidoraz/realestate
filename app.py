@@ -23,10 +23,23 @@ logging.basicConfig(
 )
 server = Flask(__name__)
 scheduler = BackgroundScheduler()
-scheduler.add_job(download_remote, 'cron', hour=0, minute=0)
-if not is_cache_ok():
-    download_remote(block=True)
-scheduler.start()
+
+
+def add_cron_update():
+    # multiple jobs are created because we want to update as soon as etl finishes
+    import itertools
+    hours = [22, 23]
+    minutes = list(range(0, 60, 5))
+
+    def download_remote_if_not_updated(hour, minute):
+        if not is_cache_ok:
+            scheduler.add_job(download_remote, 'cron', hour=hour, minute=minute)
+
+    for t in list(itertools.product(hours, minutes)):
+        download_remote_if_not_updated(t[0], t[1])
+    if not is_cache_ok():
+        download_remote(block=True)
+    scheduler.start()
 
 
 def create_app(server):
