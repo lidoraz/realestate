@@ -87,7 +87,7 @@ def get_updated_at():
         except Exception as e:
             return False
     else:
-        LOGGER.debug(f"Using cache {str(_updated_at)}")
+        LOGGER.info(f"Using cache {str(_updated_at)}")
         return _updated_at
 
 
@@ -149,6 +149,15 @@ def download_remote(block=False):
             threading.Thread(target=download_files, args=(filenames,)).start()
         # Reset cache, forces reload
 
+def check_download():
+    # will check when triggered until found
+    while True:
+        LOGGER.debug("check_download")
+        if not is_cache_ok():
+            download_remote(True)
+            break
+        time.sleep(60)
+
 
 def load_dataframes():
     if not is_cache_ok():
@@ -168,3 +177,7 @@ def get_rent_data():
 
 def get_sale_data():
     return load_dataframes()['sale']['df_forsale_all']
+
+
+if __name__ == '__main__':
+    check_download()
