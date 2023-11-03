@@ -5,7 +5,6 @@ from scrape_yad2.config import sql_today_dtypes, sql_items_dtypes
 
 DF_NADLAN_RECENT_PK = "resources/df_nadlan_recent.pk"
 
-
 TABLES = dict(forsale=dict(hist_tbl="yad2_forsale_history",
                            today_tbl="yad2_forsale_today",
                            item_tbl="yad2_forsale_items_add",
@@ -40,7 +39,7 @@ def get_today(type, conn):
     tbl_items_cols = [f'b.{c}' for c in sql_items_dtypes.keys() if c not in ('id', 'square_meters', 'processing_date')]
     q = f"""
     SELECT {','.join(tbl_today_cols)}, {','.join(tbl_items_cols)} FROM {today_tbl} a inner join {item_tbl} b on a.id = b.id
-    """ # 56691
+    """  # 56691
     df_today = pd.read_sql(q, conn)
     return df_today
 
@@ -76,6 +75,7 @@ def get_nadlan_trans(deal, days_back, dist_km, filter_room):
     df_nadlan = filter_by_dist(df_nadlan, deal, dist_km)
     df_nadlan.attrs['days_back'] = days_back
     return df_nadlan
+
 
 def haversine(lat1, lon1, lat2, lon2, to_radians=True, earth_radius=6371):
     """

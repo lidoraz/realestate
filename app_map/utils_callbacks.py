@@ -203,8 +203,7 @@ def toggle_modal(feature):
             import time
             t0 = time.time()
             title_modal, str_html = build_sidebar(deal, fig)
-            # title_modal = ""; str_html=""
-            print("TIME   ---->", time.time() - t0)
+            logging.debug("Compute TIME   ---->", time.time() - t0)
             return None, True, title_modal, str_html, dict(deal_data=deal.to_json())
     return dash.no_update
 
@@ -283,7 +282,8 @@ def focus_on_asset(url_search, keyword, n_clicks_clear_search, n_clicks_clear_ma
         else:
             return [dash.no_update for _ in range(7)] + [True, keyword, 0]
     # return dash.no_update # this stuck in production,
-    raise dash.exceptions.CallbackException("OK")  # [center, zoom] + [dash.no_update for _ in range(8)]#ValueError()  # must be used as no update keeps Updating... in dash
+    # [center, zoom] + [dash.no_update for _ in range(8)]#ValueError()  # must be used as no update keeps Updating... in dash
+    raise dash.exceptions.CallbackException("OK")
 
 
 show_table_input_output = [Output("table-toggle", "n_clicks"),

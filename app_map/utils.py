@@ -3,10 +3,14 @@ import os
 import pandas as pd
 from datetime import datetime
 import numpy as np
+
+from api.gateway.api_stats import req_timeseries_sidebar
 from app_map.marker import get_marker_tooltip, icon_maps, icon_real_estate, get_color, convert_rooms_str
 from app_map.util_layout import *
 from scrape_yad2.utils import _get_parse_item_add_info
-from fetch_data.utils import filter_by_dist, get_nadlan_trans
+from fetch_data.utils import filter_by_dist
+from ext.format import format_number
+from stats.plots import plot_line
 import logging
 import requests
 
@@ -62,24 +66,6 @@ def get_geojsons(df, marker_metric):
     deal_points = [dict(deal_id=idx, lat=d['lat'], lon=d['long'], metadata=d) for idx, d in dff.iterrows()]
     deal_points = get_marker_tooltip(deal_points, marker_metric)
     return deal_points
-
-
-def _safe_num(num):
-    if isinstance(num, str):
-        num = float(num)
-    return float('{:.3g}'.format(abs(num)))
-
-
-def format_number(num):
-    if num is None:
-        return "?"
-
-    num = _safe_num(num)
-    magnitude = 0
-    while abs(num) >= 1000:
-        magnitude += 1
-        num /= 1000.0
-    return '{}{}'.format('{:f}'.format(num).rstrip('0').rstrip('.'), ['', 'K', 'M', 'B', 'T'][magnitude])
 
 
 def _multi_str_filter(multi_choice, col_name):
@@ -158,76 +144,15 @@ def get_asset_points(df_all, price_from=-np.inf, price_to=np.inf, max_avg_price_
 
 
 def get_sidebar_plots(deal):
-    import plotly.graph_objects as go
     # TODO: EXTRACT THIS OUR OF HERE, should also be used in stats for new price monthly
-    def plot_line(df, x, y, y2, hover_data, color='Blue'):
-        df = df.ffill()
-        fig = go.Figure([
-            go.Scatter(x=df[x], y=df[y], name="ALL", hovertext=df[hover_data], line_shape='spline',
-                       legendgroup="ALL",
-                       line_color=color, line_width=2,
-                       mode='lines',
-                       opacity=0.9),
-            go.Scatter(x=df[x], y=df[y2], name="SameRooms", hovertext=df['cnt_room'], line_shape='spline',
-                       legendgroup="SameRooms",
-                       line_color=color, line_width=2,
-                       mode='lines+markers'),  # lines+markers
-            go.Bar(
-                x=df[x],
-                y=df['cnt'],
-                opacity=0.1,
-                name='#Transactions',
-                marker=dict(color=color),
-                yaxis='y2'
-            )
-        ])
-        # Add last value at the end on scatter
-        for i, d in enumerate(fig.data):
-            if d.type == 'scatter':
-                text = str(format_number(d.y[-1]))
-                fig.add_annotation(x=d.x[-1], y=d.y[-1],
-                                   text=text,
-                                   showarrow=False,
-                                   bgcolor='white',
-                                   font=dict(size=10),
-                                   # yshift=10
-                                   )
-
-        fig.update_yaxes(rangemode="tozero")
-        fig.update_layout(
-            yaxis=dict(side='left',
-                       showgrid=True),
-            yaxis2=dict(side='right',
-                        visible=False,
-                        overlaying='y',
-                        showgrid=False,))
-        fig.update_layout(
-            margin=dict(l=0, r=0, t=0, b=0),
-            height=250,
-            dragmode=False,
-            legend=dict(orientation="h",
-                        yanchor="bottom",
-                        y=1.02,
-                        xanchor="left",
-                        x=0)
-        )
-        return fig
 
     def read_preprocess(data, time_col):
         df = pd.DataFrame(data)
         df[time_col] = pd.to_datetime(df[time_col])
         return df
 
-    dist_km = 1.0
-    data = dict(lat=deal['lat'],
-                long=deal['long'],
-                rooms=deal['rooms'],
-                dist_km=dist_km)
-    res = requests.post(f'{os.getenv("REAL_ESTATE_API")}/timeseries', json=data)
-    if res.status_code != 200:
-        return []
-    res = res.json()
-    print(res.keys())
+    res = req_timeseries_sidebar(deal['lat'], deal['long'], deal['rooms'], dist_km=1.0)
+
     df = read_preprocess(res['data_recent'], 'week')
     fig1 = plot_line(df, 'week', 'price', 'price_room', 'cnt')
     df = read_preprocess(res['data_recent_rent'], 'week')
@@ -248,11 +173,6 @@ def get_sidebar_plots(deal):
             html.Div([html.H5("מכירה מחיר למטר (מתוך הלמ״ס)"),
                       dcc.Graph(id='g3', figure=fig2, config=config)])],
             className="modal-time-graphs")]
-    # fig3 = go.Figure([
-    #     go.Scatter(x=df['month'], y=df['median_price'], name="Price"),
-    #     # go.Scatter(x=df['month'], y=df['old_median_price'], name="OLD_Price"),
-    #     # go.Scatter(x=df['month'], y=df['new_median_price'], name="NEW_Price")
-    #                   ])
 
 
 def address_to_lat_long_google(address):

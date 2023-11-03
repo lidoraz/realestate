@@ -2,6 +2,7 @@ from plotly import graph_objects as go
 from plotly.subplots import make_subplots
 from api.gateway.api_stats import req_timeseries_recent_quantiles, req_ratio_time_taken_cities, \
     req_timeseries_nadlan_prices
+from ext.format import format_number
 import pandas as pd
 
 
@@ -185,6 +186,60 @@ def plot_timeseries_nadlan_prices(black=True):
             legend=dict(x=0, y=1),
             # dragmode=False
         )
+    return fig
+
+
+def plot_line(df, x, y, y2, hover_data, color='Blue'):
+    df = df.ffill()
+    fig = go.Figure([
+        go.Scatter(x=df[x], y=df[y], name="ALL", hovertext=df[hover_data], line_shape='spline',
+                   legendgroup="ALL",
+                   line_color=color, line_width=2,
+                   mode='lines',
+                   opacity=0.9),
+        go.Scatter(x=df[x], y=df[y2], name="SameRooms", hovertext=df['cnt_room'], line_shape='spline',
+                   legendgroup="SameRooms",
+                   line_color=color, line_width=2,
+                   mode='lines+markers'),  # lines+markers
+        go.Bar(
+            x=df[x],
+            y=df['cnt'],
+            opacity=0.1,
+            name='#Transactions',
+            marker=dict(color=color),
+            yaxis='y2'
+        )
+    ])
+    # Add last value at the end on scatter
+    for i, d in enumerate(fig.data):
+        if d.type == 'scatter':
+            text = str(format_number(d.y[-1]))
+            fig.add_annotation(x=d.x[-1], y=d.y[-1],
+                               text=text,
+                               showarrow=False,
+                               bgcolor='white',
+                               font=dict(size=10),
+                               # yshift=10
+                               )
+
+    fig.update_yaxes(rangemode="tozero")
+    fig.update_layout(
+        yaxis=dict(side='left',
+                   showgrid=True),
+        yaxis2=dict(side='right',
+                    visible=False,
+                    overlaying='y',
+                    showgrid=False, ))
+    fig.update_layout(
+        margin=dict(l=0, r=0, t=0, b=0),
+        height=250,
+        dragmode=False,
+        legend=dict(orientation="h",
+                    yanchor="bottom",
+                    y=1.02,
+                    xanchor="left",
+                    x=0)
+    )
     return fig
 
 

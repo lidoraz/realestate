@@ -280,7 +280,6 @@ def get_dash(server):
                   Input("stats-clock", "n_intervals"))
     @cache.cached(timeout=CACHE_INTERVAL)
     def get_main_plots(clock):
-        print("Big function")
         main_plots_layout = get_main_plots_html()
         scatter_plot_layout = [
             dbc.Col([html.H4("SALE", style={"background-color": "#1e81b0"}),

@@ -78,7 +78,7 @@ def get_updated_at():
     global _last_loaded, _updated_at
     ts = time.time()
     if ts - _last_loaded > 50:
-        LOGGER.debug(f"Reloading from file past: {_updated_at=}")
+        LOGGER.debug(f"get_updated_at Reloading from file past: {_updated_at=}")
         try:
             with open(updated_path, 'r') as f:
                 _updated_at = datetime.fromisoformat(json.loads(f.read())['updatedAt'])
@@ -87,7 +87,7 @@ def get_updated_at():
         except Exception as e:
             return False
     else:
-        LOGGER.info(f"Using cache {str(_updated_at)}")
+        LOGGER.debug(f"get_updated_at Using cache {str(_updated_at)}")
         return _updated_at
 
 
@@ -108,6 +108,7 @@ def download_files(filenames):
     is_downloading = False
     LOGGER.info("Finished downloading")
     cache_dict.clear()  # needed to force reload the datasets
+    _preprocess_and_load()
 
 
 def _preprocess_and_load():
@@ -152,9 +153,10 @@ def download_remote(block=False):
 def check_download():
     # will check when triggered until found
     while True:
-        LOGGER.debug("check_download")
+        LOGGER.info("check_download - looking for new data")
         if not is_cache_ok():
             download_remote(True)
+            LOGGER.info("check_download - downloaded new data")
             break
         time.sleep(60)
 
