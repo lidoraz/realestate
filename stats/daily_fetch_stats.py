@@ -1,7 +1,7 @@
 import os
 
 from fetch_data.daily_fetch import pub_object
-from scrape_nadlan.utils_insert import get_engine
+from ext.env import get_pg_engine
 import pandas as pd
 from datetime import datetime
 import matplotlib.pyplot as plt
@@ -128,7 +128,7 @@ def get_compare_closed_vs_active_median_price(df, city):
 
 def run_type_stats(type_):
     print(f"Started daily stats for {type_}")
-    eng = get_engine()
+    eng = get_pg_engine()
     df = fetch_data_log(type_, eng)
     file_path = f"resources/df_log_{type_}.pk"
     # df = pd.read_pickle(file_path)

@@ -1,39 +1,7 @@
 import requests
 import os
-import logging
-import time
-import functools
-import traceback
-
-
-def retry(retry_num, retry_sleep_sec):
-    """
-    retry help decorator.
-    :param retry_num: the retry num; retry sleep sec
-    :return: decorator
-    """
-
-    def decorator(func):
-        """decorator"""
-
-        # preserve information about the original function, or the func name will be "wrapper" not "func"
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            """wrapper"""
-            for attempt in range(retry_num):
-                try:
-                    return func(*args, **kwargs)  # should return the raw function's return value
-                except Exception as err:  # pylint: disable=broad-except
-                    logging.error(err)
-                    logging.error(traceback.format_exc())
-                    time.sleep(retry_sleep_sec)
-                logging.error("Trying attempt %s of %s.", attempt + 1, retry_num)
-            logging.error("func %s retry failed", func)
-            raise Exception('Exceed max retry num: {} failed'.format(retry_num))
-
-        return wrapper
-
-    return decorator
+from ext.retry import retry
+import json
 
 
 # Think about adding cache here
@@ -46,7 +14,6 @@ def req_ratio_time_taken_cities(deal_type: str, min_samples: int = 200, days_bac
 
 
 def req_timeseries_recent_quantiles(deal_type, time_interval, cities=None):
-    import json
     assert time_interval in ("year", "month", "week")
     cities = [cities] if isinstance(cities, str) else cities  # convert to array
     data = {"type": deal_type, "time_interval": time_interval}
@@ -81,3 +48,19 @@ def req_timeseries_sidebar(lat, long, rooms, dist_km=1.0):
     if res.status_code != 200:
         raise ValueError("Got invalid status code")
     return res.json()
+
+
+@retry(5, 1)
+def req_remote_past_sales(deal, dist_km, n_months=6):
+    data = dict(lat=deal['lat'],
+                long=deal['long'],
+                dist_km=dist_km,
+                n_months=n_months,
+                rooms=deal['rooms'])
+    res = requests.post(f'{os.getenv("REAL_ESTATE_API")}/histogram', json=data)
+    if res.status_code != 200:
+        raise ValueError("Got invalid status code")
+    past_sales = res.json()
+    past_sales = dict(data_histogram=past_sales['data_histogram']['price_declared'],
+                      days_back=n_months * 30)
+    return past_sales

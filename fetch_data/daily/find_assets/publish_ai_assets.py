@@ -1,8 +1,8 @@
 import pandas as pd
 from datetime import date, timedelta
 import os
-import json
-from scrape_nadlan.utils_insert import safe_send
+from ext.publish import send_to_telegram_channel
+from ext.env import load_vault
 
 config_rent = dict(min_price=4000, max_price=8000, min_rooms=3, max_rooms=4,
                    ai_price_pct_less_than=-0.6,
@@ -24,6 +24,12 @@ config_sale = dict(min_price=1_000_000, max_price=3_000_000, min_rooms=3, max_ro
                        "גבעתיים",
                        "הרצליה", ],
                    ai_std_pct=0.07, asset_type="forsale")
+
+load_vault()
+bot_id = os.getenv('TELEGRAM_BOT_ID') or os.getenv("TELEGRAM_TOKEN")
+group_id = os.getenv('TELEGRAM_REALESTATE_DEALS_CHANNEL')
+assert bot_id
+assert group_id
 
 
 def filter_assets(c):
@@ -57,27 +63,6 @@ def filter_assets(c):
             'asset_status', 'asset_type', 'info_text', 'img_url']
     df = df[cols].sort_values('pct', ascending=True)
     return df
-
-
-def load_creds():
-    creds_file = os.path.join(os.path.expanduser('~'), '.ssh', 'creds_postgres.json')
-    with open(creds_file, 'r') as f:
-        creds = json.load(f)
-    for k, v in creds.items():
-        os.environ[k] = v
-
-
-def send_to_channel(msg):
-    token = os.getenv('TELEGRAM_BOT_ID') or os.getenv("TELEGRAM_TOKEN")
-    group_id = os.getenv('TELEGRAM_REALESTATE_DEALS_CHANNEL')
-    params = {
-        "chat_id": group_id,
-        "text": msg,
-        "parse_mode": "HTML",
-    }
-    url = "https://api.telegram.org/bot{}/sendMessage"
-    safe_send(url.format(token), params=params)
-    # print(msg)
 
 
 def format_telegram(idx, sr, asset_type):
@@ -116,14 +101,13 @@ def publish(df, config, limit=None):
         idx = idx + 1
         output_str += format_telegram(idx, row, asset_type)
         if idx % max_assets_per_msg == 0:
-            send_to_channel(output_str)
+            send_to_telegram_channel(output_str, group_id, bot_id)
             output_str = ""
     if len(df) and len(output_str):
-        send_to_channel(output_str)
+        send_to_telegram_channel(output_str, group_id, bot_id)
 
 
 def find_and_publish(config):
-    load_creds()
     df = filter_assets(config)
     publish(df, config)
 

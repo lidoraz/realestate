@@ -1,14 +1,11 @@
-import os
-import time
-import schedule
 from datetime import datetime
-
-from scrape_nadlan.utils_insert import get_engine, send_telegram_msg
+from ext.env import get_pg_engine
+from scrape_nadlan.utils_insert import send_telegram_msg
 from scrape_yad2.run import get_scraper_yad2_forsale, get_scraper_yad2_rent
 
 
 def _scraper():
-    engine = get_engine()
+    engine = get_pg_engine()
     with engine.connect() as conn:
         print(f"{datetime.today()} Starting to fetch!")
         scraper = get_scraper_yad2_forsale()

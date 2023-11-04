@@ -1,10 +1,9 @@
-import os
-
 import pandas as pd
+import os
 from datetime import datetime
 import numpy as np
-
-from api.gateway.api_stats import req_timeseries_sidebar
+from api.gateway.api_stats import req_timeseries_sidebar, req_remote_past_sales
+from stats.plots import plot_deal_vs_sale_sold
 from app_map.marker import get_marker_tooltip, icon_maps, icon_real_estate, get_color, convert_rooms_str
 from app_map.util_layout import *
 from scrape_yad2.utils import _get_parse_item_add_info
@@ -17,7 +16,6 @@ import requests
 LOGGER = logging.getLogger()
 
 FETCH_LIMIT = 250
-PORT = os.getenv("PORT", 8050)
 
 
 def app_preprocess_df(df_all):
@@ -144,8 +142,6 @@ def get_asset_points(df_all, price_from=-np.inf, price_to=np.inf, max_avg_price_
 
 
 def get_sidebar_plots(deal):
-    # TODO: EXTRACT THIS OUR OF HERE, should also be used in stats for new price monthly
-
     def read_preprocess(data, time_col):
         df = pd.DataFrame(data)
         df[time_col] = pd.to_datetime(df[time_col])
@@ -285,56 +281,6 @@ def build_sidebar(deal, fig):
     return title_html, txt_html
 
 
-from plotly import graph_objects as go
-
-
-def plot_deal_vs_sale_sold(other_close_deals, deal, past_sales=None):
-    sale_items = other_close_deals['price']
-    fig = go.Figure()
-    # When the hist becomes square thats because there a huge anomaly in terms of extreme value
-    max_price_th = sale_items.median() + sale_items.std() * 3
-    sale_items = sale_items[sale_items < max_price_th]
-    tr_1 = go.Histogram(x=sale_items, name=f'Total #{len(sale_items)}', opacity=0.75, nbinsx=len(sale_items))
-    fig.add_trace(tr_1)
-    if past_sales is not None:
-        sold_items = past_sales['data_histogram']
-        days_back = past_sales['days_back']
-        if len(sold_items):
-            tr_2 = go.Histogram(x=sold_items, name=f'realPrice{days_back}D #{len(sold_items)}', opacity=0.75,
-                                nbinsx=len(sold_items))
-            fig.add_trace(tr_2)
-    fig.add_vline(x=deal['price'], line_width=2,
-                  line_color='red', line_dash='dash',
-                  name=f"{deal['price']:,.0f}")
-    fig.update_layout(
-        xaxis_title="מחיר",
-        yaxis_title="# מס עסקאות",
-        # title_text=str_txt,
-        # barmode='stack',
-        # width=450,
-        height=250,
-        margin=dict(l=0, r=0, b=0, t=0.0),
-        legend=dict(x=0.0, y=1),
-        dragmode=False)
-    # fig.update_xaxes(rangemode="tozero")
-    return fig
-
-
-def get_remote_past_sales(deal, dist_km, n_months=6):
-    data = dict(lat=deal['lat'],
-                long=deal['long'],
-                dist_km=dist_km,
-                n_months=n_months,
-                rooms=deal['rooms'])
-    res = requests.post(f'{os.getenv("REAL_ESTATE_API")}/histogram', json=data)
-    if res.status_code == 200:
-        past_sales = res.json()
-        past_sales = dict(data_histogram=past_sales['data_histogram']['price_declared'],
-                          days_back=n_months * 30)
-        return past_sales
-    return None
-
-
 def get_similar_deals(df_all, deal, days_back=99, dist_km=1, with_nadlan=True):
     filter_rooms = True
     df_open_deals = filter_by_dist(df_all, deal, dist_km)
@@ -343,7 +289,7 @@ def get_similar_deals(df_all, deal, days_back=99, dist_km=1, with_nadlan=True):
         df_open_deals = df_open_deals[df_open_deals['rooms'].astype(float).astype(int) == int(float(deal['rooms']))]
     past_sales = None
     if with_nadlan:
-        past_sales = get_remote_past_sales(deal, dist_km)
+        past_sales = req_remote_past_sales(deal, dist_km)
     fig = plot_deal_vs_sale_sold(df_open_deals, deal, past_sales)
     return fig
 
@@ -376,37 +322,3 @@ def create_pct_bar(df_agg, col_name):
         get_span("3Y:", prev[1]),
         get_span("1Y:", prev[2]),
         get_span("6M:", prev[3])]
-
-#
-# def res_get_add_info(item):
-#     import requests
-#     add_info = None
-#     try:
-#         res = requests.get('https://gw.yad2.co.il/feed-search-legacy/item?token={}'.format(item))
-#         d = res.json()['data']
-#         image_urls = d['images_urls']
-#         items_v2 = {x['key']: x['value'] for x in d['additional_info_items_v2']}
-#         # add_info = dict(parking=d['parking'],
-#         #                 balconies=d['balconies'],
-#         #                 renovated=items_v2['renovated'],
-#         #                 elevator=d['analytics_items']['elevator'],
-#         #                 storeroom=d['analytics_items']['storeroom'],
-#         #                 number_of_floors=d['analytics_items']['number_of_floors'],
-#         #                 shelter=d['analytics_items']['shelter_room'],
-#         #                 immediate=d['analytics_items']['immediate'],
-#         #                 info_text=d['info_text']
-#         #                 )
-#         add_info = dict(חנייה=d['parking'],
-#                         מרפסות=d['balconies'],
-#                         משופץ=items_v2['renovated'],
-#                         מעלית=d['analytics_items']['elevator'],
-#                         מחסן=d['analytics_items']['storeroom'],
-#                         מספר_קומות=d['analytics_items']['number_of_floors'],
-#                         מקלט=d['analytics_items']['shelter_room'],
-#                         פינוי_מיידי=d['analytics_items']['immediate'],
-#                         טקסט_חופשי=d['info_text'],
-#                         image_urls=image_urls
-#                         )
-#     except Exception as e:
-#         print("ERROR IN res_get_add_info", e)
-#     return add_info

@@ -4,14 +4,14 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import pickle
 from tqdm import tqdm
-
+from ext.env import get_pg_engine
 from datetime import datetime
 from fetch_data.daily_fetch import pub_object
 from plotly.subplots import make_subplots
 
 plt.style.use('ggplot')
 timeline_size = (14, 5)
-from scrape_nadlan.utils_insert import get_engine
+
 
 used_cols = ["trans_date", "city", "n_rooms", "price_declared",
              "sq_m_gross", "sq_m_net", "floor", "n_floors",
@@ -240,7 +240,7 @@ def run_nadlan_stats(is_local=False):
     if is_local:
         df = pd.read_pickle("resources/nadlan.pk")
     else:
-        eng = get_engine()
+        eng = get_pg_engine()
         df = get_data_nadlan(eng)
     df = add_metrics(df, diff_year=0)
     plot_timeline_new_vs_old_f(df, '30D', get_ir())

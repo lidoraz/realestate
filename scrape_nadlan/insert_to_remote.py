@@ -7,6 +7,7 @@ sys.path.append(file_dir)
 
 from scrape_nadlan.config import *
 from sqlalchemy import sql, select
+from ext.env import get_pg_engine
 from scrape_nadlan.utils_insert import *
 from scrape_nadlan.Scraper.utils import filter_files, read_files
 import pandas as pd
@@ -49,7 +50,7 @@ def preprocessing(df, drop_duplicates, dropna):
 
 
 def insert_to_postgres_db(dt):
-    eng = get_engine()
+    eng = get_pg_engine()
     nadlan_trans_tbl = create_ignore_if_exists(eng, tbl_name, columns_alchemy, primary_keys)
 
     file_lst = filter_files(dt)

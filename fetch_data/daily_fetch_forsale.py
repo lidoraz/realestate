@@ -1,11 +1,10 @@
 from fetch_data.daily_fetch import run_daily_job, run_nadlan_daily, pub_object
-from scrape_nadlan.utils_insert import get_engine
-
+from ext.env import get_pg_engine
 
 def daily_forsale():
     type_ = 'forsale'
     path = f'resources/yad2_{type_}_df.pk'
-    eng = get_engine()
+    eng = get_pg_engine()
     path_nadlan = "resources/df_nadlan_recent.pk"
     df = run_daily_job(type_, eng)
     df.to_pickle(path)

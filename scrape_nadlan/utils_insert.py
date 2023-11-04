@@ -5,6 +5,13 @@ import requests
 import time
 from requests.exceptions import RequestException
 from sqlalchemy import Column, Table, MetaData, create_engine
+from ext.env import load_vault
+
+load_vault()
+bot_id = os.getenv('TELEGRAM_BOT_ID') or os.getenv("TELEGRAM_TOKEN")
+channel_id = os.getenv("TELEGRAM_CHANNEL")
+assert bot_id
+assert channel_id
 
 
 def get_args():
@@ -39,20 +46,6 @@ def load_vault():
         os.environ[k] = str(v)
 
 
-def get_engine():
-    load_vault()
-    eng = create_engine(
-        f"postgresql://{os.environ['PGUSER']}:{os.environ['PGPASSWORD']}@{os.environ['PGHOST']}:{os.environ['PGPORT']}/{os.environ['PGDATABASE']}")
-    return eng
-
-
-def get_telegram_creds():
-    load_vault()
-    bot_id = os.environ.get("TELEGRAM_BOT_ID")
-    channel_id = os.environ.get("TELEGRAM_CHANNEL")
-    assert bot_id
-    assert channel_id
-    return bot_id, channel_id
 
 
 def safe_send(url, params=None, tries=10):
@@ -67,6 +60,5 @@ def safe_send(url, params=None, tries=10):
 
 
 def send_telegram_msg(msg):
-    bot_id, channel_id = get_telegram_creds()
-    url = f"https://api.telegram.org/bot{bot_id}/sendMessage?chat_id={channel_id}&text={msg}&parse_mode=HTML"
-    safe_send(url)
+    from ext.publish import send_to_telegram_channel
+    send_to_telegram_channel(msg, channel_id, bot_id)
