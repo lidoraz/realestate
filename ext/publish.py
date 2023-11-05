@@ -10,6 +10,7 @@ def send_to_telegram_channel(msg, group_id, bot_id):
     }
     url = "https://api.telegram.org/bot{}/sendMessage".format(bot_id)
     safe_send(url, params=params)
+    print(f"Telegram: sent to {group_id=}: {msg}")
 
 
 def safe_send(url, params=None, tries=10):

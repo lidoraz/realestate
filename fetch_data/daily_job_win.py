@@ -15,7 +15,7 @@ from fetch_data.daily.find_assets.publish_ai_assets import find_and_publish_run_
 from scrape_nadlan.utils_insert import send_telegram_msg
 
 if __name__ == '__main__':
-    job_name = "DailyJob-Sale&Rent fetch and Calc"
+    job_name = "DailyJob-Sale&Rent Preprocess"
     send_telegram_msg(f"⚪ Starting {job_name}")
     try:
         run_nadlan_stats()

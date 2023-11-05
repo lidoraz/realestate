@@ -5,7 +5,7 @@ from ext.publish import send_to_telegram_channel
 from ext.env import load_vault
 
 config_rent = dict(min_price=4000, max_price=8000, min_rooms=3, max_rooms=4,
-                   ai_price_pct_less_than=-0.6,
+                   ai_price_pct_less_than=-0.07,
                    parking=True, balconies=True,  # is_agency=False,
                    asset_status=["משופץ", "חדש (גרו בנכס)", "חדש מקבלן (לא גרו בנכס)"],
                    cities=[
@@ -32,8 +32,7 @@ assert bot_id
 assert group_id
 
 
-def filter_assets(c):
-    days_back = 1
+def filter_assets(c, days_back=1):
     df = pd.read_pickle(f"resources/yad2_{c['asset_type']}_df.pk")
     yesterday = pd.to_datetime(date.today()) - timedelta(days=days_back)
     assert pd.to_datetime(df['processing_date'].max()) >= yesterday
@@ -67,12 +66,18 @@ def filter_assets(c):
 
 def format_telegram(idx, sr, asset_type):
     agency_str = "\n<b>מתיווך</b>" if sr['is_agency'] else ""
+    rooms_str = int(sr['rooms']) if sr['rooms'].is_integer() else sr['rooms']
+    price_meter_str = f"{sr['square_meters']:,.0f} מ״ר ({sr['price'] / sr['square_meters']:,.0f}₪ למטר)"
+    balcony_parking = ""
+    if sr['parking'] > 0 or sr['balconies']:
+        balcony_parking = f"<b>עם:</b> {'חניה' if sr['parking'] > 0 else ''} {'מרפסת' if sr['balconies'] else ''}" #
     text_info = sr['info_text'][:100] + "..." if len(sr['info_text']) > 100 else sr['info_text']
     text_str = f"""
-{idx}.<b>עיר:</b> {sr['city']}
-<b>מחיר:</b> {sr['price']:,.0f}
-<b>חדרים:</b> {sr['rooms']}{agency_str}
+\n{idx}.<b>עיר:</b> {sr['city']}{agency_str}
+<b>מחיר:</b> {sr['price']:,.0f}₪
+<b>חדרים:</b> {rooms_str},  {price_meter_str}
 <b>הנחה:</b> {abs(sr['pct']):.2%}
+{balcony_parking}
 {text_info}
 https://realestate1.up.railway.app/{asset_type}/?{sr['id']}"""
     return text_str
