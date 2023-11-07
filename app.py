@@ -25,6 +25,7 @@ server = Flask(__name__)
 scheduler = BackgroundScheduler()
 
 # multiple jobs are created because we want to update as soon as etl finishes
+## the process starts at 19 UTC and usually finishes by 19:40
 scheduler.add_job(check_download, 'cron', hour=19, minute=40)
 if not is_cache_ok():
     download_remote(block=True)
