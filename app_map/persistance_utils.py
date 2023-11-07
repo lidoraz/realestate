@@ -151,9 +151,8 @@ def download_remote(block=False):
         # Reset cache, forces reload
 
 def check_download():
-    # will check when triggered until found
-    while True:
-        LOGGER.info("check_download - looking for new data")
+    for i in range(10**100): # will check when triggered until found
+        LOGGER.info(f"{i} check_download - looking for new data")
         if not is_cache_ok():
             download_remote(True)
             LOGGER.info("check_download - downloaded new data")
