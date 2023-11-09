@@ -15,21 +15,22 @@ cache_dict = {}
 _last_loaded = 0
 _updated_at = datetime.fromisoformat("1970-01-01")
 
-filenames = ["df_nadlan_recent.pk",
-             "yad2_rent_df.pk",
-             "yad2_forsale_df.pk",
-             "fig_timeline_new_vs_old.pk",
-             "dict_df_agg_nadlan_all.pk",
-             "dict_df_agg_nadlan_new.pk",
-             "dict_df_agg_nadlan_old.pk",
-             # NO NEED FOR THESE FILES, replaced with an API gateway
-             # "df_log_rent.pk",
-             # "df_log_forsale.pk"
-             "changes_last_polygon_rent_city.json",
-             "changes_last_polygon_rent_city_neighborhood.json",
-             "changes_last_polygon_forsale_city.json",
-             "changes_last_polygon_forsale_city_neighborhood.json"
-             ]
+filenames = [
+    "yad2_rent_df.pk",
+    "yad2_forsale_df.pk",
+    "df_nadlan_recent.pk",
+    "fig_timeline_new_vs_old.pk",
+    "dict_df_agg_nadlan_all.pk",
+    "dict_df_agg_nadlan_new.pk",
+    "dict_df_agg_nadlan_old.pk",
+    # NO NEED FOR THESE FILES, replaced with an API gateway
+    # "df_log_rent.pk",
+    # "df_log_forsale.pk"
+    "changes_last_polygon_rent_city.json",
+    "changes_last_polygon_rent_city_neighborhood.json",
+    "changes_last_polygon_forsale_city.json",
+    "changes_last_polygon_forsale_city_neighborhood.json"
+]
 
 
 def get_aws_session():
@@ -41,12 +42,12 @@ def get_aws_session():
     return session
 
 
-def check_time_modified(session, filename):
+def get_remote_time_modified(session, filename):
     path_file = pre_path + filename
     keys = session.client('s3').list_objects(Bucket=bucket, Prefix=path_file).get('Contents')
     dt_modified = None
     if keys:
-        dt_modified = datetime.isoformat(keys[0]['LastModified'])
+        dt_modified = keys[0]['LastModified']
     return dt_modified
 
 
@@ -74,6 +75,13 @@ def is_cache_ok(hours_diff=24):
     return False
 
 
+def is_remote_files_new():
+    session = get_aws_session()
+    updated_at = get_updated_at()
+    dt_modified = get_remote_time_modified(session, filenames[0])
+    return updated_at < dt_modified
+
+
 def get_updated_at():
     global _last_loaded, _updated_at
     ts = time.time()
@@ -93,7 +101,7 @@ def get_updated_at():
 
 def download_files(filenames):
     session = get_aws_session()
-    dt_modified = check_time_modified(session, filenames[0])
+    dt_modified = get_remote_time_modified(session, filenames[0])
     updated_at = get_updated_at()
     txt = "Downloading from remote"
     if updated_at:
@@ -103,7 +111,7 @@ def download_files(filenames):
     for filename in filenames:
         download_from_remote(session.client('s3'), filename)
     with open(updated_path, "w") as f:
-        json.dump({"updatedAt": dt_modified}, f)
+        json.dump({"updatedAt": str(dt_modified)}, f)
     global is_downloading
     is_downloading = False
     LOGGER.info("Finished downloading")
@@ -150,13 +158,14 @@ def download_remote(block=False):
             threading.Thread(target=download_files, args=(filenames,)).start()
         # Reset cache, forces reload
 
-def check_download():
-    for i in range(10**100): # will check when triggered until found
-        LOGGER.info(f"{i} check_download - looking for new data")
-        if not is_cache_ok():
+
+def check_download_until_downloaded():
+    for i in range(10 ** 100):  # will check when triggered until found
+        if is_remote_files_new():
             download_remote(True)
             LOGGER.info("check_download - downloaded new data")
             break
+        LOGGER.info(f"{i} check_download - looked for new data, sleeping..")
         time.sleep(60)
 
 
@@ -181,4 +190,6 @@ def get_sale_data():
 
 
 if __name__ == '__main__':
-    check_download()
+    LOGGER.setLevel(logging.INFO)
+    logging.info("a")
+    check_download_until_downloaded()

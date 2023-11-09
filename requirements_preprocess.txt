@@ -20,3 +20,4 @@ colour
 tqdm
 gunicorn
 easyocr
+pyTelegramBotAPI
