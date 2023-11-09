@@ -71,11 +71,12 @@ def format_telegram(idx, sr, asset_type):
     balcony_parking = ""
     if sr['parking'] > 0 or sr['balconies']:
         balcony_parking = f"<b>עם:</b> {'חניה' if sr['parking'] > 0 else ''} {'מרפסת' if sr['balconies'] else ''}" #
-    text_info = sr['info_text'][:100] + "..." if len(sr['info_text']) > 100 else sr['info_text']
+    text_info = sr['info_text'].replace('\n', ',')[:100]
     text_str = f"""
 \n{idx}.<b>עיר:</b> {sr['city']}{agency_str}
 <b>מחיר:</b> {sr['price']:,.0f}₪
 <b>חדרים:</b> {rooms_str},  {price_meter_str}
+<b>מצב:</b> {sr['asset_status']}
 <b>הנחה:</b> {abs(sr['pct']):.2%}
 {balcony_parking}
 {text_info}
