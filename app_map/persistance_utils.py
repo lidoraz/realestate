@@ -159,7 +159,7 @@ def download_remote(block=False):
         # Reset cache, forces reload
 
 
-def check_download_until_downloaded():
+def loop_until_remote_ready():
     for i in range(10 ** 100):  # will check when triggered until found
         if is_remote_files_new():
             download_remote(True)

@@ -11,7 +11,7 @@ from flask import Flask, redirect
 import sys
 from apscheduler.schedulers.background import BackgroundScheduler
 
-from app_map.persistance_utils import is_cache_ok, check_download, download_remote
+from app_map.persistance_utils import is_cache_ok, loop_until_remote_ready, download_remote
 
 logging.basicConfig(
     level=logging.INFO,
@@ -26,7 +26,7 @@ scheduler = BackgroundScheduler()
 
 # multiple jobs are created because we want to update as soon as etl finishes
 ## the process starts at 19 UTC and usually finishes by 19:40
-scheduler.add_job(check_download, 'cron', hour=19, minute=40)
+scheduler.add_job(loop_until_remote_ready, 'cron', hour=19, minute=40)
 if not is_cache_ok():
     download_remote(block=True)
 scheduler.start()
