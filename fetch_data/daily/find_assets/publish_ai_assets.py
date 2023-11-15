@@ -56,6 +56,8 @@ def filter_assets(c, days_back=1):
     df['pct'] = df['price'] / df['ai_price'] - 1
     df = df[df['pct'] < c['ai_price_pct_less_than']]
     df = df.sort_values('pct')
+    # use square meters built, if 0 take square meters
+    df['square_meters'] = df['square_meter_build'].replace(0, pd.NA).combine_first(df['square_meters'])
     cols = ['city', 'pct', 'price', 'rooms', 'square_meters',
             'is_agency', 'neighborhood', 'street', 'street_num',
             'parking', 'balconies',
