@@ -5,7 +5,7 @@ from sqlalchemy import create_engine
 import numpy as np
 from shapely.geometry import Polygon
 import geopandas as gpd
-from fetch_data.daily.neighbors.query import *
+from fetch_data.neighbors.query import *
 
 
 def get_sql_engine():
@@ -105,10 +105,11 @@ def create_geodf(df_all, metric, agg_cols=['city', 'neighborhood'], alpha=0.7):
 def save_to_geojson(gdf, name, path=""):
     file_name = os.path.join(path, f"changes_last_polygon_{name}.json")
     gdf.to_file(file_name, driver="GeoJSON", index=False)
-    from fetch_data.daily_fetch import pub_object
-    pub_object(file_name)
+    from ext.publish import put_object_in_bucket
+    put_object_in_bucket(file_name)
 
 def run_neighbors():
+    print("run_neighbors")
     calc_every_x_days = 90
     min_cnts_for_neighborhood = 10
     alpha_concave_hull = 0.5

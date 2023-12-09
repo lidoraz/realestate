@@ -2,7 +2,7 @@
 import pandas as pd
 from fetch_data.utils import get_price_hist, get_today, get_nadlan
 
-BUCKET_NAME = 'real-estate-public'
+q_path = 'fetch_data/modeling/query_predict.sql'
 
 
 def preprocess_history(df_hist, today_indexes):
@@ -33,11 +33,18 @@ def process_tables(df_today, df_hist):
     return df
 
 
-def run_daily_job(type_, eng):
-    from fetch_data.price_regression import add_ai_price
+def run_daily_job(type_):
+    # from fetch_data.price_regression import add_ai_price
+    from ext.env import get_df_from_pg, get_query
+    from fetch_data.modeling.calc_ai import add_ai_price
     from fetch_data.price_distance_comp import add_distance
-    df = fetch_prepare(type_, eng)
-    df = add_ai_price(df, type_)
+    query = get_query(q_path)
+    df = get_df_from_pg(query.format(asset_type=type_))
+    df = df.set_index('id')
+
+    # df = fetch_prepare(type_, eng)
+    model_params = dict(n_folds=5, iterations=5000)
+    df = add_ai_price(df, type_, model_params)
     df = add_distance(df)
     return df
 
@@ -53,30 +60,3 @@ def run_nadlan_daily(conn, day_backs, path_nadlan):
     print("Getting nadlan daily")
     df = get_nadlan(conn, day_backs)
     df.to_pickle(path_nadlan)
-
-
-def pub_object(path):
-    import boto3
-    session = boto3.Session()
-    s3 = session.resource('s3')
-    buck = s3.Bucket(BUCKET_NAME)
-    print(f"Uploading file:: {path} bucket: {BUCKET_NAME}")
-    buck.upload_file(path, path)
-
-
-def save_to_db(df, type_, eng, with_nadlan):
-    # Not Used
-    for t in range(5):
-        try:
-            with eng.connect() as conn:
-                print(f"Pushing to daily {type_} to db")
-                df.to_sql(f"dashboard_{type_}", conn, if_exists="replace")
-                # if with_nadlan:
-                #     run_nadlan_daily(conn, 210)
-                break
-        except Exception as e:
-            print("failed to insert", t)
-
-    # df = app_preprocess_df(df)
-    # df = df.loc[:, ~df.columns.duplicated()].copy()
-    # df = df.drop(columns=["img_url", "image_urls"])

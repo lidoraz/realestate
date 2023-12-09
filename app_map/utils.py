@@ -23,7 +23,7 @@ def app_preprocess_df(df_all):
     df_all['ai_price'] = df_all['ai_price'] * (df_all['ai_std_pct'] < 0.15)  # Take only certain AI predictions
     df_all['ai_price_pct'] = df_all['ai_price'].replace(0, np.nan)
     df_all['ai_price_pct'] = df_all['price'] / df_all['ai_price_pct'] - 1
-    df_all['square_meters'] = df_all['square_meter_build'].replace(0, np.nan).combine_first(df_all['square_meters'])
+    # df_all['square_meters'] = df_all['square_meter_build'].replace(0, np.nan).combine_first(df_all['square_meters'])
     df_all['avg_price_m'] = df_all['price'] / df_all['square_meters']
     df_all['date_added'] = pd.to_datetime(df_all['date_added'])
     df_all['date_added_d'] = (datetime.today() - df_all['date_added']).dt.days

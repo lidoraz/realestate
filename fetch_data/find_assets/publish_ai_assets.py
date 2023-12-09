@@ -32,8 +32,7 @@ assert bot_id
 assert group_id
 
 
-def filter_assets(c, days_back=1):
-    df = pd.read_pickle(f"resources/yad2_{c['asset_type']}_df.pk")
+def filter_assets(df, c, days_back=1):
     yesterday = pd.to_datetime(date.today()) - timedelta(days=days_back)
     assert pd.to_datetime(df['processing_date'].max()) >= yesterday
     print(f"Starting with {len(df):,.0f} assets with asset_type={c['asset_type']}")
@@ -52,29 +51,32 @@ def filter_assets(c, days_back=1):
     df = df[df['price'].between(c['min_price'], c['max_price'])]
     df = df[df['rooms'].between(c['min_rooms'], c['max_rooms'])]
     print(len(df))
-    df = df[df['ai_std_pct'] < c['ai_std_pct']]
+    df = df[df['ai_std_pct'] < c['ai_std_pct']].copy()
     df['pct'] = df['price'] / df['ai_price'] - 1
     df = df[df['pct'] < c['ai_price_pct_less_than']]
     df = df.sort_values('pct')
 
     # use square meters built, if 0 take square meters
-    df['square_meters'] = df['square_meter_build'].replace(0, float('nan')).combine_first(df['square_meters'])
-    cols = ['city', 'pct', 'price', 'rooms', 'square_meters',
-            'is_agency', 'neighborhood', 'street', 'street_num',
-            'parking', 'balconies',
-            'asset_status', 'asset_type', 'info_text', 'img_url']
-    df = df[cols].sort_values('pct', ascending=True)
+    # df['square_meters'] = df['square_meter_build'].replace(0, float('nan')).combine_first(df['square_meters'])
+    # cols = ['id', 'city', 'pct', 'price', 'rooms', 'square_meters',
+    #         'is_agency', 'neighborhood', 'street', 'street_num',
+    #         'parking', 'balconies',
+    #         'asset_status', 'asset_type', 'info_text', 'img_url']
+    df = df.sort_values('pct', ascending=True)
     return df
 
 
 def format_telegram(idx, sr, asset_type):
+    asset_type = asset_type.replace('forsale', 'sale')
     agency_str = "\n<b>מתיווך</b>" if sr['is_agency'] else ""
     rooms_str = int(sr['rooms']) if sr['rooms'].is_integer() else sr['rooms']
     price_meter_str = f"{sr['square_meters']:,.0f} מ״ר ({sr['price'] / sr['square_meters']:,.0f}₪ למטר)"
     balcony_parking = ""
     if sr['parking'] > 0 or sr['balconies']:
-        balcony_parking = f"<b>עם:</b> {'חניה' if sr['parking'] > 0 else ''} {'מרפסת' if sr['balconies'] else ''}" #
+        balcony_parking = (f"<b>עם:</b> {'חניה' if sr['parking'] > 0 else ''}"
+                           f" {'מרפסת' if sr['balconies'] else ''}")  #
     text_info = sr['info_text'].replace('\n', ',')[:100]
+
     text_str = f"""
 \n{idx}.<b>עיר:</b> {sr['city']}{agency_str}
 <b>מחיר:</b> {sr['price']:,.0f}₪
@@ -85,15 +87,6 @@ def format_telegram(idx, sr, asset_type):
 {text_info}
 https://realestate1.up.railway.app/{asset_type}/?{sr['id']}"""
     return text_str
-
-
-# def _format_config_str(c):
-#     # min_price=4000, max_price=8000, min_rooms=3, max_rooms=4,
-# #                    ai_price_pct_less_than=-0.05,
-# #                    parking=True, balconies=True,  # is_agency=False,
-# #                    asset_status=["משופץ", "חדש (גרו בנכס)", "חדש מקבלן (לא גרו בנכס)"],
-# #                    ai_std_pct=0.07, asset_type="rent"
-#     f"מחיר: [}{c['min_price']}, {c['max_price']}]"
 
 
 def publish(df, config, limit=None):
@@ -117,11 +110,13 @@ def publish(df, config, limit=None):
 
 
 def find_and_publish(config):
-    df = filter_assets(config)
+    df = pd.read_pickle(f"resources/yad2_{config['asset_type']}_df.pk")
+    df = filter_assets(df, config)
     publish(df, config)
 
 
 def find_and_publish_run_all():
+    print("find_and_publish_run_all")
     find_and_publish(config_sale)
     find_and_publish(config_rent)
 

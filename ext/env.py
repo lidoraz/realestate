@@ -22,3 +22,16 @@ def get_pg_engine():
     eng = create_engine(
         f"postgresql://{os.environ['PGUSER']}:{os.environ['PGPASSWORD']}@{os.environ['PGHOST']}:{os.environ['PGPORT']}/{os.environ['PGDATABASE']}")
     return eng
+
+
+def get_df_from_pg(query):
+    import pandas as pd
+    from sqlalchemy import text
+    eng = get_pg_engine()
+    with eng.connect() as conn:
+        return pd.read_sql(text(query), conn)
+
+
+def get_query(file):
+    with open(file, 'r') as f:
+        return f.read()

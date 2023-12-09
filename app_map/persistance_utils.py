@@ -189,7 +189,4 @@ def get_sale_data():
     return load_dataframes()['sale']['df_forsale_all']
 
 
-if __name__ == '__main__':
-    LOGGER.setLevel(logging.INFO)
-    logging.info("a")
-    check_download_until_downloaded()
+
