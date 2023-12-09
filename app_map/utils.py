@@ -208,7 +208,7 @@ def build_sidebar(deal, fig):
         info_text = deal['info_text']
         # add_info_text = None
     df_price_hist = None
-    if isinstance(deal['price_hist'], list):
+    if len(deal['price_hist']) > 1:
         df_hist = pd.DataFrame([deal['dt_hist'], [f"{x:0,.0f}" for x in deal['price_hist']]])
         df_price_hist = html.Table([html.Tr([html.Td(v) for v in row.values]) for i, row in df_hist.iterrows()])
     carousel = None
