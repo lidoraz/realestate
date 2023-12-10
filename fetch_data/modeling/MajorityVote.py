@@ -1,6 +1,7 @@
 import pandas as pd
 from catboost import CatBoostRegressor
 from sklearn.model_selection import KFold
+from sklearn.model_selection import train_test_split
 
 
 class MajorityVote:
@@ -13,7 +14,6 @@ class MajorityVote:
 
     def fit(self, X, y, cat_features):
         if self.n_folds == 1:
-            from sklearn.model_selection import train_test_split
             X_train, X_test, y_train, y_test = train_test_split(X, y)
             self.clfs[0].fit(X_train,
                              y_train,

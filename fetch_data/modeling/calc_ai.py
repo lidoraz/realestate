@@ -15,9 +15,9 @@ metric = 'MAE'
 ##  MAYBE HAVE SEPARATE LIST OF BAD LOCATIONS
 
 
-def get_train_config():
+def get_train_config(iterations=3_000):
     regressor_config = {
-        'iterations': 5_000,  # 15_000,
+        'iterations': iterations,  # 15_000,
         'objective': metric,
         'learning_rate': 0.0238,
         'colsample_bylevel': 0.0922,

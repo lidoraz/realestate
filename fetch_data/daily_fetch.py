@@ -33,7 +33,7 @@ def process_tables(df_today, df_hist):
     return df
 
 
-def run_daily_job(type_):
+def run_daily_job(type_, model_params):
     # from fetch_data.price_regression import add_ai_price
     from ext.env import get_df_from_pg, get_query
     from fetch_data.modeling.calc_ai import add_ai_price
@@ -43,7 +43,7 @@ def run_daily_job(type_):
     df = df.set_index('id')
 
     # df = fetch_prepare(type_, eng)
-    model_params = dict(n_folds=5, iterations=5000)
+
     df = add_ai_price(df, type_, model_params)
     df = add_distance(df)
     return df

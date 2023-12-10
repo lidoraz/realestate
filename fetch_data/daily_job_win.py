@@ -17,12 +17,13 @@ from scrape_nadlan.utils_insert import send_telegram_msg
 if __name__ == '__main__':
     job_name = "DailyJob-Sale&Rent Preprocess"
     send_telegram_msg(f"⚪ Starting {job_name}")
+    model_params = dict(n_folds=5, iterations=3000)
     try:
         run_nadlan_stats()  ## Needed until main plot will be via api
         # run_type_stats('forsale')
         # run_type_stats('rent')
-        daily_forsale()
-        daily_rent()
+        daily_forsale(model_params)
+        daily_rent(model_params)
         run_neighbors()
         find_and_publish_run_all()
         send_telegram_msg(f"🟢 FINISHED JOB in {job_name}")

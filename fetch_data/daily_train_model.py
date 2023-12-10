@@ -3,10 +3,12 @@ from scrape_nadlan.utils_insert import send_telegram_msg
 
 if __name__ == '__main__':
     job_name = "Training regression models"
+    iterations = 3_000
+    n_folds = 5
     try:
         cfg = get_train_config()
-        cfg['iterations'] = 5_000
-        n_folds = 5
+        send_telegram_msg(f"⚪ Starting {job_name}, {n_folds=}, {iterations=}")
+        cfg['iterations'] = iterations
         test_train_pipeline("forsale", n_folds, cfg)
         test_train_pipeline("rent", n_folds, cfg)
 
