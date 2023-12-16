@@ -57,7 +57,7 @@ def format_telegram(idx, sr, asset_type):
 <b>מחיר:</b> {sr['price']:,.0f}₪
 <b>חדרים:</b> {rooms_str},  {price_meter_str}
 <b>מצב:</b> {sr['asset_status']}
-<b>אחוז ממחיר מודל:</b> {abs(sr['ai_price_pct']):.1%}-{discount_str}{balcony_parking}
+<b>אחוז ממחיר AI מודל:</b> {abs(sr['ai_price_pct']):.1%}-{discount_str}{balcony_parking}
 {text_info}
 https://realestate1.up.railway.app/{asset_type}/?{sr['id']}"""
     return text_str
