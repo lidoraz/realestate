@@ -1,5 +1,6 @@
 import pandas as pd
-from datetime import date, timedelta
+from fetch_data.find_assets.filter_assets import filter_assets_by_config, filter_assets_by_newly_published, \
+    filter_assets_by_discount
 import os
 from ext.publish import send_to_telegram_channel
 from ext.env import load_vault
@@ -32,71 +33,48 @@ assert bot_id
 assert group_id
 
 
-def filter_assets(df, c, days_back=1):
-    yesterday = pd.to_datetime(date.today()) - timedelta(days=days_back)
-    assert pd.to_datetime(df['processing_date'].max()) >= yesterday
-    print(f"Starting with {len(df):,.0f} assets with asset_type={c['asset_type']}")
-    df = df[df['city'].isin(c['cities'])]
-    print(df['city'].value_counts().to_dict())
-    if c.get('balconies'):
-        df = df[df['balconies']]
-    if c.get('parking'):
-        df = df[df['parking'] > 0]
-    if c.get('is_agency'):
-        df = df[df['is_agency']]
-    if c.get('asset_status'):
-        df = df[df['asset_status'].isin(c['asset_status'])]
-    print(len(df))
-    df = df[pd.to_datetime(df['date_added']) >= yesterday]
-    df = df[df['price'].between(c['min_price'], c['max_price'])]
-    df = df[df['rooms'].between(c['min_rooms'], c['max_rooms'])]
-    print(len(df))
-    df = df[df['ai_std_pct'] < c['ai_std_pct']].copy()
-    df['pct'] = df['price'] / df['ai_price'] - 1
-    df = df[df['pct'] < c['ai_price_pct_less_than']]
-    df = df.sort_values('pct')
-
-    # use square meters built, if 0 take square meters
-    # df['square_meters'] = df['square_meter_build'].replace(0, float('nan')).combine_first(df['square_meters'])
-    # cols = ['id', 'city', 'pct', 'price', 'rooms', 'square_meters',
-    #         'is_agency', 'neighborhood', 'street', 'street_num',
-    #         'parking', 'balconies',
-    #         'asset_status', 'asset_type', 'info_text', 'img_url']
-    df = df.sort_values('pct', ascending=True)
-    return df
-
-
 def format_telegram(idx, sr, asset_type):
+    max_text_limit = 100
     asset_type = asset_type.replace('forsale', 'sale')
     agency_str = "\n<b>מתיווך</b>" if sr['is_agency'] else ""
     rooms_str = int(sr['rooms']) if sr['rooms'].is_integer() else sr['rooms']
     price_meter_str = f"{sr['square_meters']:,.0f} מ״ר ({sr['price'] / sr['square_meters']:,.0f}₪ למטר)"
     balcony_parking = ""
     if sr['parking'] > 0 or sr['balconies']:
-        balcony_parking = (f"<b>עם:</b> {'חניה' if sr['parking'] > 0 else ''}"
+        balcony_parking = (f"\n<b>עם:</b> {'חניה' if sr['parking'] > 0 else ''}"
                            f" {'מרפסת' if sr['balconies'] else ''}")  #
-    text_info = sr['info_text'].replace('\n', ',')[:100]
+    text_info = sr['info_text'].replace('\n', ',')
+    text_info = text_info[:max_text_limit] + '...' if len(text_info) > max_text_limit else text_info
 
+    recent_price_pct, recent_price_diff = sr.get('recent_price_pct'), sr.get('recent_price_diff')
+    if recent_price_pct is not None:
+        discount_str = f"\n<b>**הנחה במחיר:</b> {abs(recent_price_pct):.2%}, ({abs(recent_price_diff):,.0f}₪)"
+        discount_str += f"\n<b>**נצפה לראשונה:</b> {sr['date_added'].date()}"
+    else:
+        discount_str = ""
     text_str = f"""
-\n{idx}.<b>עיר:</b> {sr['city']}{agency_str}
+{idx}.<b>עיר:</b> {sr['city']}{agency_str}
 <b>מחיר:</b> {sr['price']:,.0f}₪
 <b>חדרים:</b> {rooms_str},  {price_meter_str}
 <b>מצב:</b> {sr['asset_status']}
-<b>הנחה:</b> {abs(sr['pct']):.2%}
-{balcony_parking}
+<b>הנחה ממחיר שמאי:</b> {abs(sr['ai_price_pct']):.2%}{discount_str}{balcony_parking}
 {text_info}
 https://realestate1.up.railway.app/{asset_type}/?{sr['id']}"""
     return text_str
 
 
-def publish(df, config, limit=None):
+def publish(df, config, find_type, limit=None):
     asset_type = config.get("asset_type").replace("forsale", "sale")
-    asset_type_str = "<b>🏠דירות למכירה:</b>" if asset_type == "sale" else "<b>💰דירות להשכרה:</b>"
-    asset_type_str += f"\n {config}"
-    output_str = asset_type_str
+    assert find_type in ("new", "discount"), 'must be one of ("new", "discount")'
+    assert asset_type in ("sale", "rent"), 'must be one of ("sale", "rent")'
+
+    asset_type_str = "<b>🏠דירות למכירה</b>" if asset_type == "sale" else "<b>💰דירות להשכרה</b>"
+    asset_type_str += "\n"
+    find_type_str = "ירידות מחיר!📣" if find_type == "discount" else "עלו לאחרונה!🆕"
+    output_str = asset_type_str + find_type_str + "\n"
     max_assets_per_msg = 5
     df = df.reset_index()
-    print(f"publishing {len(df)} assets for {asset_type=}")
+    print(f"publishing {len(df)} assets for {asset_type=}, {find_type=}")
     if limit:
         df = df[:10]
     for idx, row in df.iterrows():
@@ -109,10 +87,26 @@ def publish(df, config, limit=None):
         send_to_telegram_channel(output_str, group_id, bot_id)
 
 
+def publish_once_a_week(config):
+    from datetime import datetime
+    import json
+    isoweekday = datetime.now().date().isoweekday()
+    if isoweekday == 1:  # sunday
+        msg = f"'{config['asset_type']}' config details:\n" + json.dumps(config, ensure_ascii=False)
+        send_to_telegram_channel(msg, group_id, bot_id)
+
+
 def find_and_publish(config):
     df = pd.read_pickle(f"resources/yad2_{config['asset_type']}_df.pk")
-    df = filter_assets(df, config)
-    publish(df, config)
+    df = filter_assets_by_config(df, config)
+    days_back = 1  # should be always 1
+    df_new = filter_assets_by_newly_published(df, days_back=days_back)
+    df_dis = filter_assets_by_discount(df, days_back=days_back)
+    # Send config..
+    publish_once_a_week(config)
+
+    publish(df_new, config, find_type="new")
+    publish(df_dis, config, find_type="discount")
 
 
 def find_and_publish_run_all():
@@ -122,4 +116,8 @@ def find_and_publish_run_all():
 
 
 if __name__ == '__main__':
+    def send_to_telegram_channel(a, b, c):  # overrides when running this
+        print(a)
+
+
     find_and_publish_run_all()

@@ -10,6 +10,7 @@ with price_history as (select id,
                               coalesce(stddev(price), 0)                                    as std_price_chg,
                               count(*)                                                      as n_changes
                        from yad2_{asset_type}_history
+                       where price is not null
                        group by id
 --having (array_agg(processing_date order by processing_date desc))[1] > now() - interval '7' day
 --order by n_changes desc
