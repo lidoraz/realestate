@@ -48,7 +48,7 @@ def format_telegram(idx, sr, asset_type):
 
     recent_price_pct, recent_price_diff = sr.get('recent_price_pct'), sr.get('recent_price_diff')
     if recent_price_pct is not None:
-        discount_str = f"\n<b>**הנחה במחיר:</b> {abs(recent_price_pct):.2%}, ({abs(recent_price_diff):,.0f}₪)"
+        discount_str = f"\n<b>**הנחה במחיר:</b> {abs(recent_price_pct):.1%}-, ({abs(recent_price_diff):,.0f}₪)"
         discount_str += f"\n<b>**נצפה לראשונה:</b> {sr['date_added'].date()}"
     else:
         discount_str = ""
@@ -57,7 +57,7 @@ def format_telegram(idx, sr, asset_type):
 <b>מחיר:</b> {sr['price']:,.0f}₪
 <b>חדרים:</b> {rooms_str},  {price_meter_str}
 <b>מצב:</b> {sr['asset_status']}
-<b>הנחה ממחיר שמאי:</b> {abs(sr['ai_price_pct']):.2%}{discount_str}{balcony_parking}
+<b>אחוז ממחיר מודל:</b> {abs(sr['ai_price_pct']):.1%}-{discount_str}{balcony_parking}
 {text_info}
 https://realestate1.up.railway.app/{asset_type}/?{sr['id']}"""
     return text_str
@@ -100,8 +100,9 @@ def find_and_publish(config):
     df = pd.read_pickle(f"resources/yad2_{config['asset_type']}_df.pk")
     df = filter_assets_by_config(df, config)
     days_back = 1  # should be always 1
+
     df_new = filter_assets_by_newly_published(df, days_back=days_back)
-    df_dis = filter_assets_by_discount(df, days_back=days_back)
+    df_dis = filter_assets_by_discount(df, min_discount_pct=0.03, days_back=days_back)
     # Send config..
     publish_once_a_week(config)
 
