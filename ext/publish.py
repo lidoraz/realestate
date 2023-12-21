@@ -14,8 +14,9 @@ def send_to_telegram_channel(msg, group_id, bot_id):
     url = "https://api.telegram.org/bot{}/sendMessage".format(bot_id)
     if is_prod:
         res = safe_send(url, params=params)
-        print(f"Telegram: sent to {group_id=}: {msg}")
+        print(f"<PROD> Telegram: sent to {group_id=}:\n{msg}")
     else:
+        print(f"<NOT PROD> Telegram: sent to {group_id=}:\n{msg}")
         res = True
     return res
 

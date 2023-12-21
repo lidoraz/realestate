@@ -120,7 +120,7 @@ def get_asset_options_html(asset_type):
                 dbc.Col(
                     dbc.Row(
                         [
-                            dbc.Label("Is Balcony, Parking a MUST? What about agency?", className="mt-3 mb-2"),
+                            dbc.Label("Is Balcony, Parking a must have?\n What about agency?", className="mt-3 mb-2"),
                             dcc.Checklist(
                                 ['Parking', 'Balcony', 'No Agency'],
                                 [],
@@ -163,7 +163,7 @@ def get_dash(server):
         [
             dcc.Location(id='url', refresh=False),  # Ad
             dbc.Row(
-                dbc.Col(html.H1("User Registration App", className="text-center mb-4"), width=12),
+                dbc.Col(html.H1("Agent App, Rent & Sale", className="text-center mb-4"), width=12),
             ),
             dbc.Row(
                 dbc.Col(
@@ -229,7 +229,7 @@ def get_dash(server):
                                 id='submit-alert',
                                 color='danger',
                                 is_open=False,
-                                duration=None,
+                                duration=15_000,
                             ),
 
                             dbc.Row(
@@ -430,10 +430,10 @@ cities = sorted(
      'מעלה אדומים', 'אופקים', 'אור עקיבא', 'קרית אונו', 'עכו', 'דימונה', 'באר יעקב', 'מגדל העמק', 'טירת כרמל',
      'קרית מלאכי'])
 
-rent_header_closed = "* Rent Options - (click to enable)"
-rent_header_open = "* Rent Options - (click to disable)"
-sale_header_closed = "* Sale Options - (click to enable)"
-sale_header_open = "* Sale Options - (click to disable)"
+rent_header_closed = "💰 Rent Options - (click to enable)"
+rent_header_open = "💰 Rent Options - (click to disable)"
+sale_header_closed = "🏠 Sale Options - (click to enable)"
+sale_header_open = "🏠 Sale Options - (click to disable)"
 
 alert_bad_missing_creds = "Please select at least one city."
 alert_bad_missing_creds_rent = "Rent options have missing details:\n" + alert_bad_missing_creds
@@ -441,7 +441,7 @@ alert_bad_missing_creds_sale = "Sale options have missing details:\n" + alert_ba
 alert_bad_duplicate_user = "User with that name already exists."
 alert_bad_no_asset_type_selected = "Must enable one of the two options: Rent or Sale"
 alert_bad_missing_name = "User name or Telegram ID are missing"
-alert_ok = "Successfully submit your options!\nSoon you will receive every day new assets according to your preferences!"
+alert_ok = "Successfully submit your options!\nSoon you will receive new assets according to your preferences!"
 alert_update = "Successfully updated your profile"
 
 if __name__ == "__main__":
