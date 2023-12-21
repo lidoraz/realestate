@@ -1,10 +1,9 @@
 import argparse
-import json
 import os
 import requests
 import time
 from requests.exceptions import RequestException
-from sqlalchemy import Column, Table, MetaData, create_engine
+from sqlalchemy import Column, Table, MetaData
 from ext.env import load_vault
 
 load_vault()
@@ -35,17 +34,6 @@ def get_table(tbl_name, columns_alchemy, metadata_obj, primary_keys=()):
                              metadata_obj,
                              *columns)
     return nadlan_trans_tbl
-
-
-def load_vault():
-    path = os.path.expanduser('~')
-    path = os.path.join(path, '.ssh', "creds_postgres.json")
-    with open(path) as f:
-        c = json.load(f)
-    for k, v in c.items():
-        os.environ[k] = str(v)
-
-
 
 
 def safe_send(url, params=None, tries=10):

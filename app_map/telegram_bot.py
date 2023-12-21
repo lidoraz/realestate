@@ -1,12 +1,9 @@
 import os
 from ext.crypto import encrypt
-from ext.env import load_vault
-# This example show how to use inline keyboards and process button presses
 import telebot
 from telebot import types
 import urllib.parse
 
-# load_vault()
 API_TOKEN = os.getenv("TELEGRAM_BOT_REALESTATE_DEALS")
 assert os.getenv("TELEGRAM_USERID_SALT")  # used for crypto
 assert API_TOKEN
@@ -61,8 +58,4 @@ def server_bot():
         # bot.register_next_step_handler(msg, _2choose_cities)
 
     print("Started bot...")
-    from ext.publish import send_to_telegram_channel
-
-    # res = send_to_telegram_channel("I know u", 534859296, API_TOKEN)
-    # print(res.text)
     bot.infinity_polling()
