@@ -1,7 +1,8 @@
 import requests
 import time
 import os
-
+from ext.env import load_vault
+load_vault()
 is_prod = os.getenv("PRODUCTION", False)
 
 
