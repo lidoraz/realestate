@@ -18,7 +18,7 @@ from {table_name}
 where deal_part = 1
 )
 SELECT
-    DATE_TRUNC('month', trans_date)::date::VARCHAR AS month,
+    DATE_TRUNC('quarter', trans_date)::date::VARCHAR AS month,
     count(*) as cnt,
     count(case when round(n_rooms) = round({rooms}) then 1 end) as cnt_room,
     percentile_cont(0.5) WITHIN GROUP (ORDER BY CASE WHEN sq_m_net > 0 THEN price_declared / sq_m_net END)::int AS median_avg_meter_price,
@@ -31,8 +31,8 @@ SELECT
   --  percentile_cont(0.5) WITHIN GROUP (ORDER BY CASE WHEN trans_date <= (MAKE_DATE(year_built, 1, 1) + INTERVAL '2 years') THEN price_declared END) AS new_median_price
 FROM t0_dist where 1=1
 and distance_in_km < {dist_km}
-GROUP BY DATE_TRUNC('month', trans_date)
-ORDER BY DATE_TRUNC('month', trans_date);"""
+GROUP BY 1
+ORDER BY 1;"""
 
 sql_time_series_recent = """
 with t0_dist as(
@@ -51,7 +51,7 @@ and processing_date >= '2023-03-01' -- Only from March data is consist
 )
 
 SELECT
-    DATE_TRUNC('week', processing_date)::date::varchar AS week,
+    DATE_TRUNC('month', processing_date)::date::varchar AS week,
     count(*) as cnt,
     count(case when round(rooms) = round({rooms}) then 1 end) as cnt_room,
     percentile_cont(0.5) WITHIN GROUP (ORDER BY CASE WHEN square_meters > 0 THEN price / square_meters END)::int AS avg_price,

@@ -3,8 +3,6 @@ pandas==1.5.2
 numpy
 matplotlib
 plotly
-scikit-learn
-catboost
 requests
 sqlalchemy==1.4.46
 psycopg2
@@ -20,3 +18,4 @@ colorlover
 colour
 tqdm
 gunicorn
+pyTelegramBotAPI

@@ -6,10 +6,10 @@ def filter_assets_by_config(df, c):
     df['ai_price_pct'] = df['price'] / df['ai_price'] - 1
     df = df[df['city'].isin(c['cities'])]
     # print(df['city'].value_counts().to_dict())
-    df = df[df['balconies']] if c.get('balconies') else df
-    df = df[df['parking'] > 0] if c.get('parking') else df
-    df = df[df['is_agency']] if c.get('is_agency') else df
-    df = df[df['asset_status'].isin(c['asset_status'])] if c.get('asset_status') else df
+    df = df[df['balconies']] if c['must_balcony'] else df
+    df = df[df['parking'] > 0] if c['must_parking'] else df
+    df = df[~df['is_agency']] if c['must_no_agency'] else df
+    df = df[df['asset_status'].isin(c['asset_status'])] if c['asset_status'] else df
     df = df[df['price'].between(c['min_price'], c['max_price'])]
     df = df[df['rooms'].between(c['min_rooms'], c['max_rooms'])]
 

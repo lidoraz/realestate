@@ -1,4 +1,5 @@
 # Workaround for python in windows...
+import time
 from os.path import dirname
 import sys
 
@@ -10,7 +11,10 @@ from fetch_data.daily_fetch_forsale import daily_forsale
 from fetch_data.daily_fetch_rent import daily_rent
 from fetch_data.neighbors.calc import run_neighbors
 from fetch_data.find_assets.publish_ai_assets import find_and_publish_run_all
+from fetch_data.find_assets.publish_ai_assets_all import find_and_publish_for_all_users
 from scrape_nadlan.utils_insert import send_telegram_msg
+
+import time
 
 # from stats.daily_fetch_stats import run_type_stats
 
@@ -22,10 +26,12 @@ if __name__ == '__main__':
         run_nadlan_stats()  ## Needed until main plot will be via api
         # run_type_stats('forsale')
         # run_type_stats('rent')
-        daily_forsale(model_params)
-        daily_rent(model_params)
+        daily_forsale(model_params=model_params)
+        daily_rent(model_params=model_params)
         run_neighbors()
         find_and_publish_run_all()
+        time.sleep(60 * 5)  # sleep for 5 minutes to allow site to update...
+        find_and_publish_for_all_users()
         send_telegram_msg(f"🟢 FINISHED JOB in {job_name}")
     except Exception as e:
         send_telegram_msg(f"🔴 ERROR in {job_name}")

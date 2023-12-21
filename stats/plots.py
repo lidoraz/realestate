@@ -68,6 +68,9 @@ def get_fig_quantiles_from_api(deal_type, city, time_interval, col_name="price")
     assert col_name in ("price", "price_meter")  # price_meter_25
     # can also deal with multiple cities
     data = req_timeseries_recent_quantiles(deal_type, time_interval, cities=city)
+    if data is None:
+        print("Something went wrong in get_fig_quantiles_from_api data is Null from api")
+        return None
     fig = make_subplots()
     df = pd.DataFrame.from_dict(data)
     if isinstance(city, str):

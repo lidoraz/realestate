@@ -1,6 +1,8 @@
 import os
 import logging
 
+from app_map.telegram_bot import serve_bot_threaded
+serve_bot_threaded()
 # from flask_basicauth import BasicAuth
 # Flask-BasicAuth
 
@@ -26,7 +28,7 @@ scheduler = BackgroundScheduler()
 
 # multiple jobs are created because we want to update as soon as etl finishes
 ## the process starts at 19 UTC and usually finishes by 19:30
-scheduler.add_job(loop_until_remote_ready, 'cron', hour=19, minute=30)
+scheduler.add_job(loop_until_remote_ready, 'cron', hour=19, minute=20)
 if not is_cache_ok():
     download_remote(block=True)
 scheduler.start()
@@ -41,6 +43,8 @@ def create_app(server):
     server, _ = get_dash_stats(server)
     from app_map.dashboard_neighborhood import get_dash as get_dash_neightbor
     server, _ = get_dash_neightbor(server)
+    from app_map.register_user import get_dash as get_dash_register_bot
+    server, _ = get_dash_register_bot(server)
 
     return server
 

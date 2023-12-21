@@ -377,7 +377,24 @@ svg {
     margin: 25px;
 }
 
-.Select-input {
+.analysis-main .Select-input {
     background-color:grey;
     color: black !important;
 }
+
+/* register */
+.noselect {
+  -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+     -khtml-user-select: none; /* Konqueror HTML */
+       -moz-user-select: none; /* Old versions of Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+            user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome, Edge, Opera and Firefox */
+}
+
+.collapse-cont label {
+    margin-bottom: 5px;
+    margin-top: 5px;
+}
+/* register */
