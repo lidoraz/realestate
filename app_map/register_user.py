@@ -10,7 +10,7 @@ import os
 from ext.env import get_pg_engine
 
 # TODO: fail the page loadout if the id decrypt failed to generate valid number
-# get_pg_engine(echo=False, use_vault=False)  # just to load all the env and sanity-check
+get_pg_engine(echo=False, use_vault=False)  # just to load all the env and sanity-check
 BASE_URL = "register_"
 
 width = 10
