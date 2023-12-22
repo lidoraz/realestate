@@ -23,7 +23,7 @@ def process_user_preferences(uid, config, asset_type, df_sale, df_rent, days_bac
     df_new = filter_assets_by_newly_published(df, days_back=days_back)
     df_dis = filter_assets_by_discount(df, min_discount_pct=min_discount_pct, days_back=days_back)
 
-    print(f"{uid=}, {asset_type=}, {len(df_new)=}, {len(df_dis)=}")
+    print(f"PUBLISH: {uid=}, {asset_type=}, {len(df_new)=}, {len(df_dis)=}")
     limit = 5
     if len(df_new):
         publish(df_new, config, find_type="new", group_id=uid, bot_id=bot_id, limit=limit)
@@ -68,7 +68,8 @@ def find_and_publish_for_all_users():
 
     for _, user in df_all.iterrows():
         uid = user['telegram_id']
-        print("*" * 100, f"USER {uid}", "*" * 100)
+        name = user['name']
+        print(f"Processing user: {uid}, {name}")
         sale_options = user['sale_preferences']
         if sale_options is not None:
             process_user_preferences(uid, sale_options, "sale", df_sale, df_rent)
@@ -90,11 +91,13 @@ def test_user(uid):
 
 
 if __name__ == '__main__':
-    test_user(None)
-    exit(0)
-    # def send_to_telegram_channel(a, b, c):  # overrides when running this
-    #     print(b, c)
-    #     print(a)
-    # os.environ['PRODUCTION'] = "TRUE" # set before
+    # test_user(None)
+    # exit(0)
+    os.environ['PRODUCTION'] = "False"  # "TRUE" # set before
+    def send_to_telegram_channel(a, b, c):  # overrides when running this
+        print(b, c)
+        print(a)
+
+
     find_and_publish_for_all_users()
     # find_and_publish_run_all()
