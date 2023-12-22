@@ -255,6 +255,7 @@ def get_dash(server):
                 ),
             ),
         ],
+        className="register-container noselect",
         fluid=True,  # Set fluid to True for a full-width container
     )
 

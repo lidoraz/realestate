@@ -21,16 +21,19 @@
 }
 
 /* USED FOR LEFT TABLE*/
-.offcanvas-start{
-    width:460px;
+.offcanvas-start {
+    width: 460px;
 }
-.previous-next-container{
-    width:300px;
+
+.previous-next-container {
+    width: 300px;
 }
-#datatable-interactivity{
+
+#datatable-interactivity {
     /*width: 420px;*/
 }
-#fetched-assets{
+
+#fetched-assets {
     /*position: absolute;*/
     /*z-index: 999;*/
     /*left:10px;*/
@@ -88,6 +91,7 @@ p.rtl {
     overflow: auto;
 
 }
+
 .price-diff-table td, .price-diff-table th {
     border: 1px solid black;
 }
@@ -114,8 +118,9 @@ p.rtl {
     font-size: small;
 
 }
-.modal-time-graphs{
-    margin-top:30px;
+
+.modal-time-graphs {
+    margin-top: 30px;
 }
 
 /* Problematic, needs fix*/
@@ -221,7 +226,7 @@ p.rtl {
     direction: ltr;
     min-width: 150px;
     text-align: right;
-    padding-right:10px;
+    padding-right: 10px;
 }
 
 .rounded-checkbox {
@@ -323,7 +328,8 @@ p.rtl {
     direction: ltr;
     /*float: right;*/
 }
-.asset-images .carousel-item{
+
+.asset-images .carousel-item {
     border-radius: 10px;
 }
 
@@ -378,23 +384,29 @@ svg {
 }
 
 .analysis-main .Select-input {
-    background-color:grey;
+    background-color: grey;
     color: black !important;
 }
 
 /* register */
 .noselect {
-  -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-touch-callout: none; /* iOS Safari */
     -webkit-user-select: none; /* Safari */
-     -khtml-user-select: none; /* Konqueror HTML */
-       -moz-user-select: none; /* Old versions of Firefox */
-        -ms-user-select: none; /* Internet Explorer/Edge */
-            user-select: none; /* Non-prefixed version, currently
-                                  supported by Chrome, Edge, Opera and Firefox */
+    -khtml-user-select: none; /* Konqueror HTML */
+    -moz-user-select: none; /* Old versions of Firefox */
+    -ms-user-select: none; /* Internet Explorer/Edge */
+    user-select: none;
+    /* Non-prefixed version, currently
+                                     supported by Chrome, Edge, Opera and Firefox */
 }
 
 .collapse-cont label {
     margin-bottom: 5px;
     margin-top: 5px;
 }
+
+.register-container {
+    max-width: 800px;
+}
+
 /* register */
