@@ -4,10 +4,10 @@ import telebot
 from telebot import types
 import urllib.parse
 
-API_TOKEN = os.getenv("TELEGRAM_BOT_REALESTATE_DEALS")
-DECRYPT_SALT = os.getenv("TELEGRAM_USERID_SALT")  # used for crypto
-assert DECRYPT_SALT
-assert API_TOKEN
+TELEGRAM_BOT_REALESTATE_DEALS = os.getenv("TELEGRAM_BOT_REALESTATE_DEALS")
+TELEGRAM_USERID_SALT = os.getenv("TELEGRAM_USERID_SALT")  # used for crypto
+assert TELEGRAM_USERID_SALT
+assert TELEGRAM_BOT_REALESTATE_DEALS
 URL_TO = "https://realestate1.up.railway.app/register_?telegram_id={}"
 
 
@@ -21,7 +21,7 @@ def server_bot():
     print("telebot server_bot started")
     # exit(0)
 
-    bot = telebot.TeleBot(API_TOKEN)
+    bot = telebot.TeleBot(TELEGRAM_BOT_REALESTATE_DEALS)
 
     c1 = types.BotCommand(command='start', description='Start the Bot')
     c2 = types.BotCommand(command='edit', description='Edit configs')
@@ -51,7 +51,7 @@ def server_bot():
         uid = message.from_user.id
         print(f"{uid=}")
         bot.set_chat_menu_button(message.chat.id, types.MenuButtonCommands('commands'))
-        uid_enc = urllib.parse.quote(encrypt(uid, DECRYPT_SALT))
+        uid_enc = urllib.parse.quote(encrypt(uid, TELEGRAM_USERID_SALT))
         bot.send_message(chat_id=message.chat.id, text=start_str.format(uid_enc),
                          parse_mode="HTML")
 
