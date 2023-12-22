@@ -19,3 +19,4 @@ colour
 tqdm
 gunicorn
 pyTelegramBotAPI
+cryptography
