@@ -159,9 +159,11 @@ def get_dash(server):
     assert os.getenv("TELEGRAM_USERID_SALT")  # used for crypto
     app = dash.Dash(server=server, external_stylesheets=[dbc.themes.BOOTSTRAP], title="Register",
                     url_base_pathname=f'/{BASE_URL}/')
-
     app.layout = dbc.Container(
         [
+            # prevents zoom in when using iphone
+            html.Meta(name="viewport",
+                      content="width=device-width, height=device-height, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no"),
             dcc.Location(id='url', refresh=False),  # Ad
             dbc.Row(
                 dbc.Col(html.H1("Agent App, Rent & Sale", className="text-center mb-4"), width=12),
