@@ -7,6 +7,7 @@ import json
 # Think about adding cache here
 def req_ratio_time_taken_cities(deal_type: str, min_samples: int = 200, days_back: int = 7):
     res = requests.post(f'{os.getenv("REAL_ESTATE_API")}/ratio_time_taken_cities',
+                        timeout=10,
                         json={'type': deal_type, 'min_samples': min_samples, 'days_back': days_back})
     if res.status_code == 200:
         return res.json()['data_ratio_time_taken_cities']
@@ -14,6 +15,7 @@ def req_ratio_time_taken_cities(deal_type: str, min_samples: int = 200, days_bac
 
 
 def req_timeseries_recent_quantiles(deal_type, time_interval, cities=None):
+    # TODO: WHEN there is load in the db it might fail, consider moving the db to aws
     assert time_interval in ("year", "month", "week")
     cities = [cities] if isinstance(cities, str) else cities  # convert to array
     data = {"type": deal_type, "time_interval": time_interval}
@@ -23,6 +25,7 @@ def req_timeseries_recent_quantiles(deal_type, time_interval, cities=None):
     else:
         suffix = "all"
     res = requests.post(f'{os.getenv("REAL_ESTATE_API")}/timeseries_recent_quantiles_{suffix}',
+                        timeout=10,
                         json=data)
     if res.status_code == 200:
         return res.json()[f'data_timeseries_recent_quantiles_{suffix}']
