@@ -161,7 +161,7 @@ def get_dash(server):
                     url_base_pathname=f'/{BASE_URL}/')
     app.layout = dbc.Container(
         [
-            # prevents zoom in when using iphone https://stackoverflow.com/questions/2989263/disable-auto-zoom-in-input-text-tag-safari-on-iphone
+            # prevents zoom in when using iphone
             html.Meta(name="viewport",
                       content="width=device-width, height=device-height, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no"),
             dcc.Location(id='url', refresh=False),  # Ad
@@ -325,7 +325,7 @@ def get_dash(server):
             return dash.no_update
 
         if not (telegram_id and name) or (isinstance(telegram_id, str) and not telegram_id.isnumeric()):
-            return True, alert_bad_missing_name, "danger", False
+            return True, alert_bad_missing_name, "danger"
 
         is_anything_selected = sale_is_open or rent_is_open
         if not is_anything_selected:
@@ -361,7 +361,7 @@ def get_dash(server):
             return True, alert_ok, "success", True
         elif res == 'update':
             process_updated_user(user_config)
-            return True, alert_update, "info", True
+            return True, alert_update, "warning", True
         else:  # res == 'err':
             return True, alert_bad_something, 'danger', False
 
