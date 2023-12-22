@@ -4,7 +4,7 @@ import os
 from ext.env import load_vault
 load_vault()
 is_prod = os.getenv("PRODUCTION", False)
-
+print(f"TELEGRAM: PRODUCTION={is_prod}")
 
 def send_to_telegram_channel(msg, group_id, bot_id):
     params = {
