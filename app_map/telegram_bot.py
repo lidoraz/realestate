@@ -40,8 +40,8 @@ def server_bot():
             return
 
     start_str = "Hello! I am a Telegram bot, I will help you get new deals in rent and sale of real estate"
-    start_str += "\nTo continue, please click here:"
-    start_str += f"\n <a href='{URL_TO}'>Register</a>"
+    start_str += "\nTo continue, please click here: "
+    start_str += f"<a href='{URL_TO}'>Register</a>"
 
     # TODO: ADD option to DELETE config from here just with user ID.
 
