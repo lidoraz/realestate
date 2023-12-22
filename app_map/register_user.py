@@ -6,8 +6,7 @@ import dash_bootstrap_components as dbc
 from datetime import datetime
 import urllib.parse
 import os
-
-from ext.env import get_pg_engine
+from fetch_data.find_assets.publish_ai_assets_all import publish_for_new_user, process_updated_user
 
 # TODO: fail the page loadout if the id decrypt failed to generate valid number
 # get_pg_engine(echo=False, use_vault=False)  # just to load all the env and sanity-check
@@ -345,7 +344,7 @@ def get_dash(server):
 
         time_now = datetime.utcnow()
         print(f"Adding {time_now=}, {telegram_id=}, {rent_preferences=}, {sale_preferences=}")
-        data = {
+        user_config = {
             "name": name,
             "telegram_id": telegram_id,
             "rent_preferences": rent_preferences,
@@ -353,10 +352,12 @@ def get_dash(server):
             "inserted_at": time_now,
             "updated_at": time_now,
         }
-        res = insert_or_update_user(data)
+        res = insert_or_update_user(user_config)
         if res == 'insert':
+            publish_for_new_user(user_config)
             return True, alert_ok, "success"
         elif res == 'update':
+            process_updated_user(user_config)
             return True, alert_update, "warning"
         elif res == 'err':
             return True, alert_bad_duplicate_user, 'danger'

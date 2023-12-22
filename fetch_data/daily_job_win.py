@@ -13,12 +13,14 @@ from fetch_data.neighbors.calc import run_neighbors
 from fetch_data.find_assets.publish_ai_assets import find_and_publish_run_all
 from fetch_data.find_assets.publish_ai_assets_all import find_and_publish_for_all_users
 from scrape_nadlan.utils_insert import send_telegram_msg
+from ext.env import load_vault
 
 import time
 
 # from stats.daily_fetch_stats import run_type_stats
 
 if __name__ == '__main__':
+    load_vault()
     job_name = "DailyJob-Sale&Rent Preprocess"
     send_telegram_msg(f"⚪ Starting {job_name}")
     model_params = dict(n_folds=5, iterations=3000)
