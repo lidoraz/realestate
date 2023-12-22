@@ -445,7 +445,8 @@ alert_bad_missing_creds_sale = "Sale options have missing details:\n" + alert_ba
 alert_bad_duplicate_user = "User with that name already exists."
 alert_bad_no_asset_type_selected = "Must enable one of the two options: Rent or Sale"
 alert_bad_missing_name = "User name or Telegram ID are missing"
-alert_ok = "Successfully submit your options!\nSoon you will receive new assets according to your preferences!"
+# alert_ok = "Successfully submit your options!\nSoon you will receive new assets according to your preferences!"
+alert_ok = "Successfully submit your options!\nCheck out your telegram account for details!"
 alert_update = "Successfully updated your profile"
 
 if __name__ == "__main__":

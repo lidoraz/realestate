@@ -1,8 +1,7 @@
 import os
 import logging
-
 from app_map.telegram_bot import serve_bot_threaded
-serve_bot_threaded()
+
 # from flask_basicauth import BasicAuth
 # Flask-BasicAuth
 
@@ -50,6 +49,11 @@ def create_app(server):
 
 
 app = create_app(server)
+
+is_prod = os.getenv("PRODUCTION", False)
+if is_prod:
+    print(f"TELEGRAM BOT IS STARTING: PRODUCTION={is_prod}")
+    serve_bot_threaded()
 
 
 # app.config['BASIC_AUTH_USERNAME'] = '1'

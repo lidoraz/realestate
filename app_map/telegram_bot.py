@@ -5,7 +5,8 @@ from telebot import types
 import urllib.parse
 
 API_TOKEN = os.getenv("TELEGRAM_BOT_REALESTATE_DEALS")
-assert os.getenv("TELEGRAM_USERID_SALT")  # used for crypto
+DECRYPT_SALT = os.getenv("TELEGRAM_USERID_SALT")  # used for crypto
+assert DECRYPT_SALT
 assert API_TOKEN
 URL_TO = "https://realestate1.up.railway.app/register_?telegram_id={}"
 
@@ -50,7 +51,7 @@ def server_bot():
         uid = message.from_user.id
         print(f"{uid=}")
         bot.set_chat_menu_button(message.chat.id, types.MenuButtonCommands('commands'))
-        uid_enc = urllib.parse.quote(encrypt(uid))
+        uid_enc = urllib.parse.quote(encrypt(uid, DECRYPT_SALT))
         bot.send_message(chat_id=message.chat.id, text=start_str.format(uid_enc),
                          parse_mode="HTML")
 
