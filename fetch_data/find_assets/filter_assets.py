@@ -9,7 +9,8 @@ def filter_assets_by_config(df, c):
     df = df[df['balconies']] if c['must_balcony'] else df
     df = df[df['parking'] > 0] if c['must_parking'] else df
     df = df[~df['is_agency']] if c['must_no_agency'] else df
-    df = df[df['asset_status'].isin(c['asset_status'])] if c['asset_status'] else df
+    # note the change in name
+    df = df[df['asset_status'].isin(c['asset_cond'])] if c['asset_cond'] else df
     df = df[df['price'].between(c['min_price'], c['max_price'])]
     df = df[df['rooms'].between(c['min_rooms'], c['max_rooms'])]
 

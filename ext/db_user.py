@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, JSON, DateTime
+from sqlalchemy import Column, BigInteger, String, JSON, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session
 from ext.env import get_pg_engine
@@ -10,7 +10,7 @@ Base = declarative_base()
 class User(Base):
     __tablename__ = 'realestate_telegram_users'
     # Set telegram_id as the primary key
-    telegram_id = Column(Integer, primary_key=True)
+    telegram_id = Column(BigInteger, primary_key=True)
     name = Column(String)
     phone_number = Column(String)
     sale_preferences = Column(JSON)
@@ -60,7 +60,7 @@ def insert_or_update_user(user_data):
             else:
                 _update(session, user_record, user_data)
                 return "update"
-        except sqlalchemy.exc.IntegrityError as e:
+        except sqlalchemy.exc.SQLAlchemyError as e:
             session.rollback()
             print(e)
             return "err"
