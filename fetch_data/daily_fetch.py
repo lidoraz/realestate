@@ -37,7 +37,7 @@ def run_daily_job(type_, model_params):
     # from fetch_data.price_regression import add_ai_price
     from ext.env import get_df_from_pg, get_query
     from fetch_data.modeling.calc_ai import add_ai_price
-    from fetch_data.price_distance_comp import add_distance
+    from fetch_data.price_distance_comp import add_median_distance
     query = get_query(q_path)
     df = get_df_from_pg(query.format(asset_type=type_))
     df = df.set_index('id')
@@ -45,7 +45,7 @@ def run_daily_job(type_, model_params):
     # df = fetch_prepare(type_, eng)
 
     df = add_ai_price(df, type_, model_params)
-    df = add_distance(df)
+    df = add_median_distance(df)
     return df
 
 
