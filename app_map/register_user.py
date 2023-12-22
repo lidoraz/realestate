@@ -343,7 +343,7 @@ def get_dash(server):
 
         sale_preferences = generate_preferences(
             sale_price_range, sale_rooms_range, sale_asset_cond, sale_cities, sale_more_options
-        ) if sale_is_open else None
+        ) if sale_is_open else None #
 
         time_now = datetime.utcnow()
         print(f"Adding {time_now=}, {telegram_id=}, {rent_preferences=}, {sale_preferences=}")
