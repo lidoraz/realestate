@@ -200,7 +200,7 @@ def get_dash(server):
                                 , justify="center"),
                             html.Hr(),
                             dbc.Row(html.H3(rent_header_closed,
-                                            className="mt-4 mb-3 col-6 noselect",
+                                            className="mt-4 mb-3",
                                             n_clicks=0,
                                             id="rent-options-header"),
                                     justify="center"),
@@ -215,7 +215,7 @@ def get_dash(server):
                             html.Hr(),
 
                             dbc.Row(html.H3(sale_header_closed,
-                                            className="mt-4 mb-3 col-6 noselect",
+                                            className="mt-4 mb-3",
                                             n_clicks=0,
                                             id="sale-options-header"),
                                     justify="center"),
