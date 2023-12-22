@@ -10,8 +10,10 @@ import os
 from ext.env import get_pg_engine
 
 # TODO: fail the page loadout if the id decrypt failed to generate valid number
-get_pg_engine(echo=False, use_vault=False)  # just to load all the env and sanity-check
+# get_pg_engine(echo=False, use_vault=False)  # just to load all the env and sanity-check
 BASE_URL = "register_"
+
+width = 10
 
 
 def get_asset_options_html(asset_type):
@@ -24,8 +26,8 @@ def get_asset_options_html(asset_type):
     rent_max_price = 10_000
     sale_price_marks = {sale_min_price: '100k', 1_000_000: '1M', 2000000: '2M', 3000000: '3M', 4000000: '4M',
                         sale_max_price: '5M+'}
-    rent_price_marks = {rent_min_price: '1000', 2000: '2000', 4000: '4000', 6000: '6000', 8000: '8000',
-                        rent_max_price: '10000+'}
+    rent_price_marks = {rent_min_price: '1K', 2000: '2K', 4000: '4K', 6000: '6K', 8000: '8K',
+                        rent_max_price: '10K+'}
     rooms_marks = {i: f'{i}' for i in range(7)}
     rooms_marks[6] = '6+'
     step = 500 if asset_type == "rent" else 50_000
@@ -52,7 +54,7 @@ def get_asset_options_html(asset_type):
                             ),
                         ]
                     ),
-                    width=6,
+                    width=width,
                 ),
             ]
             , justify="center"),
@@ -72,7 +74,7 @@ def get_asset_options_html(asset_type):
                             ),
                         ]
                     ),
-                    width=6,
+                    width=width,
                 ),
             ]
             , justify="center"),
@@ -92,7 +94,7 @@ def get_asset_options_html(asset_type):
                             ),
                         ]
                     ),
-                    width=6,
+                    width=width,
                 ),
             ]
             , justify="center"),
@@ -111,7 +113,7 @@ def get_asset_options_html(asset_type):
                             ),
                         ]
                     ),
-                    width=6,
+                    width=width,
                 ),
             ]
             , justify="center"),
@@ -130,7 +132,7 @@ def get_asset_options_html(asset_type):
                             ),
                         ]
                     ),
-                    width=6,
+                    width=width,
                 ),
             ]
             , justify="center"),
@@ -178,7 +180,7 @@ def get_dash(server):
                                                 dbc.Input(id="input-name", type="text", placeholder="Enter your name"),
                                             ]
                                         ),
-                                        width=6,
+                                        width=width,
                                     ),
                                 ]
                                 , justify="center"),
@@ -192,7 +194,7 @@ def get_dash(server):
                                                           placeholder="Enter your Telegram ID"),
                                             ]
                                         ),
-                                        width=6,
+                                        width=width,
                                     ),
                                 ]
                                 , justify="center"),
@@ -236,7 +238,7 @@ def get_dash(server):
                                 [
                                     dbc.Col(
                                         dbc.Button("Submit", id="btn-submit", color="primary"),
-                                        width={"size": 6, "offset": 5},  # Center the button
+                                        width={"size": width, "offset": 5},  # Center the button
                                     ),
                                 ]
                                 , justify="center"),
@@ -445,6 +447,6 @@ alert_ok = "Successfully submit your options!\nSoon you will receive new assets 
 alert_update = "Successfully updated your profile"
 
 if __name__ == "__main__":
-    _, app = get_dash(True)
     os.environ["TELEGRAM_USERID_SALT"] = "test"
+    _, app = get_dash(True)
     app.run_server(debug=True, port=8048)
