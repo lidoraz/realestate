@@ -227,13 +227,13 @@ def get_dash(server):
                                 is_open=False
                             ),
                             html.Hr(),
-                            dbc.Alert(
+                            dcc.Loading(dbc.Alert(
                                 None,
                                 id='submit-alert',
                                 color='danger',
                                 is_open=False,
                                 duration=15_000,
-                            ),
+                            ), fullscreen=True),
 
                             dbc.Row(
                                 [
@@ -284,6 +284,7 @@ def get_dash(server):
             Output("submit-alert", "is_open"),
             Output("submit-alert", "children"),
             Output("submit-alert", "color"),
+            Output("btn-submit", "disabled"),
         ],
         [Input("btn-submit", "n_clicks")],
         [
@@ -328,13 +329,13 @@ def get_dash(server):
 
         is_anything_selected = sale_is_open or rent_is_open
         if not is_anything_selected:
-            return True, alert_bad_no_asset_type_selected, "danger"
+            return True, alert_bad_no_asset_type_selected, "danger", False
 
         if rent_is_open and not rent_cities:
-            return True, alert_bad_missing_creds_rent, "danger"
+            return True, alert_bad_missing_creds_rent, "danger", False
 
         if sale_is_open and not sale_cities:
-            return True, alert_bad_missing_creds_sale, "danger"
+            return True, alert_bad_missing_creds_sale, "danger", False
 
         rent_preferences = generate_preferences(
             rent_price_range, rent_rooms_range, rent_asset_cond, rent_cities, rent_more_options
@@ -357,14 +358,12 @@ def get_dash(server):
         res = insert_or_update_user(user_config)
         if res == 'insert':
             publish_for_new_user(user_config)
-            return True, alert_ok, "success"
+            return True, alert_ok, "success", True
         elif res == 'update':
             process_updated_user(user_config)
-            return True, alert_update, "warning"
-        elif res == 'err':
-            return True, alert_bad_duplicate_user, 'danger'
-
-        return False, alert_ok, True
+            return True, alert_update, "warning", True
+        else:  # res == 'err':
+            return True, alert_bad_something, 'danger', False
 
     @app.callback(
         [Output("input-telegram-id", "value")],
@@ -380,7 +379,7 @@ def get_dash(server):
             telegram_id = urllib.parse.unquote(telegram_id)
             print("--- >", telegram_id)
             try:
-                telegram_id = decrypt(telegram_id)
+                telegram_id = decrypt(telegram_id) if os.getenv("PRODUCTION") else telegram_id
                 return [telegram_id]
             except ValueError as e:
                 print("ValueError: Got invalid id for decrypt telegram_id")
@@ -444,7 +443,7 @@ sale_header_open = "🏠 Sale Options - (click to disable)"
 alert_bad_missing_creds = "Please select at least one city."
 alert_bad_missing_creds_rent = "Rent options have missing details:\n" + alert_bad_missing_creds
 alert_bad_missing_creds_sale = "Sale options have missing details:\n" + alert_bad_missing_creds
-alert_bad_duplicate_user = "User with that name already exists."
+alert_bad_something = "Something unexpected happened. Please try again."
 alert_bad_no_asset_type_selected = "Must enable one of the two options: Rent or Sale"
 alert_bad_missing_name = "User name or Telegram ID are missing"
 # alert_ok = "Successfully submit your options!\nSoon you will receive new assets according to your preferences!"
