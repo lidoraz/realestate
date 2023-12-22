@@ -1,6 +1,6 @@
 import dash
 from dash import html, Output, Input, State, dcc
-from ext.db_user import insert_or_update_user  # insert_or_edit
+from ext.db_user import insert_or_update_user
 from ext.crypto import decrypt
 import dash_bootstrap_components as dbc
 from datetime import datetime
@@ -10,7 +10,7 @@ import os
 from ext.env import get_pg_engine
 
 # TODO: fail the page loadout if the id decrypt failed to generate valid number
-get_pg_engine(echo=False)  # just to load all the env and sanity-check
+get_pg_engine(echo=False, use_vault=False)  # just to load all the env and sanity-check
 BASE_URL = "register_"
 
 
