@@ -325,7 +325,7 @@ def get_dash(server):
             return dash.no_update
 
         if not (telegram_id and name) or (isinstance(telegram_id, str) and not telegram_id.isnumeric()):
-            return True, alert_bad_missing_name, "danger"
+            return True, alert_bad_missing_name, "danger", False
 
         is_anything_selected = sale_is_open or rent_is_open
         if not is_anything_selected:
@@ -361,7 +361,7 @@ def get_dash(server):
             return True, alert_ok, "success", True
         elif res == 'update':
             process_updated_user(user_config)
-            return True, alert_update, "warning", True
+            return True, alert_update, "info", True
         else:  # res == 'err':
             return True, alert_bad_something, 'danger', False
 
