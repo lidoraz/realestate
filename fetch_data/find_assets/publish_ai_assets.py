@@ -47,6 +47,7 @@ def publish_once_a_week(config):
 
 def find_and_publish(config):
     df = pd.read_pickle(f"resources/yad2_{config['asset_type']}_df.pk")
+    df['ai_price_pct'] = df['price'] / df['ai_price'] - 1
     df = filter_assets_by_config(df, config)
     days_back = 1  # should be always 1
 
