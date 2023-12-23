@@ -23,7 +23,7 @@ def parse_envs():
     n_limit_env = os.getenv("TELEGRAM_BOT_LIMIT_N_ASSETS")
     try:
         ai_price_pct_less_than = float(ai_price_pct_less_than_env)
-        assert ai_price_pct_less_than < 0
+        assert ai_price_pct_less_than < 1
         print(f"{ai_price_pct_less_than=} ENV? {ai_price_pct_less_than_env is None}")
     except:
         ai_price_pct_less_than = default_ai_price_pct_less_than
