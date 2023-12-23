@@ -4,9 +4,6 @@ from fetch_data.find_assets.publish_ai_utils import publish
 from ext.db_user import select_all
 import pandas as pd
 import os
-from ext.env import load_vault
-
-load_vault()
 from ext.publish import send_to_telegram_channel
 
 bot_id = os.getenv("TELEGRAM_BOT_REALESTATE_DEALS")
@@ -14,7 +11,7 @@ bot_id = os.getenv("TELEGRAM_BOT_REALESTATE_DEALS")
 DAYS_BACK = 1
 assert bot_id
 print(f"{DAYS_BACK=}")
-default_ai_price_pct_less_than = 0 # -0.05
+default_ai_price_pct_less_than = 0  # -0.05
 default_n_limit = 5
 
 
@@ -157,9 +154,11 @@ if __name__ == '__main__':
     os.environ['PRODUCTION'] = "False"  # "TRUE" # set before
     test_user_new()
 
+
     def send_to_telegram_channel(a, b, c):  # overrides when running this
         print(b, c)
         print(a)
+
 
     find_and_publish_for_all_users()
     # find_and_publish_run_all()
