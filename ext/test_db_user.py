@@ -1,51 +1,42 @@
 from ext.db_user import User, get_engine_no_vault
 from sqlalchemy.orm import Session
+from datetime import datetime
 
 
-# min_price=4000, max_price=8000, min_rooms=3, max_rooms=4,
-#                    ai_price_pct_less_than=-0.07,
-#                    # must_balcony must_parking no_agency
-#                    must_parking=True, must_balcony=True, must_no_agency=False,
-#                    asset_status=["משופץ", "חדש (גרו בנכס)", "חדש מקבלן (לא גרו בנכס)"],
-#                    cities=[
-#                        "תל אביב יפו",
-#                        "רמת גן",
-#                        "גבעתיים",
-#                        "הרצליה", ],
-#                    ai_std_pct=0.07, asset_type="rent")
+def _get_user_data_1():
+    return dict(name="test",
+                telegram_id=1,
+                phone_number=None,  # Ignore phone number for now and insert null
+                rent_preferences={
+                    'min_price': 3000,
+                    'max_price': 7000,
+                    'min_rooms': 3,
+                    'max_rooms': 4,
+                    'asset_status': ['חדש (גרו בנכס)'],
+                    'cities': ['אור עקיבא', 'אשקלון'],
+                    'must_parking': True,
+                    'must_balcony': True,
+                    'must_no_agency': None,
+                },
+                sale_preferences={
+                    'min_price': 1000000,
+                    'max_price': 3000000,
+                    'min_rooms': 3,
+                    'max_rooms': 4,
+                    'asset_status': [],
+                    'cities': ['אילת'],
+                    'must_parking': True,
+                    'must_balcony': True,
+                    'must_no_agency': True,  # should be must be agency
+                },
+                inserted_at=datetime.now(),
+                updated_at=datetime.now())
+
+
 def test_user_data_1():
-    from datetime import datetime
     # Create a User instance
     with Session(get_engine_no_vault()) as session:
-        new_user = User(
-            name="test",
-            telegram_id=1,
-            phone_number=None,  # Ignore phone number for now and insert null
-            rent_preferences={
-                'min_price': 3000,
-                'max_price': 7000,
-                'min_rooms': 3,
-                'max_rooms': 4,
-                'asset_status': ['חדש (גרו בנכס)'],
-                'cities': ['אור עקיבא', 'אשקלון'],
-                'must_parking': True,
-                'must_balcony': True,
-                'must_no_agency': None,
-            },
-            sale_preferences={
-                'min_price': 1000000,
-                'max_price': 3000000,
-                'min_rooms': 3,
-                'max_rooms': 4,
-                'asset_status': [],
-                'cities': ['אילת'],
-                'must_parking': True,
-                'must_balcony': True,
-                'must_no_agency': True,  # should be must be agency
-            },
-            inserted_at=datetime.now(),
-            updated_at=datetime.now()
-        )
+        new_user = User(**_get_user_data_1())
         # Add the user to the session
         session.add(new_user)
         # Commit the transaction to persist the data

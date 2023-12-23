@@ -1,9 +1,10 @@
 import pandas as pd
 from datetime import datetime, timedelta
 
+AI_STD_PCT = 0.07 # checks if ensemble agrees, removes anomalies
+
 
 def filter_assets_by_config(df, c):
-    df['ai_price_pct'] = df['price'] / df['ai_price'] - 1
     df = df[df['city'].isin(c['cities'])]
     # print(df['city'].value_counts().to_dict())
     df = df[df['balconies']] if c['must_balcony'] else df
@@ -14,7 +15,7 @@ def filter_assets_by_config(df, c):
     df = df[df['price'].between(c['min_price'], c['max_price'])]
     df = df[df['rooms'].between(c['min_rooms'], c['max_rooms'])]
 
-    df = df[df['ai_std_pct'] < c['ai_std_pct']]
+    df = df[df['ai_std_pct'] < AI_STD_PCT]
     df = df[df['ai_price_pct'] < c['ai_price_pct_less_than']]
     df = df.sort_values('ai_price_pct')
     return df
