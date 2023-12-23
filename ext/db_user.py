@@ -1,3 +1,5 @@
+import os
+
 from sqlalchemy import Column, BigInteger, String, JSON, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session
@@ -20,7 +22,8 @@ class User(Base):
 
 
 def get_engine_no_vault():
-    engine = get_pg_engine(True, use_vault=False)
+    is_echo = os.getenv('PRODUCTION') == 'TRUE'
+    engine = get_pg_engine(is_echo, use_vault=False)
     return engine
 
 

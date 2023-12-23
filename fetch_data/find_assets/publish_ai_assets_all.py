@@ -3,6 +3,7 @@ from fetch_data.find_assets.filter_assets import filter_assets_by_config, filter
 from fetch_data.find_assets.publish_ai_utils import publish
 from ext.db_user import select_all
 import pandas as pd
+from datetime import datetime, timedelta
 import os
 from ext.publish import send_to_telegram_channel
 
@@ -52,11 +53,20 @@ def process_user_preferences(uid, config, asset_type,
         print(f"PUBLISH: {uid=}, {asset_type=}, {len(df_new)=}, {len(df_dis)=}")
 
 
+def _process_df(asset_type):
+    file_path = f"resources/yad2_{asset_type}_df.pk"
+    df = pd.read_pickle(file_path)
+    df['ai_price_pct'] = df['price'] / df['ai_price'] - 1
+    max_update = df['date_updated'].max()
+    td = datetime.now() - max_update
+    if td > timedelta(hours=24):
+        print(f"CAUTION! DATAFRAME '{file_path}' IS NOT UPDATED MORE THAN 24 HOURS ({td})")
+    return df
+
+
 def _load_dataframes():
-    df_sale = pd.read_pickle(f"resources/yad2_{'forsale'}_df.pk")
-    df_sale['ai_price_pct'] = df_sale['price'] / df_sale['ai_price'] - 1
-    df_rent = pd.read_pickle(f"resources/yad2_{'rent'}_df.pk")
-    df_rent['ai_price_pct'] = df_rent['price'] / df_rent['ai_price'] - 1
+    df_sale = _process_df('forsale')
+    df_rent = _process_df('rent')
     return df_sale, df_rent
 
 

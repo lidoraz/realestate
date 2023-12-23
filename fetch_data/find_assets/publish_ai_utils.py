@@ -42,7 +42,7 @@ def publish(df, config, find_type, group_id, bot_id, limit=None):
     output_str = asset_type_str + find_type_str + "\n"
     max_assets_per_msg = 5
     df = df.reset_index()
-    print(f"publishing {len(df)} assets for {asset_type=}, {find_type=}")
+    print(f"publishing {len(df)}, limited to {limit} assets for {asset_type=}, {find_type=}")
     if limit:
         df = df[:limit]
     for idx, row in df.iterrows():

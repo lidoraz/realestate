@@ -33,8 +33,9 @@ if __name__ == '__main__':
         daily_rent(model_params=model_params)
         run_neighbors()
         find_and_publish_run_all() # for me
+        # this code goes out to other process..
         # time.sleep(60 * 5)  # sleep for 5 minutes to allow site to update...
-        find_and_publish_for_all_users() # for all others
+        # find_and_publish_for_all_users() # for all others
         send_telegram_msg(f"🟢 FINISHED JOB in {job_name}")
     except Exception as e:
         send_telegram_msg(f"🔴 ERROR in {job_name}")
