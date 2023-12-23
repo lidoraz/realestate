@@ -45,15 +45,14 @@ def create_app(server):
     from app_map.register_user import get_dash as get_dash_register_bot
     server, _ = get_dash_register_bot(server)
 
+    is_prod = os.getenv("PRODUCTION", False)
+    if is_prod:
+        print(f"TELEGRAM BOT IS STARTING: PRODUCTION={is_prod}")
+        serve_bot_threaded()
     return server
 
 
 app = create_app(server)
-
-is_prod = os.getenv("PRODUCTION", False)
-if is_prod:
-    print(f"TELEGRAM BOT IS STARTING: PRODUCTION={is_prod}")
-    serve_bot_threaded()
 
 
 # app.config['BASIC_AUTH_USERNAME'] = '1'
