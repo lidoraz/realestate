@@ -14,7 +14,7 @@ bot_id = os.getenv("TELEGRAM_BOT_REALESTATE_DEALS")
 DAYS_BACK = 1
 assert bot_id
 print(f"{DAYS_BACK=}")
-default_ai_price_pct_less_than = -0.05
+default_ai_price_pct_less_than = 0 # -0.05
 default_n_limit = 5
 
 
