@@ -22,7 +22,7 @@ class User(Base):
 
 
 def get_engine_no_vault():
-    is_echo = os.getenv('PRODUCTION') == 'TRUE'
+    is_echo = os.getenv('PRODUCTION') != 'TRUE'
     engine = get_pg_engine(is_echo, use_vault=False)
     return engine
 
