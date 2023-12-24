@@ -160,7 +160,7 @@ def download_remote(block=False):
 
 
 def loop_until_remote_ready():
-    for i in range(60 * 4):  # will check when triggered until found
+    for i in range(60 * 6):  # will check when triggered until found
         if is_remote_files_new():
             download_remote(True)
             LOGGER.info("check_download - downloaded new data")
