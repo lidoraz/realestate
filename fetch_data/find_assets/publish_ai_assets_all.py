@@ -1,5 +1,5 @@
 from fetch_data.find_assets.filter_assets import filter_assets_by_config, filter_assets_by_newly_published, \
-    filter_assets_by_discount
+    filter_assets_by_discount, combine_dfs_and_limit
 from fetch_data.find_assets.publish_ai_utils import publish
 from ext.db_user import select_all
 import pandas as pd
@@ -44,11 +44,13 @@ def process_user_preferences(uid, config, asset_type,
     df = filter_assets_by_config(df, config)
     df_new = filter_assets_by_newly_published(df, days_back=days_back)
     df_dis = filter_assets_by_discount(df, min_discount_pct=min_discount_pct, days_back=days_back)
+    df_new, df_dis = combine_dfs_and_limit([df_new, df_dis], 'ai_price_pct', n_limit)
 
     if len(df_new):
         publish(df_new, config, find_type="new", group_id=uid, bot_id=bot_id, limit=n_limit)
     if len(df_dis):
         publish(df_dis, config, find_type="discount", group_id=uid, bot_id=bot_id, limit=n_limit)
+
     if len(df_new) or len(df_dis):
         print(f"PUBLISH: {uid=}, {asset_type=}, {len(df_new)=}, {len(df_dis)=}")
 
