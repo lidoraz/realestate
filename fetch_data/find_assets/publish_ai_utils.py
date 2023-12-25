@@ -1,5 +1,5 @@
 from ext.publish import send_to_telegram_channel
-
+import pandas as pd
 
 def format_telegram(idx, sr, asset_type):
     max_text_limit = 100
@@ -15,7 +15,7 @@ def format_telegram(idx, sr, asset_type):
     text_info = text_info[:max_text_limit] + '...' if len(text_info) > max_text_limit else text_info
 
     recent_price_pct, recent_price_diff = sr.get('recent_price_pct'), sr.get('recent_price_diff')
-    if recent_price_pct is not None:
+    if recent_price_pct is not None and not pd.isna(recent_price_pct):
         discount_str = f"\n<b>**הנחה במחיר:</b> {abs(recent_price_pct):.1%}-, ({abs(recent_price_diff):,.0f}₪)"
         discount_str += f"\n<b>**נצפה לראשונה:</b> {sr['date_added'].date()}"
     else:
