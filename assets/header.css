@@ -84,6 +84,25 @@ p.rtl {
     height: calc(100vh - 0vh) !important;
 }
 
+/* Media query for mobile devices */
+@media only screen and (max-width: 500px) {
+    .leaflet-control-zoom {
+        display: none;
+    }
+}
+
+#main-alert {
+    position: absolute;
+    z-index: 1001;
+    direction: rtl;
+    right: 0;
+    top: 50px;
+}
+
+#search-input {
+
+}
+
 
 .price-diff-table {
     font-size: 70%;
@@ -119,10 +138,18 @@ p.rtl {
     font-size: small;
 }
 
-.sidebar-info-links a {
-    margin-right: 20px;
+.sidebar-info-links-container {
     margin-top: 30px;
+}
+
+.sidebar-info-links {
+    text-decoration: none;
+    margin-right: 20px;
     color: black;
+}
+
+.nopadding {
+    padding: 0;
 }
 
 .sidebar-info-links img {
@@ -239,7 +266,7 @@ p.rtl {
     overflow-y: scroll;
     max-height: 80vh;
     width: 220px;
-    direction: ltr;
+    direction: rtr;
     min-width: 150px;
     text-align: right;
     padding-right: 10px;

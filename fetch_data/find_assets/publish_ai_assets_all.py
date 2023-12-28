@@ -9,11 +9,14 @@ from ext.publish import send_to_telegram_channel
 
 bot_id = os.getenv("TELEGRAM_BOT_REALESTATE_DEALS")
 
-DAYS_BACK = 1
+try:
+    DAYS_BACK = int(os.getenv('TEST_DAYS_BACK'))
+except:
+    DAYS_BACK = 1
 assert bot_id
 print(f"{DAYS_BACK=}")
 default_ai_price_pct_less_than = 0  # -0.05
-default_n_limit = 5
+default_n_limit = 6
 
 
 def parse_envs():
@@ -34,10 +37,9 @@ def parse_envs():
     return ai_price_pct_less_than, n_limit
 
 
-def process_user_preferences(uid, config, asset_type,
+def process_user_preferences(uid, name, config, asset_type,
                              df, days_back,
                              ai_price_pct_less_than, n_limit):
-    asset_type = config['asset_type'] = asset_type
     config['ai_price_pct_less_than'] = ai_price_pct_less_than
     min_discount_pct = 0.03
 
@@ -45,14 +47,13 @@ def process_user_preferences(uid, config, asset_type,
     df_new = filter_assets_by_newly_published(df, days_back=days_back)
     df_dis = filter_assets_by_discount(df, min_discount_pct=min_discount_pct, days_back=days_back)
     df_new, df_dis = combine_dfs_and_limit([df_new, df_dis], 'ai_price_pct', n_limit)
-
     if len(df_new):
-        publish(df_new, config, find_type="new", group_id=uid, bot_id=bot_id, limit=n_limit)
+        publish(df_new, asset_type, find_type="new", group_id=uid, bot_id=bot_id, limit=n_limit)
     if len(df_dis):
-        publish(df_dis, config, find_type="discount", group_id=uid, bot_id=bot_id, limit=n_limit)
-
+        publish(df_dis, asset_type, find_type="discount", group_id=uid, bot_id=bot_id, limit=n_limit)
     if len(df_new) or len(df_dis):
-        print(f"PUBLISH: {uid=}, {asset_type=}, {len(df_new)=}, {len(df_dis)=}")
+        t_now_str = datetime.utcnow().isoformat(timespec="seconds")
+        print(f"{t_now_str} PUBLISHED: {uid=}, {name=} {asset_type=}, {len(df_new)=}, {len(df_dis)=}")
 
 
 def _process_df(asset_type):
@@ -112,22 +113,22 @@ def find_and_publish(user_configs):
     df_sale, df_rent = _load_dataframes()
     ai_price_pct_less_than, n_limit = parse_envs()
     days_back = DAYS_BACK
-    for user in user_configs:
-        uid = user['telegram_id']
-        name = user['name']
+    for user_cfg in user_configs:
+        uid = user_cfg['telegram_id']
+        name = user_cfg['name']
         print(f"Processing user: {uid}, {name}")
-        sale_options = user['sale_preferences']
-        if user.get('is_new_user'):
+        if user_cfg.get('is_new_user'):
             days_back = 4
             send_welcome_msg(uid, name, days_back)
-        if sale_options is not None:
-            process_user_preferences(uid, sale_options,
+        sale_cfg = user_cfg['sale_preferences']
+        if sale_cfg is not None:
+            process_user_preferences(uid, name, sale_cfg,
                                      "sale", df_sale, days_back=days_back,
                                      ai_price_pct_less_than=ai_price_pct_less_than,
                                      n_limit=n_limit)
-        rent_options = user['rent_preferences']
-        if rent_options is not None:
-            process_user_preferences(uid, rent_options,
+        rent_cfg = user_cfg['rent_preferences']
+        if rent_cfg is not None:
+            process_user_preferences(uid, name, rent_cfg,
                                      "rent", df_rent, days_back=days_back,
                                      ai_price_pct_less_than=ai_price_pct_less_than,
                                      n_limit=n_limit)

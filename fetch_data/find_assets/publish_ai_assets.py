@@ -14,8 +14,7 @@ config_rent = dict(min_price=4000, max_price=8000, min_rooms=3, max_rooms=4,
                    cities=[
                        "תל אביב יפו",
                        "רמת גן",
-                       "גבעתיים",
-                       "הרצליה", ],
+                       "גבעתיים"],
                    ai_std_pct=0.07, asset_type="rent")
 config_sale = dict(min_price=1_000_000, max_price=3_000_000, min_rooms=3, max_rooms=4,
                    ai_price_pct_less_than=-0.12,
@@ -55,9 +54,9 @@ def find_and_publish(config):
     df_dis = filter_assets_by_discount(df, min_discount_pct=0.03, days_back=days_back)
     # Send config..
     publish_once_a_week(config)
-
-    publish(df_new, config, find_type="new", group_id=group_id, bot_id=bot_id)
-    publish(df_dis, config, find_type="discount", group_id=group_id, bot_id=bot_id)
+    asset_type = config.get("asset_type")
+    publish(df_new, asset_type, find_type="new", group_id=group_id, bot_id=bot_id)
+    publish(df_dis, asset_type, find_type="discount", group_id=group_id, bot_id=bot_id)
 
 
 def find_and_publish_run_all():

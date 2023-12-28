@@ -1,8 +1,9 @@
 import numpy as np
+import os
 from dash import html, Output, Input, State, ctx
 import dash
 import time
-from app_map.util_layout import get_interactive_table, CLUSTER_MAX_ZOOM, marker_type_options
+from app_map.util_layout import get_interactive_table, CLUSTER_MAX_ZOOM, marker_type_options, btn_color
 from app_map.utils import get_asset_points, get_cords_by_city, get_cords_by_id, get_geojsons, build_sidebar, \
     get_similar_deals, \
     address_to_lat_long_google
@@ -12,30 +13,10 @@ from flask import request
 
 LOGGER = logging.getLogger()
 
-clear_filter_input_outputs = [
-    Output('button-clear', "n_clicks"),
-    Output("price-slider", "value"),
-    Output("price-median-pct-slider", "value"),
-    Output("price-discount-pct-slider", "value"),
-    Output("ai-price-pct-slider", "value"),
-    Output("price-median-pct-slider-check", "value"),
-    Output("price-discount-pct-slider-check", "value"),
-    Output("ai-price-pct-slider-check", "value"),
-    Output("date-added", "value"),
-    Output("rooms-slider", "value"),
-    Output("asset-status", "value"),
-    Output("asset-type", "value"),
-    Input('button-clear', "n_clicks")]
-
-
-def clear_filter(n_clicks):
-    if n_clicks:
-        return 0, [0, 10_000], [-100, 0], [-100, 0], [-100, 0], [], [], [], None, (1, 6), [], []
-    return dash.no_update
-
-
-# df_all = pd.DataFrame()
 config_defaults = dict()
+config_defaults["last_asset_id_input"] = "?"
+CLEAR_BUTTON_SELECTED_ASSET_COLOR = "secondary"
+FETCH_LIMIT = 150
 
 
 def get_context_by_rule():
@@ -100,88 +81,224 @@ def limit_refresh(map_zoom):
     # sleep_bounds()
 
 
+def _process_keyword(df, keyword, search_submit_nclicks):
+    res = {"search-submit": 0}
+    if not search_submit_nclicks or not len(keyword):
+        return res
+    pos = get_cords_by_city(df, keyword)
+    if pos:
+        res.update({"big-map_center": pos, "big-map_zoom": CLUSTER_MAX_ZOOM, "search-input_invalid": False,
+                    "search-input_value": keyword,
+                    "button-clear_n_clicks": 0})
+        return res
+    r = address_to_lat_long_google(keyword)  # Use maps api to get location
+    if r:
+        res.update({"big-map_center": (r['lat'], r['lng']), "big-map_zoom": r['zoom']})
+        return res
+    res.update({"search-input_invalid": True})
+    return res
+
+
+def _process_asset_url(df, url_path, clear_button_n_clicks):
+    output = {}
+    is_found_asset_by_search = False
+    asset_id = _parse_search(url_path).get('asset_id')
+    if clear_button_n_clicks == 0 and asset_id:
+        is_found_asset_by_search = (df['id'] == asset_id).any()
+        LOGGER.info(f"search {asset_id=}, {is_found_asset_by_search=}")
+        if not is_found_asset_by_search:
+            if asset_id != config_defaults["last_asset_id_input"]:
+                config_defaults["last_asset_id_input"] = asset_id
+                LOGGER.info("main-alert_is_open: True")
+                output.update({"main-alert_is_open": True})
+            asset_id = None
+        else:
+            pos = get_cords_by_id(df, asset_id)
+            output.update({"big-map_center": pos, "big-map_zoom": 14, "search-input_invalid": False,
+                           # "search-input_value": asset_id,
+                           "button-clear_color": "info",
+                           "button-clear_n_clicks": 0})
+    if clear_button_n_clicks:
+        asset_id = None
+        output.update({"button-clear_color": "primary"})
+        print("clear_button_n_clicks clicked!")
+    return output, asset_id, is_found_asset_by_search
+
+
+def _process_table(df,
+                   n_clicks_clear_marker,
+                   table_modal_is_open,
+                   table_active_cell,
+                   table_data):
+    output = {}
+    if n_clicks_clear_marker or (not table_modal_is_open and table_active_cell):
+        output.update({"datatable-interactivity_selected_cells": [],
+                       "datatable-interactivity_active_cell": None,
+                       "clear-cell-button_n_clicks": 0})
+    if table_active_cell:
+        asset_id = [x for x in table_data if x['id'] == table_active_cell['row_id']][0]['id']
+        pos = get_cords_by_id(df, asset_id)
+        output.update({"big-map_center": pos,
+                       "big-map_zoom": CLUSTER_MAX_ZOOM + 1})
+    return output
+
+
 show_assets_input_output = [Output("geojson", "data"),
+                            Output("main-alert", "is_open"),
                             Output("datatable-interactivity", "columns"),
                             Output("datatable-interactivity", "data"),
                             Output("datatable-interactivity", "style_data_conditional"),
                             Output("fetched-assets", "children"),
-                            Output("button-around", "n_clicks"),
+                            ####################
+                            Output("big-map", "center"),
+                            Output("big-map", "zoom"),
+                            # Output("map-marker", "opacity"),
+                            # Output("map-marker", "position"),
+                            Output("datatable-interactivity", "selected_cells"),
+                            Output("datatable-interactivity", "active_cell"),
+                            Output("clear-cell-button", "n_clicks"),
+                            Output("search-input", "invalid"),
+                            Output("search-input", "value"),
+                            Output('button-clear', "n_clicks"),
+                            # Output("button-around", "n_clicks"),
                             Output("updated-at", "children"),
+                            Output('search-submit', 'n_clicks'),
+                            Output("button-clear", "color"),
+                            ######## OPTIONS INPUTS ##
                             Input("price-slider", "value"),
                             Input("max-avg-price-meter-slider", "value"),
                             Input("price-median-pct-slider", "value"),
                             Input("price-discount-pct-slider", "value"),
                             Input("ai-price-pct-slider", "value"),
-                            #
                             Input("price-median-pct-slider-check", "value"),
                             Input("price-discount-pct-slider-check", "value"),
                             Input("ai-price-pct-slider-check", "value"),
-                            #
-                            Input("date-added", "value"), Input("date-updated", "value"),
-                            Input("rooms-slider", "value"), Input("floor-slider", "value"),
+                            Input("date-added", "value"),
+                            Input("date-updated", "value"),
+                            Input("rooms-slider", "value"),
+                            Input("floor-slider", "value"),
                             Input('agency-check', "value"),
-                            Input('parking-check', "value"), Input('balconies-check', "value"),
-                            Input('asset-status', "value"), Input('asset-type', "value"),
-                            Input("button-around", "n_clicks"),
+                            Input('parking-check', "value"),
+                            Input('balconies-check', "value"),
+                            Input('asset-status', "value"),
+                            Input('asset-type', "value"),
                             Input('marker-type', 'value'),
-                            Input('search-input', 'value'),
-                            Input('big-map', 'bounds'), State('big-map', 'zoom'),
-                            State("datatable-interactivity", "active_cell")]
+                            Input('search-submit', 'n_clicks'),
+                            State('search-input', 'value'),
+                            ######## OPTIONS INPUTS ##
+                            Input('big-map', 'bounds'),
+                            State('big-map', 'zoom'),
+                            #####
+                            Input("path-location", "href"),
+                            Input('button-clear', "n_clicks"),
+                            Input("clear-cell-button", "n_clicks"),
+                            Input("table-modal", "is_open"),
+                            Input("datatable-interactivity", "active_cell"),
+                            State("datatable-interactivity", "data")
+                            ]
 
 
-def show_assets(price_range, max_avg_price_meter,
-                price_median_pct_range, price_discount_pct_range, price_ai_pct_range,
+# Functions:
+#  1. Focus on asset that has been selected with the table using the map center function
+#  2. handles the search bar for a city and its reset button
+#  3. Parse url search if asset is selected from the url
+#  4. filter and get out assets!
+
+def show_assets(price_range, max_avg_price_meter, price_median_pct_range, price_discount_pct_range, price_ai_pct_range,
                 is_price_median_pct_range, is_price_discount_pct_range, is_price_ai_pct_range,
                 date_added, date_updated,
                 rooms_range, floor_range,
-                with_agency, with_parking, with_balconies, asset_status, asset_type, n_clicks_around,
-                marker_type, search_input,
-                map_bounds, map_zoom, active_cell=None):
+                with_agency, with_parking, with_balconies, asset_status, asset_type,
+                marker_type, search_submit_nclicks, search_input,
+                ## end inputs
+                map_bounds, map_zoom,
+                url_path, clear_button_n_clicks, n_clicks_clear_marker, table_modal_is_open,
+                table_active_cell, table_data):
     conf = get_context_by_rule()
+    nthg = dash.no_update
+    output = {
+        "geojson_data": nthg,
+        "main-alert_is_open": nthg,
+        "datatable-interactivity_columns": nthg,
+        "datatable-interactivity_data": nthg,
+        "datatable-interactivity_style_data_conditional": nthg,
+        "fetched-assets_children": nthg,
 
+        "big-map_center": nthg,
+        "big-map_zoom": nthg,
+        "datatable-interactivity_selected_cells": nthg,
+        "datatable-interactivity_active_cell": nthg,
+        "clear-cell-button_n_clicks": nthg,
+        "search-input_invalid": nthg,
+        "search-input_value": nthg,
+        "button-clear_n_clicks": nthg,
+        "updated-at_children": nthg,
+        "search-submit": nthg,
+        "button-clear_color": nthg
+    }
     if limit_refresh(map_zoom):
         return dash.no_update
-    LOGGER.debug(f"{marker_type=}")
-    with_agency = True if len(with_agency) else False
-    with_parking = True if len(with_parking) else None
-    with_balconies = True if len(with_balconies) else None
-    is_price_median_pct_range = len(is_price_median_pct_range) > 0
-    is_price_discount_pct_range = len(is_price_discount_pct_range) > 0
-    is_price_ai_pct_range = len(is_price_ai_pct_range) > 0
-    df = conf['func_data']()
-    df_id = df.query(f'id == "{search_input}"').squeeze()
-    asset_id = search_input if len(df_id) else None
-    # Used to filter out points not in the city if input has a city value
-    city = search_input if len(search_input) and get_cords_by_city(df, search_input) else None
-    map_bounds = map_bounds if city is None else None
 
-    if active_cell:
-        return dash.no_update
-    price_from = price_range[0] * conf["price_mul"]
-    # when max price is at limits, allow prices above it
-    price_to = np.inf if price_range[0] == conf['price-max'] else price_range[1] * conf["price_mul"]
-    max_avg_price_meter = np.inf if max_avg_price_meter == 50_000 else max_avg_price_meter  # remove limits, ADD TO CONF
-    if n_clicks_around:
-        df_f = get_asset_points(df, -np.inf, np.inf, map_bounds=map_bounds)
+    df = conf['func_data']()
+    output_changes, asset_id, is_found_asset_by_search = _process_asset_url(df, url_path, clear_button_n_clicks)
+    output.update(output_changes)
+    output.update(_process_table(df,
+                                 n_clicks_clear_marker,
+                                 table_modal_is_open,
+                                 table_active_cell,
+                                 table_data))
+    output.update(_process_keyword(df, search_input, search_submit_nclicks))
+
+    if is_found_asset_by_search:
+        df_f = get_asset_points(df, id_=asset_id)
     else:
-        df_f = get_asset_points(df, price_from, price_to, max_avg_price_meter, city,
-                                price_median_pct_range, price_discount_pct_range, price_ai_pct_range,
-                                is_price_median_pct_range, is_price_discount_pct_range, is_price_ai_pct_range,
-                                date_added, date_updated, rooms_range, floor_range,
-                                with_agency, with_parking, with_balconies, map_bounds=map_bounds,
-                                asset_status=asset_status, asset_type=asset_type, id_=asset_id)
+        LOGGER.debug(f"{marker_type=}")
+        # Used to filter out points not in the city if input has a city value
+        city = search_input if len(search_input) and get_cords_by_city(df, search_input) else None
+        asset_filter_params = dict(
+            price_from=price_range[0] * conf["price_mul"],
+            # when max price is at limits, allow prices above it
+            price_to=np.inf if price_range[0] == conf['price-max'] else price_range[1] * conf["price_mul"],
+            max_avg_price_meter=np.inf if max_avg_price_meter == 50_000 else max_avg_price_meter,
+            city=city,
+            # remove limits, ADD TO CONF
+            rooms_range=rooms_range,
+            floor_range=floor_range,
+            price_median_pct_range=price_median_pct_range,
+            price_discount_pct_range=price_discount_pct_range,
+            price_ai_pct_range=price_ai_pct_range,
+            is_price_median_pct_range=len(is_price_median_pct_range) > 0,
+            is_price_discount_pct_range=len(is_price_discount_pct_range) > 0,
+            is_price_ai_pct_range=len(is_price_ai_pct_range) > 0,
+            date_added_days=date_added,
+            date_updated=date_updated,
+            with_agency=True if len(with_agency) else False,
+            with_parking=True if len(with_parking) else None,
+            with_balconies=True if len(with_balconies) else None,
+            asset_status=asset_status,
+            asset_type=asset_type,
+            map_bounds=map_bounds if city is None else None
+        )
+        df_f = get_asset_points(df, **asset_filter_params)
+
     # Can keep a list of points, if after fetch there was no new, no need to build new points, just keep them to save resources
-    # out_marker = handle_marker_type(marker_type,
-    #                                 [is_price_median_pct_range, is_price_discount_pct_range, is_price_ai_pct_range])
     n_rows = len(df_f)
-    FETCH_LIMIT = 250
     df_f = df_f[:FETCH_LIMIT]
     deal_points = get_geojsons(df_f, marker_type)
     columns, data, style_data_conditional = get_interactive_table(df_f)
     days_b = df["date_updated_d"].min()
     bot_html = f'נמצאו {n_rows:,.0f} נכסים {"" if (-1 if np.isnan(days_b) else days_b) == 0 else " .."}'
     updated_at_html = [f"מעודכן ל-{df_f['date_updated'].max().date()}"]
-    return deal_points, columns, data, style_data_conditional, bot_html, None, updated_at_html
+    output.update({
+        "geojson_data": deal_points,
+        "datatable-interactivity_columns": columns,
+        "datatable-interactivity_data": data,
+        "datatable-interactivity_style_data_conditional": style_data_conditional,
+        "fetched-assets_children": bot_html,
+        "updated-at_children": updated_at_html,
+    }
+    )
+    return list(output.values())
 
 
 toggle_model_input_outputs = [Output("geojson", "click_feature"),  # output none to reset button for re-click
@@ -200,7 +317,6 @@ def toggle_modal(feature):
             deal_id = feature['properties']['deal_id']
             deal = conf['func_data']().loc[deal_id]
             fig = get_similar_deals(conf['func_data'](), deal, with_nadlan=conf['with_nadlan'])
-            import time
             t0 = time.time()
             title_modal, str_html = build_sidebar(deal, fig)
             logging.debug("Compute TIME   ---->", time.time() - t0)
@@ -227,63 +343,26 @@ focus_on_asset_input_outputs = [Output("big-map", "center"),
                                 Output("datatable-interactivity", "selected_cells"),
                                 Output("datatable-interactivity", "active_cell"),
                                 Output("clear-cell-button", "n_clicks"),
-                                ##
                                 Output("search-input", "invalid"),
                                 Output("search-input", "value"),
-                                Output("search-clear", "n_clicks"),
-                                Input("path-location", "search"),
-                                Input("search-input", "value"),
-                                Input("search-clear", "n_clicks"),
-                                Input("clear-cell-button", "n_clicks"),
-                                Input("table-modal", "is_open"),
-                                Input("datatable-interactivity", "active_cell"),
-                                State("datatable-interactivity", "data")
+                                Output('button-clear', "n_clicks"),
                                 ]
 
-def _parse_search(url):
-    if url is None or not len(url) or '?' not in url:
-        return None
-    return url[1:]
 
-# Functions:
-#  1. Focus on asset that has been selected with the table using the map center function
-#  2. handles the search bar for a city and its reset button
-#  3. Parse url search if asset is selected from the url
-# dl.Marker(position=[31.7, 32.7], opacity=0, id='map-marker')
-def focus_on_asset(url_search, keyword, n_clicks_clear_search, n_clicks_clear_marker, table_modal_is_open, table_active_cell,
-                   table_data):
-    asset_id = _parse_search(url_search)
-    if asset_id:
-        LOGGER.info(f"Override keyword by search asset_id = {asset_id}")
-        keyword = asset_id
-    if n_clicks_clear_search:
-        return [dash.no_update for _ in range(7)] + [False, "", 0]
-    if n_clicks_clear_marker or (not table_modal_is_open and table_active_cell):
-        return [dash.no_update, dash.no_update, 0, dash.no_update] + [[], None, 0] + [dash.no_update for _ in range(3)]
-    # if not len(keyword) and table_active_cell is None:
-    #     return dash.no_update
-    conf = get_context_by_rule()
-    df = conf['func_data']()
-    if table_active_cell:
-        id_ = [x for x in table_data if x['id'] == table_active_cell['row_id']][0]['id']
-        item = get_asset_points(df, id_=id_).squeeze()
-        position = [item['lat'], item['long']]
-        return [position, CLUSTER_MAX_ZOOM + 1, 0.75, position] + [dash.no_update for _ in range(6)]
-    if len(keyword):
-        pos = get_cords_by_id(df, keyword)
-        if pos is None:
-            pos = get_cords_by_city(df, keyword)
-        if pos:
-            return pos, 14, *[dash.no_update for _ in range(5)], False, keyword, 0
-        # Use maps api to get location
-        r = address_to_lat_long_google(keyword)
-        if r:
-            return (r['lat'], r['lng']), r['zoom'], *[dash.no_update for _ in range(5)], False, keyword, 0
-        else:
-            return [dash.no_update for _ in range(7)] + [True, keyword, 0]
-    # return dash.no_update # this stuck in production,
-    # [center, zoom] + [dash.no_update for _ in range(8)]#ValueError()  # must be used as no update keeps Updating... in dash
-    raise dash.exceptions.CallbackException("OK")
+def parse_params(search):
+    return dict(x.split('=') for x in search.split('&')) if search else {}
+
+
+def _parse_search(url):
+    split_by_question = url.split("?")
+    os.environ["BASE_URL_PATH"] = split_by_question[0]  # set base path
+    if len(split_by_question) == 1:
+        return {}
+    params = parse_params(split_by_question[1])
+    asset_id = params.get('asset_id')
+    user_id = params.get('user_id')
+    print(f"{asset_id=}, {user_id=}")
+    return params
 
 
 show_table_input_output = [Output("table-toggle", "n_clicks"),
@@ -343,13 +422,11 @@ def add_callbacks(app, config):
     # df_all = df
     name = config['name']
     config_defaults[name] = config
-    app.callback(clear_filter_input_outputs)(clear_filter)
+    # app.callback(clear_filter_input_outputs, prevent_initial_call=True)(clear_filter)
     app.callback(show_assets_input_output)(show_assets)
     app.callback(toggle_model_input_outputs)(toggle_modal)
-    app.callback(focus_on_asset_input_outputs)(focus_on_asset)
     app.callback(disable_range_input_outputs)(disable_range_sliders)
     app.callback(show_table_input_output)(show_table_modal)
     app.callback(toggle_cluster_input_outputs)(toggle_cluster)
     app.callback(gen_plots_lazy_input_outputs)(gen_plots_lazy)
-    app.callback(change_polygons_type_input_outputs)(change_polygons_type) # polygons
-    # app.callback(clear_table_selected_input_output)(clear_selected_if_closed)
+    app.callback(change_polygons_type_input_outputs)(change_polygons_type)  # polygons

@@ -4,7 +4,7 @@ from datetime import datetime
 import numpy as np
 from api.gateway.api_stats import req_timeseries_sidebar, req_remote_past_sales
 from stats.plots import plot_deal_vs_sale_sold
-from app_map.marker import get_marker_tooltip, icon_maps, icon_real_estate, get_color, convert_rooms_str
+from app_map.marker import get_marker_tooltip, icon_maps, icon_real_estate, icon_share, get_color, convert_rooms_str
 from app_map.util_layout import *
 from scrape_yad2.utils import _get_parse_item_add_info
 from fetch_data.utils import filter_by_dist
@@ -264,10 +264,26 @@ def build_sidebar(deal, fig):
          html.Div(children=[carousel], className="asset-images", style={"display": "block" if image_urls else "none"}),
          html.Span(info_text, className='sidebar-info-text'),
          html.Div([html.A(href=maps_url, children=[html.Img(src=icon_maps), "למפה"],
+                          className="sidebar-info-links",
                           target="_blank"),
                    html.A(href=f"https://www.yad2.co.il/item/{deal['id']}",
                           children=[html.Img(src=icon_real_estate), "למודעה"],
-                          target="_blank")], className="sidebar-info-links"),
+                          className="sidebar-info-links",
+                          target="_blank"),
+                   dbc.Button(
+                       [
+                           html.Img(src=icon_share),
+                           "העתק קישור",
+                           dcc.Clipboard(
+                               content=os.getenv("BASE_URL_PATH") + "?asset_id=" + deal["id"],
+                               className="position-absolute start-0 top-0 h-100 w-100 opacity-0",
+                           ),
+                       ],
+                       className="position-relative sidebar-info-links nopadding",
+                       color="white",
+                   ),
+                   ],
+                  className="sidebar-info-links-container"),
          html.Span(deal['id'], style={"display": "block", "font-size": "8pt"}),
          html.H5("פילוח מס׳ עסקאות עם מספר חדרים זהה בסביבה", className="sidebar-info-graphs-header"),
          # TODO: Move this graph to the loading too, but a bit problem because it uses massive dataframe, maybe agg it and send it via state to front

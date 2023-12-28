@@ -34,10 +34,10 @@ scheduler.start()
 
 
 def create_app(server):
-    from app_map.dashboard_yad2_rent import get_dash as get_dash_rent
-    server, _ = get_dash_rent(server)
     from app_map.dashboard_yad2_forsale import get_dash as get_dash_sale
     server, _ = get_dash_sale(server)
+    from app_map.dashboard_yad2_rent import get_dash as get_dash_rent
+    server, _ = get_dash_rent(server)
     from app_map.dashboard_stats import get_dash as get_dash_stats
     server, _ = get_dash_stats(server)
     from app_map.dashboard_neighborhood import get_dash as get_dash_neightbor

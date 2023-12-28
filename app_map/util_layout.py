@@ -5,13 +5,14 @@ import dash_leaflet as dl
 from dash import html
 from app_map.marker import POINT_TO_LAYER_FUN
 
+text_not_found_alert = "הנכס לא נמצא, אבל יש הרבה נכסים באתר שיכולים להיות הבית הבא שלך!"
 date_added_txt = 'הועלה עד'
 date_updated_text = 'עודכן לפני'
 n_rooms_txt = 'חדרים'
 n_floor_txt = "קומה"
-median_price_txt = '% מהממוצע'
-ai_pct_txt = '% ממחיר AI'
-price_pct_txt = '% הורדה במחיר'
+median_price_txt = '% אחוז מהממוצע באיזור'
+ai_pct_txt = '% אחוז ממחיר מודל AI'
+price_pct_txt = '% אחוז הורדה במחיר'
 rooms_marks = {r: str(r) for r in range(7)}
 rooms_marks[6] = '6+'
 max_floor = 32
@@ -21,7 +22,7 @@ slider_tooltip = {'always_visible': True, 'placement': 'bottom'}
 # best practice to avoid overlap points
 CLUSTER_MAX_ZOOM = 18
 CLUSTER_RADIUS = 30  # px
-
+ALERT_DURATION = 10000
 asset_status_cols = ['חדש מקבלן (לא גרו בנכס)',
                      'חדש (גרו בנכס)',
                      'משופץ',
@@ -57,7 +58,12 @@ def get_page_menu():
 
 def get_layout(default_config):
     layout = html.Div(children=[
+        html.Meta(name="viewport",
+                  content="width=device-width, height=device-height, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no"),
         html.Header(className="top-container", children=get_div_top_bar(default_config)),
+        dbc.Alert(children=text_not_found_alert, duration=ALERT_DURATION,
+                  className="main-alert", fade=True,
+                  id="main-alert", color='primary', is_open=False),
         dcc.Location(id="path-location"),
         html.Div(className="grid-container", children=get_main_map()),
         html.Div(className="table-container", children=[div_left_off_canvas]),
@@ -125,12 +131,12 @@ def get_div_top_bar(config_defaults):
             html.Div([
                 dbc.Row(dbc.Label(id="fetched-assets")),
                 html.Div([dbc.Label("עיר"),
-                          dbc.Row([
-                              dbc.Col(dbc.Button("X", id="search-clear", color="secondary",
-                                                 style=dict(margin=0, padding=0)), width=1),
+                          dbc.Row(
                               dbc.Col(dbc.Input(id="search-input", value="", debounce=True, type="text",
-                                                placeholder="חיפוש לפי עיר", style=dict(width="89.5%")), width=11),
-                          ], style={"flex-wrap": "inherit"})
+                                                placeholder="חיפוש לפי עיר", style=dict(width="89.5%")), width=11)),
+                          dbc.Row(
+                              dbc.Col(dbc.Button("חפש", id="search-submit", color="primary", n_clicks=0,
+                                                 style=dict(padding="0 25px 0")), width=6))
                           ],
                          className="slider-container-drop"),
 
@@ -155,7 +161,7 @@ def get_div_top_bar(config_defaults):
                 dbc.DropdownMenuItem(divider=True),
                 html.Div(
                     [html.Div([html.Span(n_rooms_txt),
-                               html.Div(dcc.RangeSlider(1, 6, 1, value=[3, 4], marks=rooms_marks, id='rooms-slider',
+                               html.Div(dcc.RangeSlider(1, 6, 1, value=[1, 6], marks=rooms_marks, id='rooms-slider',
                                                         tooltip=slider_tooltip))],
                               className='slider-container-drop'),
                      html.Div([html.Span(n_floor_txt),
@@ -239,17 +245,18 @@ def get_div_top_bar(config_defaults):
                                    dcc.RadioItems([{'label': 'שכירות', 'value': 'rent'},
                                                    {'label': 'מכירה', 'value': 'forsale'}],
                                                   asset_type, id="polygon-select-radio",
-                                                  inputClassName="rounded-checkbox", inline=True),
+                                                  style={"margin-right": "12px"},
+                                                  inputClassName="rounded-checkbox", inline=False),
                                    ])
 
                           ], className="text-rtl"),
-                dbc.Button("נקה", id="button-clear", color="secondary"),
+                # dbc.Button("נקה", id="button-clear", color="secondary", n_clicks=0),
                 dbc.Row(dbc.Label(id="updated-at")),
                 dbc.Row(dbc.Label("Made with ❤️"))
             ],
                 className="dropdown-container")], label='אפשרויות', color=btn_color, size=btn_size),  # align_end=True,
+        dbc.Button("נקה חיפוש", id="button-clear", color=btn_color, size=btn_size, n_clicks=0),
         dbc.Button("טבלה", id="table-toggle", color=btn_color, size=btn_size),
-        dbc.Button("איזור", id="button-around", color=btn_color, size=btn_size),
         # dbc.Button("סנן", id='button-return'),
         get_page_menu(),
         html.H2(config_defaults['name'].capitalize(), style={"margin": "5px 5px 0px 5px"}),
