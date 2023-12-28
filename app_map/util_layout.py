@@ -255,7 +255,7 @@ def get_div_top_bar(config_defaults):
                 dbc.Row(dbc.Label("Made with ❤️"))
             ],
                 className="dropdown-container")], label='אפשרויות', color=btn_color, size=btn_size),  # align_end=True,
-        dbc.Button("נקה חיפוש", id="button-clear", color=btn_color, size=btn_size, n_clicks=0),
+        dbc.Button("נקה", id="button-clear", color=btn_color, size=btn_size, n_clicks=0),
         dbc.Button("טבלה", id="table-toggle", color=btn_color, size=btn_size),
         # dbc.Button("סנן", id='button-return'),
         get_page_menu(),
