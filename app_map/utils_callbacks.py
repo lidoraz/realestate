@@ -358,7 +358,10 @@ def _parse_search(url):
     os.environ["BASE_URL_PATH"] = split_by_question[0]  # set base path
     if len(split_by_question) == 1:
         return {}
-    params = parse_params(split_by_question[1])
+    params_url = split_by_question[1]
+    if '=' not in params_url:
+        return {'asset_id': params_url}
+    params = parse_params(params_url)
     asset_id = params.get('asset_id')
     user_id = params.get('user_id')
     print(f"{asset_id=}, {user_id=}")
