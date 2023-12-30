@@ -8,7 +8,7 @@ def format_telegram(idx, sr, asset_type, group_id=None):
     max_text_limit = 100
     asset_type = asset_type.replace('forsale', 'sale')
 
-    neighborhood_str = f"\n<b>איזור:</b> {sr['neighborhood']}" if sr['neighborhood'] is not None else ""
+    neighborhood_str = f"\n<b>איזור:</b> {sr['neighborhood']}" if sr['neighborhood'] != 'U' else ""
     agency_str = "\n<b>מתיווך</b>" if sr['is_agency'] else ""
     rooms_str = int(sr['rooms']) if sr['rooms'].is_integer() else sr['rooms']
     floor_str = "קרקע" if sr['floor'] == 0 else sr['floor']

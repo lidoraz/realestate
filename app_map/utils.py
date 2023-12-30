@@ -231,9 +231,15 @@ def build_sidebar(deal, fig):
 
     title_html = html.Div([html.Span(f"{deal['price']:,.0f}₪"),
                            get_html_span_pct(deal['price_pct'])])
-    street = deal['street'] if deal['street'] else deal['neighborhood'] if deal['neighborhood'] else ""
+    street = deal['street'] if deal['street'] != 'U' else ""
+    neighborhood = deal['neighborhood'] if deal['neighborhood'] != 'U' else ""
+    rooms = f" {convert_rooms_str(deal['rooms'])} חדרים,"
+    floor = f" קומה  {round(deal['floor']) if deal['floor'] > 0 else 'קרקע'} "
     n_floors_building = round(deal['number_of_floors']) if deal['number_of_floors'] > 0 else None
     n_floors_building_str = f', (מתוך {n_floors_building})' if n_floors_building else ""
+    parking = f" חנייה: {deal['parking'] if deal['parking'] else 'ללא'} "
+    balcony = f"{'עם מרפסת' if deal['balconies'] else 'ללא מרפסת'}"
+
     txt_html = html.Div(
         [html.Span(f"מחיר הנכס מהחציון באיזור: "),
          get_html_span_pct(deal['pct_diff_median']),
@@ -248,18 +254,20 @@ def build_sidebar(deal, fig):
              html.Br(),
              f"מצב הנכס: ",
              html.B(deal['asset_status'])]),
-         html.P([f" {convert_rooms_str(deal['rooms'])} חדרים,",
-                 f" קומה  {round(deal['floor']) if deal['floor'] > 0 else 'קרקע'} ",
+         html.P([rooms,
+                 floor,
                  n_floors_building_str,
                  html.Br(),
-                 f"{deal['asset_type']}, {deal['city']}, {street}",
+                 f"{deal['asset_type']}, {deal['city']}",
+                 html.Br(),
+                 f"{neighborhood}, {street}",
                  html.Br(),
                  html.Span(f"{deal['square_meters']:,.0f} מטר"),
                  html.Span(f"(מחיר למטר ₪{deal['price'] / deal['square_meters']:,.0f})"),
                  html.Br(),
-                 f" חנייה: {deal['parking'] if deal['parking'] else 'ללא'} ",
+                 parking,
                  html.Br(),
-                 f"{'עם מרפסת' if deal['balconies'] else 'ללא מרפסת'}",
+                 balcony,
                  ]),
          html.Div(children=[carousel], className="asset-images", style={"display": "block" if image_urls else "none"}),
          html.Span(info_text, className='sidebar-info-text'),
