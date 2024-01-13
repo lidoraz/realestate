@@ -99,7 +99,7 @@ def check_inactivity(inactivity_sec=300):
         last_interact = payload["last_interact"]
         if (current_time - last_interact).total_seconds() > inactivity_sec:  # 300:  # 5 minutes of inactivity
             user_data_lst = payload['data']
-            user_data_lst = _filter_between_user_activity(user_data_lst)
+            # user_data_lst = _filter_between_user_activity(user_data_lst)
             add_user_activity_records(user_data_lst)
             del sessions[ip]
 
