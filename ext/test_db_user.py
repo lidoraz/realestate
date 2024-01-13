@@ -1,4 +1,4 @@
-from ext.db_user import User, get_engine_no_vault
+from ext.db_user import User, get_engine_no_vault, UserActivity
 from sqlalchemy.orm import Session
 from datetime import datetime
 
@@ -29,8 +29,8 @@ def _get_user_data_1():
                     'must_balcony': True,
                     'must_no_agency': True,  # should be must be agency
                 },
-                inserted_at=datetime.now(),
-                updated_at=datetime.now())
+                inserted_at=datetime.utcnow(),
+                updated_at=datetime.utcnow())
 
 
 def test_user_data_1():
@@ -55,8 +55,8 @@ def test_user_data_2():
             phone_number=None,  # Ignore phone number for now and insert null
             rent_preferences={},
             sale_preferences={},
-            inserted_at=datetime.now(),
-            updated_at=datetime.now()
+            inserted_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
         )
         # Add the user to the session
         session.add(new_user)
@@ -68,10 +68,28 @@ def test_user_data_2():
         session.commit()
 
 
+def test_user_activity():
+    with Session(get_engine_no_vault()) as session:
+        activity = UserActivity(telegram_id=123,
+                                dt=datetime.utcnow(),
+                                asset_id="ABC",
+                                asset_type="rent",
+                                endpoint="/sale",
+                                ip="1.1.1.1",
+                                user_agent="Opera",
+                                clicks=1,
+                                session_rn=4)
+        session.add(activity)
+        session.commit()
+
+
 if __name__ == '__main__':
     from ext.env import load_vault
+    from ext.db_user import create_all
 
     load_vault()
+    create_all()
+    test_user_activity()
 
-    test_user_data_1()
-    test_user_data_2()
+    # test_user_data_1()
+    # test_user_data_2()

@@ -1,10 +1,11 @@
 import os
 
-from sqlalchemy import Column, BigInteger, String, JSON, DateTime
+from sqlalchemy import Column, BigInteger, String, JSON, DateTime, TIMESTAMP, Integer
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session
 from ext.env import get_pg_engine
 import sqlalchemy
+import logging
 
 Base = declarative_base()
 
@@ -19,6 +20,21 @@ class User(Base):
     rent_preferences = Column(JSON)
     inserted_at = Column(DateTime)
     updated_at = Column(DateTime)
+
+
+# {ip, telegram_id, asset_id, asset_type, url, time, clicks, user_agent})"
+class UserActivity(Base):
+    __tablename__ = 'realestate_user_activity'
+    rec_id = Column(Integer, primary_key=True, autoincrement=True)
+    telegram_id = Column(BigInteger)
+    dt = Column(TIMESTAMP)
+    asset_id = Column(String)
+    asset_type = Column(String)
+    endpoint = Column(String)
+    ip = Column(String)
+    user_agent = Column(String)
+    clicks = Column(Integer)
+    session_rn = Column(Integer)
 
 
 def get_engine_no_vault():
@@ -42,6 +58,28 @@ def _get_user_record(session, user_data):
 def _add_user_record(session, user_data):
     session.add(User(**user_data))
     session.commit()
+
+
+def add_user_activity_records(user_data_lst):
+    with Session(get_engine_no_vault()) as session:
+        try:
+            cnt = _add_user_activity_records(session, user_data_lst)
+            logging.info(f'Added {cnt} user activity records')
+            return cnt
+        except Exception as e:
+            session.rollback()
+            logging.error("add_user_activity_records:", e)
+            return -1
+
+
+def _add_user_activity_records(session, user_data_lst):
+    assert isinstance(user_data_lst, list)
+    cnt = 0
+    for user_data in user_data_lst:
+        session.add(UserActivity(**user_data))
+        cnt += 1
+    session.commit()
+    return cnt
 
 
 def _update(session, user_record, user_data):

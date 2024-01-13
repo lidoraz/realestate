@@ -231,9 +231,9 @@ def build_sidebar(deal, fig):
 
     title_html = html.Div([html.Span(f"{deal['price']:,.0f}₪"),
                            get_html_span_pct(deal['price_pct'])])
-    street = deal['street'] if deal['street'] is not None else ""
-    street_num = deal['street_num'] if deal['street_num'] is not None else ""
-    street = f"{street} {street_num}"
+    # street = deal['street'] if deal['street'] is not None else ""
+    street_num = deal['street_num'] if deal['street_num'] else ""
+    street = f"{street_num}"
 
     neighborhood = deal['neighborhood'] if deal['neighborhood'] != 'U' else ""
     rooms = f" {convert_rooms_str(deal['rooms'])} חדרים,"

@@ -213,6 +213,7 @@ def plot_line(df, x, y, y2, hover_data, color='Blue'):
     # Add last value at the end on scatter
     for i, d in enumerate(fig.data):
         if d.type == 'scatter':
+            # : IndexError: index -1 is out of bounds for axis 0 with size 0
             text = str(format_number(d.y[-1]))
             fig.add_annotation(x=d.x[-1], y=d.y[-1],
                                text=text,
