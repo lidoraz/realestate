@@ -86,7 +86,7 @@ def _filter_between_user_activity(user_data_lst):
     length = len(user_data_lst)
     if length > 2:
         user_data_lst = [d for idx, d in enumerate(user_data_lst) \
-                         if idx in (0, length - 1) or (d.get('endpoint') and '_dash' not in d['endpoint'])]
+                         if idx in (0, length - 1) or (d.get('endpoint') is not None and '_dash' not in d['endpoint'])]
     return user_data_lst
 
 
