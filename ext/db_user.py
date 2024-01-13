@@ -26,7 +26,7 @@ class User(Base):
 class UserActivity(Base):
     __tablename__ = 'realestate_user_activity'
     rec_id = Column(Integer, primary_key=True, autoincrement=True)
-    telegram_id = Column(BigInteger)
+    user_id = Column(BigInteger)
     dt = Column(TIMESTAMP)
     asset_id = Column(String)
     asset_type = Column(String)

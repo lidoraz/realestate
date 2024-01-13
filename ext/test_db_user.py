@@ -70,7 +70,7 @@ def test_user_data_2():
 
 def test_user_activity():
     with Session(get_engine_no_vault()) as session:
-        activity = UserActivity(telegram_id=123,
+        activity = UserActivity(user_id=123,
                                 dt=datetime.utcnow(),
                                 asset_id="ABC",
                                 asset_type="rent",
@@ -88,8 +88,8 @@ if __name__ == '__main__':
     from ext.db_user import create_all
 
     load_vault()
-    create_all()
+    # create_all()
     test_user_activity()
-
+    # GRANT USAGE, SELECT ON SEQUENCE realestate_user_activity_rec_id_seq TO telegram_manager;
     # test_user_data_1()
     # test_user_data_2()

@@ -119,19 +119,11 @@ def process_json_req():
 def before_request():
     # get ip if behind a proxy, or regular
     ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.environ['REMOTE_ADDR'])
-    telegram_id = request.args.get('telegram_id')
-    # if telegram_id is None:
-    #     print("DDD", ip)
-    #     # Later will handle users without id with a cookie
-    #     return
+    user_id = request.args.get('user_id')
     asset_id = request.args.get('asset_id')
     asset_type = request.path.split('/')[1] if '/' in request.path else None
     # url = request.url
     user_agent = request.headers.get('User-Agent')
-    # ip = request.remote_addr
-    # Add first interaction time
-    # maybe session length in time?
-    # Update session data
     if ip not in sessions:
         print(f"""FIRST USER ACQ:: {ip}""")
         sessions[ip] = {'last_interact': None, 'data': []}
@@ -140,7 +132,7 @@ def before_request():
         prev_rn = sessions[ip]['data'][-1]['session_rn']
         session_rn = prev_rn + 1
 
-    data = {'telegram_id': telegram_id,
+    data = {'user_id': user_id,
             'asset_id': asset_id,
             'asset_type': asset_type,  # already in endpoint.
             'endpoint': request.endpoint,
