@@ -130,6 +130,9 @@ def get_div_top_bar(config_defaults):
         dbc.DropdownMenu([
             html.Div([
                 dbc.Row(dbc.Label(id="fetched-assets")),
+                # Annoying that user must consent for location, I want only when user clicks to popup loc request
+                # dbc.Row([dbc.Button("למרכוז",id="find-geolocation", n_clicks=0),
+                #         dcc.Geolocation(id="geolocation")]),
                 html.Div([dbc.Label("עיר"),
                           dbc.Row(
                               dbc.Col(dbc.Input(id="search-input", value="", debounce=True, type="text",

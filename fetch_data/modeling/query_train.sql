@@ -45,8 +45,8 @@ select a.id,
        coalesce(neighborhood, 'U')                                          as neighborhood,
 -- street,street_num,primary_area_id,area_id,
        is_agency,
-       lat,
-       long,
+       TRUNC(lat::numeric, 4) as lat,
+       TRUNC(long::numeric, 4) as long,
        parking,
        balconies,
        coalesce(number_of_floors, 0)                                        as number_of_floors,
@@ -92,6 +92,7 @@ where
     price is not null
   and lat is not null
   and long is not null
+  and date_added >= now() - interval '1' year
   and lat::varchar || long::varchar not in (select latlong from bad_loctions)
     {price_between_sql}
 

@@ -194,7 +194,9 @@ show_assets_input_output = [Output("geojson", "data"),
                             Input("clear-cell-button", "n_clicks"),
                             Input("table-modal", "is_open"),
                             Input("datatable-interactivity", "active_cell"),
-                            State("datatable-interactivity", "data")
+                            State("datatable-interactivity", "data"),
+                            # Input("find-geolocation", "n_clicks"),
+                            # Input("geolocation", "position")
                             ]
 
 
@@ -216,6 +218,8 @@ def show_assets(price_range, max_avg_price_meter, price_median_pct_range, price_
                 table_active_cell, table_data):
     conf = get_context_by_rule()
     nthg = dash.no_update
+    # dbc.Row(dbc.Label(id="find-geolocation"),
+    #                         dcc.Geolocation(id="geolocation"),
     output = {
         "geojson_data": nthg,
         "main-alert_is_open": nthg,
@@ -236,8 +240,14 @@ def show_assets(price_range, max_avg_price_meter, price_median_pct_range, price_
         "search-submit": nthg,
         "button-clear_color": nthg
     }
-    if limit_refresh(map_zoom):
+    # check submit to make search instantly show assets when clicked
+    if search_submit_nclicks == 0 and limit_refresh(map_zoom):
         return dash.no_update
+
+    # if geolocation_n_clicks > 0 and 'lat' in geolocation and 'lon' in geolocation:
+    #     print(f"{geolocation=}")
+    #     output["big-map_center"] = geolocation['lat'], geolocation['lon']
+    #     output["big-map_zoom"] = 14
 
     df = conf['func_data']()
     output_changes, asset_id, is_found_asset_by_search = _process_asset_url(df, url_path, clear_button_n_clicks)
@@ -414,10 +424,11 @@ change_polygons_type_input_outputs = [Output(component_id='geogson_', component_
 
 def change_polygons_type(value, zoom, toggle):
     # use state to avoid reload json when zoom has not changed enough to pass zoom level
-    from app_map.dashboard_neighborhood import load_geojson
+    from app_map.dashboard_neighborhood import get_points_by
     if not len(toggle):
         return [None]
-    return [load_geojson(value, zoom)]
+    json_points, _ = get_points_by(value, zoom, "pct_chg")
+    return [json_points]
 
 
 def add_callbacks(app, config):

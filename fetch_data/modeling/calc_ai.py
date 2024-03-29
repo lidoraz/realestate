@@ -19,11 +19,11 @@ def get_train_config(iterations=3_000):
     regressor_config = {
         'iterations': iterations,  # 15_000,
         'objective': metric,
-        'learning_rate': 0.0238,
-        'colsample_bylevel': 0.0922,
-        'max_depth': 10,
-        'boosting_type': 'Ordered',
-        'bootstrap_type': 'MVS'
+        # 'learning_rate': 0.0238,
+        # 'colsample_bylevel': 0.0922,
+        # 'max_depth': 10,
+        # 'boosting_type': 'Ordered',
+        # 'bootstrap_type': 'MVS'
     }
     return regressor_config
 

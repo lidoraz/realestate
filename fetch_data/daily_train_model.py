@@ -3,7 +3,7 @@ from scrape_nadlan.utils_insert import send_telegram_msg
 
 if __name__ == '__main__':
     job_name = "Training regression models"
-    iterations = 3_000
+    iterations = 5_000
     n_folds = 5
     try:
         cfg = get_train_config()
