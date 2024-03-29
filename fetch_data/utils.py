@@ -97,8 +97,11 @@ def haversine(lat1, lon1, lat2, lon2, to_radians=True, earth_radius=6371):
     return earth_radius * 2 * np.arcsin(np.sqrt(a))
 
 
-def filter_by_dist(df, deal, distance):
-    dist = haversine(df['lat'], df['long'], deal['lat'], deal['long'])
+def filter_by_dist(df, deal, distance, is_cords_radians=False):
+    if is_cords_radians:
+        dist = haversine(df['lat_r'], df['long_r'], deal['lat_r'], deal['long_r'], to_radians=False)
+    else:
+        dist = haversine(df['lat'], df['long'], deal['lat'], deal['long'], to_radians=True)
     df['dist'] = dist
     df = df[df['dist'] < distance]
     return df

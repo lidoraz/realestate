@@ -21,16 +21,19 @@
 }
 
 /* USED FOR LEFT TABLE*/
-.offcanvas-start{
-    width:460px;
+.offcanvas-start {
+    width: 460px;
 }
-.previous-next-container{
-    width:300px;
+
+.previous-next-container {
+    width: 300px;
 }
-#datatable-interactivity{
+
+#datatable-interactivity {
     /*width: 420px;*/
 }
-#fetched-assets{
+
+#fetched-assets {
     /*position: absolute;*/
     /*z-index: 999;*/
     /*left:10px;*/
@@ -81,13 +84,34 @@ p.rtl {
     height: calc(100vh - 0vh) !important;
 }
 
+/* Media query for mobile devices */
+@media only screen and (max-width: 500px) {
+    .leaflet-control-zoom {
+        display: none;
+    }
+}
+
+#main-alert {
+    position: absolute;
+    z-index: 1001;
+    direction: rtl;
+    right: 0;
+    top: 50px;
+}
+
+#search-input {
+
+}
+
 
 .price-diff-table {
     font-size: 70%;
     margin: 5px;
     overflow: auto;
+    width: 100%;
 
 }
+
 .price-diff-table td, .price-diff-table th {
     border: 1px solid black;
 }
@@ -112,10 +136,34 @@ p.rtl {
 
 .sidebar-info-text {
     font-size: small;
-
 }
-.modal-time-graphs{
-    margin-top:30px;
+
+.sidebar-info-links-container {
+    margin-top: 30px;
+}
+
+.sidebar-info-links {
+    text-decoration: none;
+    margin-right: 20px;
+    color: black;
+}
+
+.nopadding {
+    padding: 0;
+}
+
+.sidebar-info-links img {
+    width: 32px;
+    height: 32px;
+}
+
+.sidebar-info-graphs-header {
+    display: block;
+    margin: 20px 4px 5px;
+}
+
+.modal-time-graphs {
+    margin-top: 30px;
 }
 
 /* Problematic, needs fix*/
@@ -218,10 +266,10 @@ p.rtl {
     overflow-y: scroll;
     max-height: 80vh;
     width: 220px;
-    direction: ltr;
+    direction: rtr;
     min-width: 150px;
     text-align: right;
-    padding-right:10px;
+    padding-right: 10px;
 }
 
 .rounded-checkbox {
@@ -323,7 +371,8 @@ p.rtl {
     direction: ltr;
     /*float: right;*/
 }
-.asset-images .carousel-item{
+
+.asset-images .carousel-item {
     border-radius: 10px;
 }
 
@@ -377,7 +426,34 @@ svg {
     margin: 25px;
 }
 
-.Select-input {
-    background-color:grey;
+.analysis-main .Select-input {
+    background-color: grey;
     color: black !important;
 }
+
+/* register */
+.noselect {
+    -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+    -khtml-user-select: none; /* Konqueror HTML */
+    -moz-user-select: none; /* Old versions of Firefox */
+    -ms-user-select: none; /* Internet Explorer/Edge */
+    user-select: none;
+    /* Non-prefixed version, currently
+                                     supported by Chrome, Edge, Opera and Firefox */
+}
+
+.collapse-cont label {
+    margin-bottom: 5px;
+    margin-top: 5px;
+}
+
+.register-container {
+    max-width: 700px;
+}
+
+.register-submit-row {
+    margin-bottom: 150px;
+}
+
+/* register */

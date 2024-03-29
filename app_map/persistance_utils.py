@@ -160,7 +160,7 @@ def download_remote(block=False):
 
 
 def loop_until_remote_ready():
-    for i in range(10 ** 100):  # will check when triggered until found
+    for i in range(60 * 6):  # will check when triggered until found
         if is_remote_files_new():
             download_remote(True)
             LOGGER.info("check_download - downloaded new data")
@@ -189,7 +189,4 @@ def get_sale_data():
     return load_dataframes()['sale']['df_forsale_all']
 
 
-if __name__ == '__main__':
-    LOGGER.setLevel(logging.INFO)
-    logging.info("a")
-    check_download_until_downloaded()
+

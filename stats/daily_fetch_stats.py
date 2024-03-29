@@ -1,6 +1,6 @@
 import os
 
-from fetch_data.daily_fetch import pub_object
+from ext.publish import put_object_in_bucket
 from ext.env import get_pg_engine
 import pandas as pd
 from datetime import datetime
@@ -133,7 +133,7 @@ def run_type_stats(type_):
     file_path = f"resources/df_log_{type_}.pk"
     # df = pd.read_pickle(file_path)
     df.to_pickle(file_path)
-    pub_object(file_path)
+    put_object_in_bucket(file_path)
     #
     os.makedirs(f"resources/stats/plots_daily_{type_}", exist_ok=True)
     get_price_changes(eng, type_)

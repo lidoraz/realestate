@@ -6,7 +6,7 @@ import pickle
 from tqdm import tqdm
 from ext.env import get_pg_engine
 from datetime import datetime
-from fetch_data.daily_fetch import pub_object
+from ext.publish import put_object_in_bucket
 from plotly.subplots import make_subplots
 
 plt.style.use('ggplot')
@@ -110,7 +110,7 @@ def plot_timeline_new_vs_old_f(df, resample_rule, df_rates=None):
     file_path = "resources/fig_timeline_new_vs_old.pk"
     with open(file_path, 'wb') as f:
         pickle.dump(fig, f)
-    pub_object(file_path)
+    put_object_in_bucket(file_path)
     return fig
 
 
@@ -215,7 +215,7 @@ def calc_agg_by_metrics(df):
                 continue
             res[city] = calc_perc(df_[df_['city'] == city])
         to_pickle(res, f"resources/{name}.pk")
-        pub_object(f"resources/{name}.pk")
+        put_object_in_bucket(f"resources/{name}.pk")
         results[name] = res
     return list(results.values())
 

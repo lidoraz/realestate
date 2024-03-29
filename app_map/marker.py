@@ -11,7 +11,7 @@ icon_50 = "https://cdn-icons-png.flaticon.com/128/5065/5065451.png"
 icon_regular = "https://cdn-icons-png.flaticon.com/128/6153/6153497.png"
 icon_maps = "https://cdn-icons-png.flaticon.com/128/684/684809.png"
 icon_real_estate = "https://cdn-icons-png.flaticon.com/128/602/602275.png"
-
+icon_share = "https://cdn-icons-png.flaticon.com/128/4855/4855052.png"
 
 def get_icon(deal, marker_metric='median'):
     p = deal['metadata'][marker_metric]

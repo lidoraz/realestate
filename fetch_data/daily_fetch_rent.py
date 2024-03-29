@@ -1,16 +1,10 @@
-from fetch_data.daily_fetch import run_daily_job, pub_object
-from ext.env import get_pg_engine
+from fetch_data.daily_fetch import run_daily_job
+from ext.publish import put_object_in_bucket
 
 
-def daily_rent():
+def daily_rent(model_params):
     type_ = 'rent'
     path = f'resources/yad2_{type_}_df.pk'
-    eng = get_pg_engine()
-    print(f"STARTED DAILY FETCH FOR {type_}")
-    df = run_daily_job(type_, eng)
+    df = run_daily_job(type_, model_params)
     df.to_pickle(path)
-    pub_object(path)
-
-
-if __name__ == '__main__':
-    daily_rent()
+    put_object_in_bucket(path)

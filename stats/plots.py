@@ -69,6 +69,9 @@ def get_fig_quantiles_from_api(deal_type, city, time_interval, col_name="price")
     # can also deal with multiple cities
     data = req_timeseries_recent_quantiles(deal_type, time_interval, cities=city)
     fig = make_subplots()
+    if data is None:
+        print("Something went wrong in get_fig_quantiles_from_api data is Null from api")
+        return fig
     df = pd.DataFrame.from_dict(data)
     if isinstance(city, str):
         title = f'{city} ({get_heb_type_present(deal_type)})'
@@ -210,11 +213,13 @@ def plot_line(df, x, y, y2, hover_data, color='Blue'):
     # Add last value at the end on scatter
     for i, d in enumerate(fig.data):
         if d.type == 'scatter':
+            # : IndexError: index -1 is out of bounds for axis 0 with size 0
             text = str(format_number(d.y[-1]))
             fig.add_annotation(x=d.x[-1], y=d.y[-1],
                                text=text,
                                showarrow=False,
-                               bgcolor='white',
+                               bgcolor='white', #rgba(255, 255, 255, 0.5)',  # white 50%
+                               opacity=0.8,
                                font=dict(size=10),
                                # yshift=10
                                )

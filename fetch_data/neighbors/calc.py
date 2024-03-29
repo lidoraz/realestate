@@ -1,39 +1,25 @@
 import os
-import json
 import pandas as pd
-from sqlalchemy import create_engine
+from ext.env import get_df_from_pg
 import numpy as np
 from shapely.geometry import Polygon
 import geopandas as gpd
-from fetch_data.daily.neighbors.query import *
+from fetch_data.neighbors.query import *
 
-
-def get_sql_engine():
-    path = os.path.join(os.path.expanduser("~"), '.ssh', 'creds_postgres.json')
-    with open(path, 'r') as f:
-        c = json.loads(f.read())
-
-    engine = create_engine(
-        f"postgresql://{c['PGUSER']}:{c['PGPASSWORD']}@{c['PGHOST']}:{c['PGPORT']}/{c['PGDATABASE']}",
-        isolation_level="REPEATABLE READ")
-    return engine
+OUTLIERS_STDS_VAL = 2.0
 
 
 # # Remove any outliers from the list of data points from each area - data is better since 1 April 2023
 # # Data is not clean and there are outliers in the dataset.
-def fetch_polygons(engine, q_polygons, table_name):
+def fetch_polygons(q_polygons, table_name):
     q_polygons = q_polygons.format(table_name=table_name)
-    with engine.connect() as con:
-        df_polygons = pd.read_sql(q_polygons, con)
-    return df_polygons
+    return get_df_from_pg(q_polygons)
 
 
-def fetch_prices(engine, q_prices, table_name, calc_every_x_days=90, min_cnts_for_neighborhood=10):
+def fetch_prices(q_prices, table_name, calc_every_x_days=90, min_cnts_for_neighborhood=10):
     q_prices = q_prices.format(calc_every_x_days=calc_every_x_days, table_name=table_name,
                                min_cnt=min_cnts_for_neighborhood)
-    with engine.connect() as con:
-        df_prices = pd.read_sql(q_prices, con)
-    return df_prices
+    return get_df_from_pg(q_prices)
 
 
 def process(df_prices, df_polygons, metric=None, agg_cols=['city', 'neighborhood']):
@@ -41,6 +27,7 @@ def process(df_prices, df_polygons, metric=None, agg_cols=['city', 'neighborhood
 
     res = pd.Series(dtype=float)
     cnts = {}
+    agg_cols = agg_cols[0] if len(agg_cols) == 1 else agg_cols
     for g, x in df_prices.groupby(agg_cols):
         res = pd.concat([res, x[metric].pct_change()])
         cnts[g] = len(x)
@@ -56,12 +43,12 @@ def process(df_prices, df_polygons, metric=None, agg_cols=['city', 'neighborhood
     df_last = df.groupby(agg_cols)[[metric, "pct_change", 'cnt']].last().reset_index()
 
     df_all = df_last.merge(df_polygons, left_on=agg_cols, right_on=agg_cols)
-    cords = remove_outleirs(df_all, 2.0)
+    cords = remove_outliers(df_all, OUTLIERS_STDS_VAL)
     df_all['geometry'] = [Polygon(list_points) for list_points in cords]
     return df_all
 
 
-def remove_outleirs(df_all, stds_val=1.0):
+def remove_outliers(df_all, stds_val=1.0):
     cords = [(tuple(zip(x, y))) for x, y in zip(df_all['list_long'], df_all['list_lat'])]
     stds_lat = df_all['list_lat'].apply(lambda x: np.std(x))
     mean_lat = df_all['list_lat'].apply(lambda x: np.mean(x))
@@ -82,8 +69,7 @@ def create_geodf(df_all, metric, agg_cols=['city', 'neighborhood'], alpha=0.7):
     # Must have 0.14 version
     gdf['geometry'] = gdf.concave_hull(alpha)
     gdf = gdf[gdf.geom_type == 'Polygon']
-    #     gdf = gdf[gdf['geometry'].apply(lambda x: x.type) == 'Polygon']
-    gdf['geometry'].apply(lambda x: x.exterior if x.type == 'Polygon' else x)
+
     gdf['n_points'] = gdf['geometry'].apply(lambda x: len(x.exterior.coords))
     gdf['area'] = gdf.area  # / 10**6
     gdf["type"] = "C" if len(
@@ -105,10 +91,12 @@ def create_geodf(df_all, metric, agg_cols=['city', 'neighborhood'], alpha=0.7):
 def save_to_geojson(gdf, name, path=""):
     file_name = os.path.join(path, f"changes_last_polygon_{name}.json")
     gdf.to_file(file_name, driver="GeoJSON", index=False)
-    from fetch_data.daily_fetch import pub_object
-    pub_object(file_name)
+    from ext.publish import put_object_in_bucket
+    put_object_in_bucket(file_name)
+
 
 def run_neighbors():
+    print("run_neighbors")
     calc_every_x_days = 90
     min_cnts_for_neighborhood = 10
     alpha_concave_hull = 0.5
@@ -132,18 +120,19 @@ def run_neighbors():
 
             output_name = table_name.split('_')[1] + "_" + "_".join(agg_cols)
 
-            eng = get_sql_engine()
-            df_polygons = fetch_polygons(eng, q_polygons, table_name)
-            df_prices = fetch_prices(eng, q_prices, table_name, calc_every_x_days, min_cnts_for_neighborhood)
+            df_polygons = fetch_polygons(q_polygons, table_name)
+            df_prices = fetch_prices(q_prices, table_name, calc_every_x_days, min_cnts_for_neighborhood)
             df_all = process(df_prices, df_polygons, metric, agg_cols)
 
             df_all = df_all[[*agg_cols, metric, 'pct_change', 'cnt', 'geometry']]
             gdf = create_geodf(df_all, metric, agg_cols, alpha=alpha_concave_hull)
             save_to_geojson(gdf, output_name, path)
 
+
 if __name__ == '__main__':
     from os.path import dirname
-    file_dir = dirname(dirname(dirname(dirname(__file__))))
+
+    file_dir = dirname(dirname(dirname(__file__)))
     os.chdir(file_dir)
     print(file_dir)
     run_neighbors()

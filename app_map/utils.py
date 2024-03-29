@@ -4,7 +4,7 @@ from datetime import datetime
 import numpy as np
 from api.gateway.api_stats import req_timeseries_sidebar, req_remote_past_sales
 from stats.plots import plot_deal_vs_sale_sold
-from app_map.marker import get_marker_tooltip, icon_maps, icon_real_estate, get_color, convert_rooms_str
+from app_map.marker import get_marker_tooltip, icon_maps, icon_real_estate, icon_share, get_color, convert_rooms_str
 from app_map.util_layout import *
 from scrape_yad2.utils import _get_parse_item_add_info
 from fetch_data.utils import filter_by_dist
@@ -23,7 +23,7 @@ def app_preprocess_df(df_all):
     df_all['ai_price'] = df_all['ai_price'] * (df_all['ai_std_pct'] < 0.15)  # Take only certain AI predictions
     df_all['ai_price_pct'] = df_all['ai_price'].replace(0, np.nan)
     df_all['ai_price_pct'] = df_all['price'] / df_all['ai_price_pct'] - 1
-    df_all['square_meters'] = df_all['square_meter_build'].replace(0, np.nan).combine_first(df_all['square_meters'])
+    # df_all['square_meters'] = df_all['square_meter_build'].replace(0, np.nan).combine_first(df_all['square_meters'])
     df_all['avg_price_m'] = df_all['price'] / df_all['square_meters']
     df_all['date_added'] = pd.to_datetime(df_all['date_added'])
     df_all['date_added_d'] = (datetime.today() - df_all['date_added']).dt.days
@@ -208,7 +208,7 @@ def build_sidebar(deal, fig):
         info_text = deal['info_text']
         # add_info_text = None
     df_price_hist = None
-    if isinstance(deal['price_hist'], list):
+    if len(deal['price_hist']) > 1:
         df_hist = pd.DataFrame([deal['dt_hist'], [f"{x:0,.0f}" for x in deal['price_hist']]])
         df_price_hist = html.Table([html.Tr([html.Td(v) for v in row.values]) for i, row in df_hist.iterrows()])
     carousel = None
@@ -231,9 +231,18 @@ def build_sidebar(deal, fig):
 
     title_html = html.Div([html.Span(f"{deal['price']:,.0f}₪"),
                            get_html_span_pct(deal['price_pct'])])
-    street = deal['street'] if deal['street'] else deal['neighborhood'] if deal['neighborhood'] else ""
+    # street = deal['street'] if deal['street'] is not None else ""
+    street_num = deal['street_num'] if deal['street_num'] else ""
+    street = f"{street_num}"
+
+    neighborhood = deal['neighborhood'] if deal['neighborhood'] != 'U' else ""
+    rooms = f" {convert_rooms_str(deal['rooms'])} חדרים,"
+    floor = f" קומה  {round(deal['floor']) if deal['floor'] > 0 else 'קרקע'} "
     n_floors_building = round(deal['number_of_floors']) if deal['number_of_floors'] > 0 else None
     n_floors_building_str = f', (מתוך {n_floors_building})' if n_floors_building else ""
+    parking = f" חנייה: {deal['parking'] if deal['parking'] else 'ללא'} "
+    balcony = f"{'עם מרפסת' if deal['balconies'] else 'ללא מרפסת'}"
+
     txt_html = html.Div(
         [html.Span(f"מחיר הנכס מהחציון באיזור: "),
          get_html_span_pct(deal['pct_diff_median']),
@@ -241,35 +250,53 @@ def build_sidebar(deal, fig):
                  html.Span(f"{deal['ai_price']:,.0f} (±{deal['ai_std_pct']:.1%})", className="text-ltr"),
                  get_html_span_pct(deal['ai_price_pct'])]),
          html.H6(f"הועלה בתאריך {date_added.date()}, (לפני {days_online / 7:0.1f} שבועות)"),
-         html.Span(f"מתי עודכן: {deal['date_updated']}, ({days_str_txt(days_updated)})"),
+         html.Span(f"מתי עודכן: {deal['date_updated'].strftime('%Y-%m-%d %H:%M')}, ({days_str_txt(days_updated)})"),
          html.Div(df_price_hist, className='price-diff-table text-ltr'),
          html.P([
              'תיווך' if deal['is_agency'] else 'לא תיווך',
              html.Br(),
              f"מצב הנכס: ",
              html.B(deal['asset_status'])]),
-         html.P([f" {convert_rooms_str(deal['rooms'])} חדרים,",
-                 f" קומה  {round(deal['floor']) if deal['floor'] > 0 else 'קרקע'} ",
+         html.P([rooms,
+                 floor,
                  n_floors_building_str,
                  html.Br(),
-                 f"{deal['asset_type']}, {deal['city']}, {street}",
+                 f"{deal['asset_type']}, {deal['city']}",
+                 html.Br(),
+                 f"{neighborhood}, {street}",
                  html.Br(),
                  html.Span(f"{deal['square_meters']:,.0f} מטר"),
                  html.Span(f"(מחיר למטר ₪{deal['price'] / deal['square_meters']:,.0f})"),
                  html.Br(),
-                 f" חנייה: {deal['parking'] if deal['parking'] else 'ללא'} ",
+                 parking,
                  html.Br(),
-                 f"{'עם מרפסת' if deal['balconies'] else 'ללא מרפסת'}",
-                 html.A(href=maps_url, children=html.Img(src=icon_maps, style=dict(width=32, height=32)),
-                        target="_blank"),
-                 html.A(href=f"https://www.yad2.co.il/item/{deal['id']}",
-                        children=html.Img(src=icon_real_estate, style=dict(width=32, height=32)),
-                        target="_blank"),
+                 balcony,
                  ]),
          html.Div(children=[carousel], className="asset-images", style={"display": "block" if image_urls else "none"}),
          html.Span(info_text, className='sidebar-info-text'),
+         html.Div([html.A(href=maps_url, children=[html.Img(src=icon_maps), "למפה"],
+                          className="sidebar-info-links",
+                          target="_blank"),
+                   html.A(href=f"https://www.yad2.co.il/item/{deal['id']}",
+                          children=[html.Img(src=icon_real_estate), "למודעה"],
+                          className="sidebar-info-links",
+                          target="_blank"),
+                   dbc.Button(
+                       [
+                           html.Img(src=icon_share),
+                           "העתק קישור",
+                           dcc.Clipboard(
+                               content=os.getenv("BASE_URL_PATH") + "?asset_id=" + deal["id"],
+                               className="position-absolute start-0 top-0 h-100 w-100 opacity-0",
+                           ),
+                       ],
+                       className="position-relative sidebar-info-links nopadding",
+                       color="white",
+                   ),
+                   ],
+                  className="sidebar-info-links-container"),
          html.Span(deal['id'], style={"display": "block", "font-size": "8pt"}),
-         html.H5("פילוח מס׳ עסקאות עם מספר חדרים זהה בסביבה:", style=dict(display="block", margin="0px 5px 0px")),
+         html.H5("פילוח מס׳ עסקאות עם מספר חדרים זהה בסביבה", className="sidebar-info-graphs-header"),
          # TODO: Move this graph to the loading too, but a bit problem because it uses massive dataframe, maybe agg it and send it via state to front
          dcc.Graph(id='histogram', figure=fig,
                    config={'displayModeBar': False,
