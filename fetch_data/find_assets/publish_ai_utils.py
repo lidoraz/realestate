@@ -12,7 +12,10 @@ def format_telegram(idx, sr, asset_type, group_id=None):
     agency_str = "\n<b>מתיווך</b>" if sr['is_agency'] else ""
     rooms_str = int(sr['rooms']) if sr['rooms'].is_integer() else sr['rooms']
     floor_str = "קרקע" if sr['floor'] == 0 else sr['floor']
-    price_meter_str = f"{sr['square_meters']:,.0f} מ״ר ({sr['price'] / sr['square_meters']:,.0f}₪ למטר)"
+    if sr['square_meters'] > 1:
+        price_meter_str = f"{sr['square_meters']:,.0f} מ״ר ({sr['price'] / sr['square_meters']:,.0f}₪ למטר)"
+    else:
+        price_meter_str = ""
     balcony_parking = ""
     if sr['parking'] > 0 or sr['balconies']:
         balcony_parking = (f"\n<b>עם:</b> {'חניה' if sr['parking'] > 0 else ''}"
