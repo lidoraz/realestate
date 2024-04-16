@@ -16,7 +16,8 @@ price_pct_txt = '% אחוז הורדה במחיר'
 rooms_marks = {r: str(r) for r in range(7)}
 rooms_marks[6] = '6+'
 max_floor = 32
-floor_marks = {k: str(k) for k in range(0, max_floor + 1, 4)}
+# floor_marks = {k: str(k) for k in range(0, max_floor + 1, 4)}
+floor_marks = {k: "" for k in range(0, max_floor + 1, 4)}
 floor_marks.update({0: "קרקע", 32: "32+"})
 slider_tooltip = {'always_visible': True, 'placement': 'bottom'}
 # best practice to avoid overlap points
