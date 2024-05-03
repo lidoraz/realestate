@@ -140,9 +140,7 @@ def get_div_top_bar(config_defaults):
                         dbc.Col(dbc.Input(id="search-input", value="", debounce=True, type="text",
                                           placeholder="חפש לפי כתובת, איזור.."), width=10, style={"padding-left": "0"}),
                         dbc.Col(dbc.Button("🔍", id="search-submit", color="primary", n_clicks=0,
-                                           style={"margin": "0",
-                                                  "border": "none",
-                                                  "background": "none"}),
+                                           style={"margin": "0"}),
                                 width=1,
                                 style={"padding": "0"})]
                     )],
