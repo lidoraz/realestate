@@ -85,15 +85,15 @@ def _process_keyword(df, keyword, search_submit_nclicks):
     res = {"search-submit": 0}
     if not search_submit_nclicks or not len(keyword):
         return res
-    pos = get_cords_by_city(df, keyword)
-    if pos:
-        res.update({"big-map_center": pos, "big-map_zoom": CLUSTER_MAX_ZOOM, "search-input_invalid": False,
-                    "search-input_value": keyword,
-                    "button-clear_n_clicks": 0})
-        return res
-    r = address_to_lat_long_google(keyword)  # Use maps api to get location
+        pos = get_cords_by_city(df, keyword)
+        if pos:
+            res.update({"big-map_center": pos, "big-map_zoom": CLUSTER_MAX_ZOOM, "search-input_invalid": False,
+                        "search-input_value": keyword,
+                        "button-clear_n_clicks": 0})
+            return res
+    r = get_cords_by_id(df, keyword) or address_to_lat_long_google(keyword)  # Use maps api to get location
     if r:
-        res.update({"big-map_center": (r['lat'], r['lng']), "big-map_zoom": r['zoom']})
+        res.update({"big-map_center": (r['lat'], r['long']), "big-map_zoom": r['zoom']})
         return res
     res.update({"search-input_invalid": True})
     return res
@@ -113,11 +113,12 @@ def _process_asset_url(df, url_path, clear_button_n_clicks):
                 output.update({"main-alert_is_open": True})
             asset_id = None
         else:
-            pos = get_cords_by_id(df, asset_id)
-            output.update({"big-map_center": pos, "big-map_zoom": 14, "search-input_invalid": False,
-                           # "search-input_value": asset_id,
-                           "button-clear_color": "info",
-                           "button-clear_n_clicks": 0})
+            r = get_cords_by_id(df, asset_id)
+            output.update(
+                {"big-map_center": [r['lat'], r['long']], "big-map_zoom": r['zoom'], "search-input_invalid": False,
+                 # "search-input_value": asset_id,
+                 "button-clear_color": "info",
+                 "button-clear_n_clicks": 0})
     if clear_button_n_clicks:
         asset_id = None
         output.update({"button-clear_color": "primary"})
@@ -137,8 +138,8 @@ def _process_table(df,
                        "clear-cell-button_n_clicks": 0})
     if table_active_cell:
         asset_id = [x for x in table_data if x['id'] == table_active_cell['row_id']][0]['id']
-        pos = get_cords_by_id(df, asset_id)
-        output.update({"big-map_center": pos,
+        r = get_cords_by_id(df, asset_id)
+        output.update({"big-map_center": [r['lat'], r['long']],
                        "big-map_zoom": CLUSTER_MAX_ZOOM + 1})
     return output
 
@@ -167,6 +168,8 @@ show_assets_input_output = [Output("geojson", "data"),
                             ######## OPTIONS INPUTS ##
                             Input("price-slider", "value"),
                             Input("max-avg-price-meter-slider", "value"),
+                            Input("min-meter-slider", "value"),
+
                             Input("price-median-pct-slider", "value"),
                             Input("price-discount-pct-slider", "value"),
                             Input("ai-price-pct-slider", "value"),
@@ -206,7 +209,9 @@ show_assets_input_output = [Output("geojson", "data"),
 #  3. Parse url search if asset is selected from the url
 #  4. filter and get out assets!
 
-def show_assets(price_range, max_avg_price_meter, price_median_pct_range, price_discount_pct_range, price_ai_pct_range,
+def show_assets(price_range, max_avg_price_meter,
+                min_meter,
+                price_median_pct_range, price_discount_pct_range, price_ai_pct_range,
                 is_price_median_pct_range, is_price_discount_pct_range, is_price_ai_pct_range,
                 date_added, date_updated,
                 rooms_range, floor_range,
@@ -270,6 +275,7 @@ def show_assets(price_range, max_avg_price_meter, price_median_pct_range, price_
             # when max price is at limits, allow prices above it
             price_to=np.inf if price_range[0] == conf['price-max'] else price_range[1] * conf["price_mul"],
             max_avg_price_meter=np.inf if max_avg_price_meter == 50_000 else max_avg_price_meter,
+            min_meter=min_meter,
             city=city,
             # remove limits, ADD TO CONF
             rooms_range=rooms_range,

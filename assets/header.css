@@ -265,11 +265,11 @@ p.rtl {
     overflow-x: hidden;
     overflow-y: scroll;
     max-height: 80vh;
-    width: 220px;
-    direction: rtr;
+    width: 280px;
+    direction: rtl;
     min-width: 150px;
     text-align: right;
-    padding-right: 10px;
+    padding: 0px 10px 0 10px;
 }
 
 .rounded-checkbox {

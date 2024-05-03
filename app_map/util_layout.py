@@ -134,15 +134,19 @@ def get_div_top_bar(config_defaults):
                 # Annoying that user must consent for location, I want only when user clicks to popup loc request
                 # dbc.Row([dbc.Button("למרכוז",id="find-geolocation", n_clicks=0),
                 #         dcc.Geolocation(id="geolocation")]),
-                html.Div([dbc.Label("עיר"),
-                          dbc.Row(
-                              dbc.Col(dbc.Input(id="search-input", value="", debounce=True, type="text",
-                                                placeholder="חיפוש לפי עיר", style=dict(width="89.5%")), width=11)),
-                          dbc.Row(
-                              dbc.Col(dbc.Button("חפש", id="search-submit", color="primary", n_clicks=0,
-                                                 style=dict(padding="0 25px 0")), width=6))
-                          ],
-                         className="slider-container-drop"),
+                html.Div([
+                    # dbc.Label("עיר"),
+                    dbc.Row([
+                        dbc.Col(dbc.Input(id="search-input", value="", debounce=True, type="text",
+                                          placeholder="חפש לפי כתובת, איזור.."), width=10, style={"padding-left": "0"}),
+                        dbc.Col(dbc.Button("🔍", id="search-submit", color="primary", n_clicks=0,
+                                           style={"margin": "0",
+                                                  "border": "none",
+                                                  "background": "none"}),
+                                width=1,
+                                style={"padding": "0"})]
+                    )],
+                    className="slider-container-drop"),
 
                 html.Div([config_defaults['price_label'], dcc.RangeSlider(min=config_defaults["price-min"],
                                                                           max=config_defaults["price-max"],
@@ -161,6 +165,12 @@ def get_div_top_bar(config_defaults):
                                      marks=None,
                                      tooltip=slider_tooltip)],
                          style={"display": "none"} if config_defaults['name'] != "sale" else None
+                         ),
+                html.Div(["שטח (במ״ר)",
+                          dcc.Slider(min=0, max=200, step=10,
+                                     value=0, id="min-meter-slider",
+                                     marks=None,
+                                     tooltip=slider_tooltip)]
                          ),
                 dbc.DropdownMenuItem(divider=True),
                 html.Div(

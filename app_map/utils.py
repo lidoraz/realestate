@@ -80,7 +80,7 @@ def get_cords_by_id(df, keyword):
         r = dff.squeeze()
         if np.isnan(r['lat']) or np.isnan(r['long']):
             return None
-        return [r['lat'], r['long']]
+        return {'lat': r['lat'], 'long': r['long'], "zoom": 18}
     return None
 
 
@@ -95,7 +95,9 @@ def get_cords_by_city(df, search, err_th=0.1):
     return [lat, long]
 
 
-def get_asset_points(df_all, price_from=-np.inf, price_to=np.inf, max_avg_price_meter=np.inf, city=None,
+def get_asset_points(df_all, price_from=-np.inf, price_to=np.inf, max_avg_price_meter=np.inf,
+                     min_meter=0,
+                     city=None,
                      price_median_pct_range=None, price_discount_pct_range=None, price_ai_pct_range=None,
                      is_price_median_pct_range=False, is_price_discount_pct_range=False, is_price_ai_pct_range=False,
                      date_added_days=None, date_updated=None,
@@ -120,6 +122,7 @@ def get_asset_points(df_all, price_from=-np.inf, price_to=np.inf, max_avg_price_
         sql_floor_range=f"{floor_from} <= floor <= {floor_to}",
         sql_price=f"{price_from} <= price <= {price_to}",
         sql_avg_price_meter=f"avg_price_m <= {max_avg_price_meter}",
+        sql_min_meter=f"square_meters >= {min_meter}",
         sql_is_agency="is_agency == False" if not with_agency else "",
         sql_is_parking="parking > 0" if with_parking else "",
         sql_is_balcony="balconies == True" if with_balconies else "",
@@ -187,7 +190,7 @@ def address_to_lat_long_google(address):
         zoom = 18
     else:
         return None
-    return dict(lat=loc['lat'], lng=loc['lng'], zoom=zoom)
+    return dict(lat=loc['lat'], long=loc['lng'], zoom=zoom)
 
 
 def build_sidebar(deal, fig):
