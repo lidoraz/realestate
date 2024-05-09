@@ -74,13 +74,13 @@ def _multi_str_filter(multi_choice, col_name):
     return sql_state_asset
 
 
-def get_cords_by_id(df, keyword):
+def get_cords_by_id(df, keyword, zoom=14):
     dff = df.query(f'id == "{keyword}"')
     if len(dff):
         r = dff.squeeze()
         if np.isnan(r['lat']) or np.isnan(r['long']):
             return None
-        return {'lat': r['lat'], 'long': r['long'], "zoom": 18}
+        return {'lat': r['lat'], 'long': r['long'], "zoom": zoom}
     return None
 
 

@@ -91,7 +91,7 @@ def _process_keyword(df, keyword, search_submit_nclicks):
                         "search-input_value": keyword,
                         "button-clear_n_clicks": 0})
             return res
-    r = get_cords_by_id(df, keyword) or address_to_lat_long_google(keyword)  # Use maps api to get location
+    r = get_cords_by_id(df, keyword, 14) or address_to_lat_long_google(keyword)  # Use maps api to get location
     if r:
         res.update({"big-map_center": (r['lat'], r['long']), "big-map_zoom": r['zoom']})
         return res
@@ -113,7 +113,7 @@ def _process_asset_url(df, url_path, clear_button_n_clicks):
                 output.update({"main-alert_is_open": True})
             asset_id = None
         else:
-            r = get_cords_by_id(df, asset_id)
+            r = get_cords_by_id(df, asset_id, 14)
             output.update(
                 {"big-map_center": [r['lat'], r['long']], "big-map_zoom": r['zoom'], "search-input_invalid": False,
                  # "search-input_value": asset_id,
@@ -138,7 +138,7 @@ def _process_table(df,
                        "clear-cell-button_n_clicks": 0})
     if table_active_cell:
         asset_id = [x for x in table_data if x['id'] == table_active_cell['row_id']][0]['id']
-        r = get_cords_by_id(df, asset_id)
+        r = get_cords_by_id(df, asset_id, 16)
         output.update({"big-map_center": [r['lat'], r['long']],
                        "big-map_zoom": CLUSTER_MAX_ZOOM + 1})
     return output
