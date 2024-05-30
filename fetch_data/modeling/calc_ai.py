@@ -73,7 +73,7 @@ def train_model(asset_type, n_folds=MAJORITY_N_FOLDS, regressor_config=None):
     return clf
 
 
-def add_ai_price(df, asset_type, model_params, set_no_active=True):
+def add_ai_price(df, asset_type, model_params, set_no_active=True, filter_bad_locs=True):
     print(f'Predicting AI Price (v2) - {asset_type=}')
     path = FILE_PATH.format(asset_type=asset_type,
                             n_folds=model_params['n_folds'],
@@ -82,10 +82,11 @@ def add_ai_price(df, asset_type, model_params, set_no_active=True):
     with open(path, 'rb') as f:
         clf = pickle.load(f)
     cols, _ = get_model_cols_n_cat()
-    df_f = filter_bad_loc_assets(df, asset_type)
+    df_f = df.copy()
+    if filter_bad_locs:
+        df_f = filter_bad_loc_assets(df, asset_type)
     df_f = df_f[cols].drop(columns=['price'])
     if set_no_active:  # setting to no active to emulate sold conditions
-        df_f = df_f.copy()
         df_f['is_active'] = False
     df_preds = clf.predict_price(df_f)
     df = df.join(df_preds, how='left')

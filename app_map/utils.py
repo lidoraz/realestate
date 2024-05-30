@@ -222,7 +222,11 @@ def build_sidebar(deal, fig):
     carousel = None
     if len(image_urls):
         carousel = dbc.Carousel(
-            items=[{"key": f"{idx + 1}", "src": url, "href": "https://google.com", "img_class_name": "asset-images-img",
+            items=[{"key": f"{idx + 1}",
+                    "img_class_name": "asset-images-img",
+                    "src": url,
+                    "href": url,
+                    "target": "_blank",
                     "loading": "lazy"}
                    for idx, url in
                    enumerate(image_urls)],

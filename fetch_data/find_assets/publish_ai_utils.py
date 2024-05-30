@@ -38,7 +38,7 @@ def format_telegram(idx, sr, asset_type, group_id=None):
 <b>קומה:</b> {floor_str}
 <b>מצב:</b> {sr['asset_status']}
 <b>אחוז ממחיר AI מודל:</b> {abs(sr['ai_price_pct']):.1%}-{discount_str}{balcony_parking}
-{text_info}<a href='{href_url_asset}'>לחץ כאן למודעה</a>
+{text_info}ֿ{href_url_asset}
 """
     return text_str
 

@@ -245,7 +245,7 @@ def get_div_top_bar(config_defaults):
                                        id="date-added",
                                        type="number",
                                        placeholder=date_added_txt,
-                                       value=300,
+                                       value=720,
                                        debounce=True,
                                        className="input-ltr"))]),
                           dbc.Row([dbc.Col(date_updated_text),
@@ -253,7 +253,7 @@ def get_div_top_bar(config_defaults):
                                        id="date-updated",
                                        type="number",
                                        placeholder=date_updated_text,
-                                       value=14,
+                                       value=30,
                                        debounce=True,
                                        className="input-ltr"
                                    ))]),
