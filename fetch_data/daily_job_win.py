@@ -2,7 +2,7 @@
 import os
 from ext.env import load_vault
 
-load_vault() # load env to prod
+load_vault()  # load env to prod
 from os.path import dirname
 import sys
 
@@ -24,15 +24,13 @@ import time
 if __name__ == '__main__':
     job_name = "DailyJob-Sale&Rent Preprocess"
     send_telegram_msg(f"⚪ Starting {job_name}")
-    model_params = dict(n_folds=5, iterations=3000)
+    model_params = dict(n_folds=5, iterations=5000)
     try:
         run_nadlan_stats()  ## Needed until main plot will be via api
-        # # run_type_stats('forsale')
-        # # run_type_stats('rent')
         daily_forsale(model_params=model_params)
         daily_rent(model_params=model_params)
         run_neighbors()
-        find_and_publish_run_all() # for me
+        find_and_publish_run_all()  # for me
         # this code goes out to other process..
         # time.sleep(60 * 5)  # sleep for 5 minutes to allow site to update...
         # find_and_publish_for_all_users() # for all others

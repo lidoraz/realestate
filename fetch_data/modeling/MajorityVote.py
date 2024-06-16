@@ -54,4 +54,5 @@ class MajorityVote:
         for clf in self.clfs:
             res.append({k: v for k, v in zip(clf.feature_names_, clf.feature_importances_)})
         self.df_feat_imp = pd.DataFrame(res)
+
         return self.df_feat_imp.mean(axis=0).sort_values(ascending=False)

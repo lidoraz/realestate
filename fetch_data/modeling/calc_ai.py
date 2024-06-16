@@ -1,6 +1,7 @@
 from ext.env import get_query, get_df_from_pg
 from fetch_data.modeling.MajorityVote import MajorityVote
 from fetch_data.modeling.utils import get_model_cols_n_cat, filter_bad_loc_assets
+import pandas as pd
 import os
 import pickle
 import time
@@ -91,7 +92,23 @@ def add_ai_price(df, asset_type, model_params, set_no_active=True, filter_bad_lo
     df_preds = clf.predict_price(df_f)
     df = df.join(df_preds, how='left')
     print(f"Added {len(df_preds):,.0f} predictions to {len(df):,.0f} assets")
+    print(clf.get_feat_importance())
     print('Finished Calculating and Adding AI Price')
+    return df
+
+
+def add_rent_price_to_forsale(df, rent_model_params):
+    ai_cols = ['ai_price', 'ai_price_std', 'ai_std_pct']
+
+    df_to_predict = df.drop(columns=ai_cols).copy()
+    # reset these columns to avoid extreme deviations in the predictions
+    df_to_predict['price_pct'] = 0
+    df_to_predict['std_price_chg'] = 0
+    df_ = add_ai_price(df_to_predict, 'rent', rent_model_params)
+    df_ = df_[ai_cols]
+    df_.columns = [f"{c}_rent" for c in df_.columns]
+    df = pd.concat([df, df_], axis=1)
+    df['estimated_rent_annual_return'] = 12 * df['ai_price_rent'] / df['price']
     return df
 
 

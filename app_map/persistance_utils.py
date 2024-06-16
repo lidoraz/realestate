@@ -187,6 +187,3 @@ def get_rent_data():
 
 def get_sale_data():
     return load_dataframes()['sale']['df_forsale_all']
-
-
-

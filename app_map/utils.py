@@ -199,6 +199,7 @@ def address_to_lat_long_google(address):
 
 
 def build_sidebar(deal, fig):
+    # from app_map.utils_callbacks import config_defaults
     # THIS NEEDS REWORK - to DBC usage and better design
     maps_url = f"http://maps.google.com/maps?z=12&t=m&q={deal['lat']}+{deal['long']}&hl=iw"  # ?hl=iw, t=k sattalite
     days_online = (datetime.today() - pd.to_datetime(deal['date_added'])).days
@@ -241,6 +242,16 @@ def build_sidebar(deal, fig):
         pct = 0 if np.isnan(pct) else pct
         return html.Span(f"{pct:.1%}", style={"background-color": get_color(pct)}, className="span-color-pct text-ltr")
 
+    html_rent_est = html.P()
+    if deal.get('ai_price_rent'):
+        html_rent_est = html.P([html.Div([html.Span(f"שכירות צפויה ממודל AI : "),
+                                          html.Span(f"{deal['ai_price_rent']:,.0f} (±{deal['ai_std_pct_rent']:.1%})",
+                                                    className="text-ltr")]),
+                                html.Div([html.Span("תשואה צפויה:"),
+                                          html.Span(f"{deal['estimated_rent_annual_return']:.1%}",
+                                                    className="text-ltr")]),
+                                ])
+
     title_html = html.Div([html.Span(f"{deal['price']:,.0f}₪"),
                            get_html_span_pct(deal['price_pct'])])
     # street = deal['street'] if deal['street'] is not None else ""
@@ -261,6 +272,7 @@ def build_sidebar(deal, fig):
          html.P([html.Span(f"מחיר הנכס ממודל AI : "),
                  html.Span(f"{deal['ai_price']:,.0f} (±{deal['ai_std_pct']:.1%})", className="text-ltr"),
                  get_html_span_pct(deal['ai_price_pct'])]),
+         html_rent_est,
          html.H6(f"הועלה בתאריך {date_added.date()}, (לפני {days_online / 7:0.1f} שבועות)"),
          html.Span(f"מתי עודכן: {deal['date_updated'].strftime('%Y-%m-%d %H:%M')}, ({days_str_txt(days_updated)})"),
          html.Div(df_price_hist, className='price-diff-table text-ltr'),
