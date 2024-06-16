@@ -133,6 +133,6 @@ if __name__ == '__main__':
     from os.path import dirname
 
     file_dir = dirname(dirname(dirname(__file__)))
-    os.chdir(file_dir)
+    # os.chdir(file_dir)
     print(file_dir)
     run_neighbors()

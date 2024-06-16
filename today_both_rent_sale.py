@@ -2,7 +2,7 @@ import requests
 import pandas as pd
 import os
 
-LIMIT = 100
+LIMIT = 200
 
 print("Generating today rent sale")
 url = f"{os.environ['REAL_ESTATE_API']}/today_both_rent_sale"

@@ -73,14 +73,25 @@ def train_model(asset_type, n_folds=MAJORITY_N_FOLDS, regressor_config=None):
     return clf
 
 
-def add_ai_price(df, asset_type, model_params, set_no_active=True, filter_bad_locs=True):
-    print(f'Predicting AI Price (v2) - {asset_type=}')
+from datetime import datetime
+
+
+def load_model(asset_type, regressor_config):
     path = FILE_PATH.format(asset_type=asset_type,
-                            n_folds=model_params['n_folds'],
-                            iterations=model_params['iterations'])
+                            n_folds=regressor_config['n_folds'],
+                            iterations=regressor_config['iterations'])
     assert os.path.exists(path), f"Model is missing, train first.\n({path})"
+    time_model_created = datetime.fromtimestamp(int(os.path.getmtime(path))).isoformat()
     with open(path, 'rb') as f:
         clf = pickle.load(f)
+    print(f"Loaded model from {path} created at {time_model_created}")
+    return clf
+
+
+def add_ai_price(df, asset_type, model_params, set_no_active=True, filter_bad_locs=True):
+    print(f'Predicting AI Price (v2) - {asset_type=}')
+    clf = load_model(asset_type, model_params)
+
     cols, _ = get_model_cols_n_cat()
     df_f = df.copy()
     if filter_bad_locs:

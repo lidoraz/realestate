@@ -4,7 +4,7 @@ import requests
 def _get_parse_item_add_info(item_id):
     yad2_url_item = "https://gw.yad2.co.il/feed-search-legacy/item?token={}"
     try:
-        d = requests.get(yad2_url_item.format(item_id)).json()['data']
+        d = requests.get(yad2_url_item.format(item_id), timeout=2.5).json()['data']
         is_bad = d.get('error_message') is not None
         if is_bad:
             return None

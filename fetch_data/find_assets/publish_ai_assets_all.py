@@ -13,7 +13,8 @@ try:
     DAYS_BACK = int(os.getenv('TEST_DAYS_BACK'))
 except:
     DAYS_BACK = 1
-assert bot_id
+if os.getenv("PRODUCTION", False):
+    assert bot_id
 print(f"{DAYS_BACK=}")
 default_ai_price_pct_less_than = 0  # -0.05
 default_n_limit = 6

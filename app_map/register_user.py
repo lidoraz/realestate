@@ -3,11 +3,16 @@ from dash import html, Output, Input, State, dcc
 from ext.db_user import insert_or_update_user
 from ext.crypto import decrypt
 import dash_bootstrap_components as dbc
+import dash_mantine_components as dmc
 from datetime import datetime
 import urllib.parse
 import os
 from fetch_data.find_assets.publish_ai_assets_all import publish_for_new_user, process_updated_user
 
+from tests.test_register_user_city_neighborhood import get_options_values_city_neighborhood, \
+    build_city_neighborhood_dict
+
+#os.environ["REACT_VERSION"] = "18.2.0"
 # TODO: fail the page loadout if the id decrypt failed to generate valid number
 # get_pg_engine(echo=False, use_vault=False)  # just to load all the env and sanity-check
 BASE_URL = "register_"
@@ -44,12 +49,12 @@ def get_asset_options_html(asset_type):
                     dbc.Row(
                         [
                             dbc.Label("Relevant cities"),
-                            dcc.Dropdown(
+                            dmc.MultiSelect(
                                 id=f"input-{asset_type}-cities",
-                                options=[{"label": option, "value": option} for option in
-                                         cities],
-                                multi=True,
+                                data=[{"label": option, "value": option} for option in
+                                      cities],
                                 placeholder="Select cities...",
+                                searchable=True
                             ),
                         ]
                     ),
@@ -57,6 +62,27 @@ def get_asset_options_html(asset_type):
                 ),
             ]
             , justify="center"),
+        dbc.Row(
+            dbc.Col(
+                dbc.Row(
+                    [
+                        dbc.Label("Filter neighborhoods"),
+                        dmc.MultiSelect(
+                            id=f"input-{asset_type}-cities-neighborhood",
+                            data=[],
+                            placeholder="Select neighborhoods... If nothing is selected, take all",
+                            clearable=True,
+                            disabled=True,
+                            searchable=True,
+                            # selectOnBlur=False,
+                            # withCheckIcon="right",
+                        ),
+                    ]
+                ),
+                width=width,
+            ),
+            justify="center"
+        ),
         dbc.Row(
             [
                 dbc.Col(
@@ -103,11 +129,10 @@ def get_asset_options_html(asset_type):
                     dbc.Row(
                         [
                             dbc.Label("Asset Condition"),
-                            dcc.Dropdown(
+                            dmc.MultiSelect(
                                 id=f"input-{asset_type}-asset-cond",
-                                options=[{"label": option, "value": option} for option in
-                                         asset_condition_options],
-                                multi=True,
+                                data=[{"label": option, "value": option} for option in
+                                      asset_condition_options],
                                 placeholder="Select asset condition",
                             ),
                         ]
@@ -139,7 +164,7 @@ def get_asset_options_html(asset_type):
 
 
 def create_asset_preferences(price_from, price_to, rooms_from,
-                             rooms_to, asset_cond, cities,
+                             rooms_to, asset_cond, cities, cities_neighborhood_dict,
                              must_parking, must_balcony, must_no_agency):
     asset_preferences = {
         "min_price": price_from,
@@ -148,6 +173,7 @@ def create_asset_preferences(price_from, price_to, rooms_from,
         "max_rooms": rooms_to,
         "asset_status": [] if asset_cond is None else asset_cond,
         "cities": cities,
+        "cities_neighborhoods": cities_neighborhood_dict,
         "must_parking": must_parking,
         "must_balcony": must_balcony,
         "must_no_agency": must_no_agency,
@@ -159,7 +185,7 @@ def get_dash(server):
     assert os.getenv("TELEGRAM_USERID_SALT")  # used for crypto
     app = dash.Dash(server=server, external_stylesheets=[dbc.themes.BOOTSTRAP], title="Register",
                     url_base_pathname=f'/{BASE_URL}/')
-    app.layout = dbc.Container(
+    app.layout = dmc.MantineProvider(dbc.Container(
         [
             # prevents zoom in when using iphone
             html.Meta(name="viewport",
@@ -258,7 +284,7 @@ def get_dash(server):
         ],
         className="register-container noselect",
         fluid=True,  # Set fluid to True for a full-width container
-    )
+    ))
 
     def extract_range_values(range_values):
         return range_values[0], range_values[1]
@@ -269,13 +295,14 @@ def get_dash(server):
         must_no_agency = 'No Agency' in more_options
         return must_balcony, must_parking, must_no_agency
 
-    def generate_preferences(price_range, rooms_range, asset_cond, cities, more_options):
+    def generate_preferences(price_range, rooms_range, asset_cond, cities, cities_neighborhood_dict, more_options):
         price_from, price_to = extract_range_values(price_range)
         rooms_from, rooms_to = extract_range_values(rooms_range)
         must_balcony, must_parking, must_no_agency = process_more_options(more_options)
 
         return create_asset_preferences(
             price_from, price_to, rooms_from, rooms_to, asset_cond, cities,
+            cities_neighborhood_dict,
             must_parking, must_balcony, must_no_agency
         ) if price_range else None
 
@@ -294,12 +321,14 @@ def get_dash(server):
             State("input-rent-rooms-range", "value"),
             State("input-rent-asset-cond", "value"),
             State("input-rent-cities", "value"),
+            State("input-rent-cities-neighborhood", "data"),
             State("input-rent-more-options", "value"),
             State("rent-options-collapse", "is_open"),
             State("input-sale-price-range", "value"),
             State("input-sale-rooms-range", "value"),
             State("input-sale-asset-cond", "value"),
             State("input-sale-cities", "value"),
+            State("input-sale-cities-neighborhood", "data"),
             State("input-sale-more-options", "value"),
             State("sale-options-collapse", "is_open"),
         ],
@@ -312,12 +341,14 @@ def get_dash(server):
             rent_rooms_range,
             rent_asset_cond,
             rent_cities,
+            rent_neighborhoods,
             rent_more_options,
             rent_is_open,
             sale_price_range,
             sale_rooms_range,
             sale_asset_cond,
             sale_cities,
+            sale_neighborhoods,
             sale_more_options,
             sale_is_open,
     ):
@@ -337,13 +368,18 @@ def get_dash(server):
         if sale_is_open and not sale_cities:
             return True, alert_bad_missing_creds_sale, "danger", False
 
+        rent_cities_neighborhood_dict = build_city_neighborhood_dict(rent_neighborhoods)
+        sale_cities_neighborhood_dict = build_city_neighborhood_dict(sale_neighborhoods)
+
         rent_preferences = generate_preferences(
-            rent_price_range, rent_rooms_range, rent_asset_cond, rent_cities, rent_more_options
+            rent_price_range, rent_rooms_range, rent_asset_cond, rent_cities,
+            rent_cities_neighborhood_dict, rent_more_options
         ) if rent_is_open else None
 
         sale_preferences = generate_preferences(
-            sale_price_range, sale_rooms_range, sale_asset_cond, sale_cities, sale_more_options
-        ) if sale_is_open else None #
+            sale_price_range, sale_rooms_range, sale_asset_cond, sale_cities,
+            sale_cities_neighborhood_dict, sale_more_options
+        ) if sale_is_open else None  #
 
         time_now = datetime.utcnow()
         print(f"Adding {time_now=}, {telegram_id=}, {rent_preferences=}, {sale_preferences=}")
@@ -355,7 +391,9 @@ def get_dash(server):
             "inserted_at": time_now,
             "updated_at": time_now,
         }
-        res = insert_or_update_user(user_config)
+        res = insert_or_update_user(user_config) # TODO::
+        res == "insert"
+        print(user_config)
         if res == 'insert':
             publish_for_new_user(user_config)
             return True, alert_ok, "success", True
@@ -418,6 +456,29 @@ def get_dash(server):
             return [not is_open, sale_header_open]
 
     # @app.callback()
+
+    @app.callback(
+        Output("input-rent-cities-neighborhood", "data"),
+        Output("input-sale-cities-neighborhood", "data"),
+        # Output("input-rent-cities-neighborhood", "value"),
+        # Output("input-sale-cities-neighborhood", "value"),
+        Output("input-rent-cities-neighborhood", "disabled"),
+        Output("input-sale-cities-neighborhood", "disabled"),
+        [Input("input-rent-cities", "value"),
+         Input("input-sale-cities", "value")]
+    )
+    def update_cities_neighborhood(rent_cities, sale_cities):
+        from tests.test_register_user_city_neighborhood import get_neighborhood, get_options_values_city_neighborhood
+        if rent_cities is None and sale_cities is None:
+            return dash.no_update
+
+        rent_options, sale_options = [], []
+        if rent_cities:
+            rent_options = get_options_values_city_neighborhood(rent_cities)
+        if sale_cities:
+            sale_options = get_options_values_city_neighborhood(sale_cities)
+
+        return rent_options, sale_options, not rent_cities, not sale_cities
 
     return server, app
 

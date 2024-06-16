@@ -131,7 +131,7 @@ p.rtl {
     color: black;
     padding: 3px;
     /*border: 1px solid black;*/
-    position: center;
+    /*position: center;*/
 }
 
 .sidebar-info-text {
@@ -171,7 +171,10 @@ p.rtl {
     max-height: 200px;
     /*!*display: flex;*!*/
     overflow-y: scroll;
+    margin: 10px 5px 10px 5px;
 }
+
+
 
 #table-container {
     top: 100px;
@@ -455,5 +458,6 @@ svg {
 .register-submit-row {
     margin-bottom: 150px;
 }
+
 
 /* register */

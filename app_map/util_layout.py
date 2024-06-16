@@ -1,4 +1,5 @@
 import dash_bootstrap_components as dbc
+import dash_mantine_components as dmc
 from dash import dcc
 from dash.dash_table import DataTable, FormatTemplate
 import dash_leaflet as dl
@@ -58,7 +59,7 @@ def get_page_menu():
 
 
 def get_layout(default_config):
-    layout = html.Div(children=[
+    layout = dmc.MantineProvider(html.Div(children=[
         html.Meta(name="viewport",
                   content="width=device-width, height=device-height, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no"),
         html.Header(className="top-container", children=get_div_top_bar(default_config)),
@@ -70,7 +71,7 @@ def get_layout(default_config):
         html.Div(className="table-container", children=[div_left_off_canvas]),
         html.Div(className="modal-container", children=[div_offcanvas]),
         dcc.Store(id='data-store'),
-    ])
+    ]))
     return layout
 
 
@@ -182,19 +183,17 @@ def get_div_top_bar(config_defaults):
                                                         tooltip=slider_tooltip,
                                                         ))],
                               className='slider-container-drop'),
-                     dcc.Dropdown(
-                         asset_status_cols,
-                         [],
+                     dmc.MultiSelect(
+                         data=asset_status_cols,
+                         value=[],
                          placeholder="מצב הנכס",
-                         multi=True,
                          searchable=False,
                          id='asset-status',
                          className="asset-dropdown"),
-                     dcc.Dropdown(
-                         asset_type_cols,
-                         [],
+                     dmc.MultiSelect(
+                         data=asset_type_cols,
+                         value=[],
                          placeholder="סוג",
-                         multi=True,
                          searchable=False,
                          id='asset-type',
                          className="asset-dropdown"),

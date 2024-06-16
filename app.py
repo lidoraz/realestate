@@ -8,7 +8,7 @@ from ext.db_user import add_user_activity_records
 
 os.environ[
     'OPENBLAS_NUM_THREADS'] = '1'  # fixes OpenBLAS blas_thread_init: pthread_create: Resource temporarily unavailable
-
+# os.environ["REACT_VERSION"] = "18.2.0"
 from flask import Flask, redirect
 import sys
 from apscheduler.schedulers.background import BackgroundScheduler
