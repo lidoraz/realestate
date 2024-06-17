@@ -225,8 +225,9 @@ def build_sidebar(deal, fig):
         carousel = dbc.Carousel(
             items=[{"key": f"{idx + 1}",
                     "img_class_name": "asset-images-img",
-                    "src": url,
-                    "href": url,
+                    # added c=6 to get high quality images
+                    "src": url + "?c=6",
+                    "href": url + "?c=6",
                     "target": "_blank",
                     "loading": "lazy"}
                    for idx, url in
@@ -273,7 +274,7 @@ def build_sidebar(deal, fig):
                  html.Span(f"{deal['ai_price']:,.0f} (±{deal['ai_std_pct']:.1%})", className="text-ltr"),
                  get_html_span_pct(deal['ai_price_pct'])]),
          html_rent_est,
-         html.H6(f"הועלה בתאריך {date_added.date()}, (לפני {days_online / 7:0.1f} שבועות)"),
+         html.Span(f"הועלה בתאריך {date_added.date()}, (לפני {days_online / 7:0.1f} שבועות)"),
          html.Span(f"מתי עודכן: {deal['date_updated'].strftime('%Y-%m-%d %H:%M')}, ({days_str_txt(days_updated)})"),
          html.Div(df_price_hist, className='price-diff-table text-ltr'),
          html.P([
