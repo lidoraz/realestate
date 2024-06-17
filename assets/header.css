@@ -349,8 +349,13 @@ p.rtl {
     direction: rtl;
 }
 
+.price-modal{
+    font-size:1.5em;
+    font-weight: 600;
+}
+
 .span-color-pct {
-    font-size: 0.75em;
+    font-size: 0.9em;
     padding: 5px;
     margin-right: 3px;
     margin-left: 3px;
@@ -363,6 +368,14 @@ p.rtl {
     direction: rtl;
     text-align: right;
     padding: 5%;
+}
+
+.offcanvas-body {
+    padding: 0;
+}
+
+.sidebar-info-container {
+    padding: 25px 10px 25px 10px;
 }
 
 .asset-images {
@@ -383,7 +396,7 @@ p.rtl {
     /*object-fit: contain;*/
     object-fit: cover;
     vertical-align: bottom;
-    border-radius: 10px;
+    /*border-radius: 10px;*/
 }
 
 /* ANALYSIS PAGE*/

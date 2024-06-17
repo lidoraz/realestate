@@ -12,6 +12,7 @@ icon_regular = "https://cdn-icons-png.flaticon.com/128/6153/6153497.png"
 icon_maps = "https://cdn-icons-png.flaticon.com/128/684/684809.png"
 icon_real_estate = "https://cdn-icons-png.flaticon.com/128/602/602275.png"
 icon_share = "https://cdn-icons-png.flaticon.com/128/4855/4855052.png"
+icon_bureaucracy = "https://cdn-icons-png.flaticon.com/128/3511/3511207.png"
 
 def get_icon(deal, marker_metric='median'):
     p = deal['metadata'][marker_metric]
@@ -126,6 +127,7 @@ def create_tooltip(deal):
     <tr><td class="text-ltr">{m['square_meters']:,.0f}</td>          <td class="text-rtl">מ״ר</td>  </tr>
     {tr_ai_price}
     {tr_chg_price}
+    <tr><td colspan="2"><img src="{m['img_url']}" loading="lazy" style="max-width:150px; max-height: 100px; opacity: 1 !important"></td></tr>
     </table>"""
     return html_tp
 
