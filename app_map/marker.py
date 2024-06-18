@@ -102,7 +102,7 @@ def gen_color(x):
 
 
 def _row_table_if_pct_ok(pct, text):
-    if np.isnan(pct):
+    if np.isnan(pct) or pct == 0:
         return ""
     return f"""<tr><td class="text-ltr" style="color:{gen_color(pct)}">{pct:0.1%}</td><td class="text-rtl">{text}</td></tr>"""
 

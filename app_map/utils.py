@@ -298,7 +298,7 @@ def build_sidebar(deal, fig):
     neighborhood = deal['neighborhood'] if deal['neighborhood'] != 'U' else ""
     neighborhood_street_html = html.Div(f"{neighborhood}, {street}") if neighborhood else html.Div(street)
 
-    rooms = f" {convert_rooms_str(deal['rooms'])}חדרים"
+    rooms = [html.Span(convert_rooms_str(deal['rooms'])), html.Span(" חדרים")]
     floor = f" קומה  {round(deal['floor']) if deal['floor'] > 0 else 'קרקע'} "
     n_floors_building = round(deal['number_of_floors']) if deal['number_of_floors'] > 0 else None
     n_floors_building_str = f' (מתוך {n_floors_building})' if n_floors_building else ""
