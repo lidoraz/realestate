@@ -149,7 +149,7 @@ def get_div_top_bar(config_defaults):
                     className="slider-container-drop"),
 
                 html.Div([config_defaults['price_label'],
-                          html.Div("לנכסים מעל יש להזיז את השמאלי עד הסוף ימינה", className="subtext-help"),
+                          html.Div("לנכסים מעל יש להזיז את שמאל לימין", className="subtext-help"),
                           dcc.RangeSlider(min=config_defaults["price-min"],
                                           max=config_defaults["price-max"],
                                           step=config_defaults['price_step'],
