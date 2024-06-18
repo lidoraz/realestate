@@ -287,7 +287,7 @@ def build_sidebar(deal, fig):
 
     square_meter_html = html.Div([
         html.Span(f"{deal['square_meters']:,.0f}מ״ר", style={"padding-left": "10px"}),
-        html.Span(f"(למ״ר ₪{deal['price'] / deal['square_meters']:,.0f})")])
+        html.Strong(f"( למ״ר ₪{deal['price'] / deal['square_meters']:,.0f} )")])
 
     # street = deal['street'] if deal['street'] is not None else ""
     street_num = deal['street_num'] if deal['street_num'] else ""
@@ -347,7 +347,7 @@ def build_sidebar(deal, fig):
                     html.Div([rooms, floor, n_floors_building_str], style=margin_bottom),
 
                     html.Div(square_meter_html, style=margin_bottom),
-                    html.Div([f"מצב הנכס: ", html.B(deal['asset_status'])]),
+                    html.Div([f"מצב הנכס: ", deal['asset_status']]),
                     html.Div([parking, balcony, elevator]),
                     html.Div(html.B('תיווך') if deal['is_agency'] else 'לא תיווך'),
                 ], width=6),
