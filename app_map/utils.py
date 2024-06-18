@@ -256,15 +256,15 @@ def build_sidebar(deal, fig):
             ride="carousel",
             # style="sidebar-carousel"
         )
-    left_price_col_w = 4
+    left_price_col_w = 6
     right_price_col_w = 12 - left_price_col_w
     html_rent_est = None
     if is_forsale_deal:
         html_rent_est = html.Div([
             dbc.Row([dbc.Col(f"שכירות צפויה ", width=right_price_col_w),
-                     dbc.Col(html.Div(
-                         f"₪{round_ai(deal['ai_price_rent']):,.0f} (±{deal['ai_std_pct_rent']:.1%})",
-                         className="text-ltr"), width=left_price_col_w)]),
+                     dbc.Col(html.Div([html.Span(f"₪{round_ai(deal['ai_price_rent']):,.0f}"),
+                                       html.Small(f" (±{deal['ai_std_pct_rent']:.1%})")],
+                                      className="text-ltr"), width=left_price_col_w)]),
             dbc.Row([dbc.Col(f"תשואה מהשכירות ", width=right_price_col_w),
                      dbc.Col(html.Small(get_html_span_pct(deal['estimated_rent_annual_return'], plus=False),
                                         className="text-ltr"), width=left_price_col_w)],
@@ -279,7 +279,7 @@ def build_sidebar(deal, fig):
                                                width=left_price_col_w)]),
                               dbc.Row(
                                   dbc.Col(html.Div([html.Span(f"₪{round_ai(deal['ai_price']):,.0f}"),
-                                                    html.Small(f"(±{deal['ai_std_pct']:.1%})")],
+                                                    html.Small(f" (±{deal['ai_std_pct']:.1%})")],
                                                    className="text-ltr"))),
                               dbc.Row(dbc.Col(html_rent_est)),
 
