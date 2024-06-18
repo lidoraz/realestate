@@ -13,7 +13,7 @@ def get_dash(server):
                            "switch-median": False,
                            "discount-price-pct": -0.05,
                            "ai_pct": None,
-                           "price_label": "מחיר שכירות",
+                           "price_label": "מחיר שכירות ₪",
                            "price_step": 500,
                            "price_mul": 1,  # 1e3,
                            "with_nadlan": False,  # Work around for missing nadlan db in remote

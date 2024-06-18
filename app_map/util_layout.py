@@ -38,7 +38,7 @@ marker_type_options = [
     {'label': 'M', 'value': 'pct_diff_median', 'label_id': 'pct_diff_median'}
 ]
 tooltips = [
-    dbc.Tooltip("הצג את המחיר לעומת חיזוי של בינה מלאכותית AI🚀 ", target="ai_price_pct"),
+    dbc.Tooltip("הצג את המחיר לעומת חיזוי של בינה מלאכותית 🚀AI ", target="ai_price_pct"),
     dbc.Tooltip("הצג את השינוי במחיר הנכס מרגע העלאה עד היום", target="price_pct"),
     dbc.Tooltip("הצג לפי ממוצע המחיר של נכסים עם אותו מספר חדרים באיזור", target="pct_diff_median")
 ]

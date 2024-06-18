@@ -19,7 +19,7 @@ def get_dash(server):
                               "switch-median": True,
                               "discount-price-pct": None,
                               "ai_pct": None,
-                              "price_label": "מחיר מכירה (א׳)",
+                              "price_label": "מחיר מכירה ₪ (א׳)",
                               "price_step": 100,
                               "price_mul": 1e3,  # 1e6,
                               "with_nadlan": True,

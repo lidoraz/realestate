@@ -262,21 +262,21 @@ def build_sidebar(deal, fig):
         html_rent_est = html.Div([
             dbc.Row([dbc.Col(f"שכירות חזויה:"),
                      dbc.Col(html.Div(
-                         f"{round_ai(deal['ai_price_rent']):,.0f}₪ (±{deal['ai_std_pct_rent']:.1%})",
+                         f"₪{round_ai(deal['ai_price_rent']):,.0f} (±{deal['ai_std_pct_rent']:.1%})",
                          className="text-ltr"), width=left_col_width)]),
             dbc.Row([dbc.Col(f"תשואה משכירות:"),
                      dbc.Col(html.Span(get_html_span_pct(deal['estimated_rent_annual_return'], plus=False),
                                        className="text-ltr"), width=left_col_width)], style={"margin-top": "10px"})
         ], style={"margin-top": "10px"})
 
-    price_html = html.Div(html.Span(f"{deal['price']:,.0f}₪", className="price-modal"))
+    price_html = html.Div(html.Span(f"₪{deal['price']:,.0f}", className="price-modal"))
     price_median_html = html.Div([html.Span(f"ממחיר חציוני:"),
                                   get_html_span_pct(deal['pct_diff_median'])])
     price_ai_html = html.Div([dbc.Row([dbc.Col(f"מחיר AI🚀:"),
                                        dbc.Col(get_html_span_pct(deal['ai_price_pct']),
                                                width=left_col_width)]),
                               dbc.Row(
-                                  dbc.Col(html.Div(f"{round_ai(deal['ai_price']):,.0f}₪ (±{deal['ai_std_pct']:.1%})",
+                                  dbc.Col(html.Div(f"₪{round_ai(deal['ai_price']):,.0f} (±{deal['ai_std_pct']:.1%})",
                                                    className="text-ltr"))),
                               dbc.Row(dbc.Col(html_rent_est)),
 
@@ -287,7 +287,10 @@ def build_sidebar(deal, fig):
 
     square_meter_html = html.Div([
         html.Span(f"{deal['square_meters']:,.0f}מ״ר", style={"padding-left": "10px"}),
-        html.Strong(f"( למ״ר ₪{deal['price'] / deal['square_meters']:,.0f} )")])
+        # ( למ״ר
+        html.Strong(html.Span(f"₪{deal['price'] / deal['square_meters']:,.0f}")),
+        html.Span("למ״ר")
+    ])
 
     # street = deal['street'] if deal['street'] is not None else ""
     street_num = deal['street_num'] if deal['street_num'] else ""
