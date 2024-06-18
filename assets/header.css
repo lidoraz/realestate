@@ -121,6 +121,14 @@ p.rtl {
     height: 28px;
 }
 
+.tooltip-image {
+    /*max-width: 150px;*/
+    max-height: 100px;
+    width:150px;
+    opacity: 1 !important;
+    object-fit: cover
+}
+
 .marker-div-image {
     width: 28px;
     height: 28px;

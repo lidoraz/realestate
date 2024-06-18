@@ -127,7 +127,7 @@ def create_tooltip(deal):
     <tr><td class="text-ltr">{m['square_meters']:,.0f}</td>          <td class="text-rtl">מ״ר</td>  </tr>
     {tr_ai_price}
     {tr_chg_price}
-    <tr><td colspan="2"><img src="{m['img_url']}" loading="lazy" style="max-width:150px; max-height: 100px; opacity: 1 !important"></td></tr>
+    <tr><td colspan="2"><img src="{m['img_url']}" loading="lazy" class="tooltip-image"></td></tr>
     </table>"""
     return html_tp
 

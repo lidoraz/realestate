@@ -260,11 +260,11 @@ def build_sidebar(deal, fig):
     html_rent_est = None
     if is_forsale_deal:
         html_rent_est = html.Div([
-            dbc.Row([dbc.Col(f"שכירות חזויה:"),
+            dbc.Row([dbc.Col(f"שכירות צפויה:"),
                      dbc.Col(html.Div(
                          f"₪{round_ai(deal['ai_price_rent']):,.0f} (±{deal['ai_std_pct_rent']:.1%})",
                          className="text-ltr"), width=left_col_width)]),
-            dbc.Row([dbc.Col(f"תשואה משכירות:"),
+            dbc.Row([dbc.Col(f"תשואה מהשכירות:"),
                      dbc.Col(html.Span(get_html_span_pct(deal['estimated_rent_annual_return'], plus=False),
                                        className="text-ltr"), width=left_col_width)], style={"margin-top": "10px"})
         ], style={"margin-top": "10px"})
