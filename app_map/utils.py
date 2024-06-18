@@ -237,7 +237,7 @@ def build_sidebar(deal, fig):
     if len(deal['price_hist']) > 1:
         df_hist = pd.DataFrame([deal['dt_hist'], [f"{x:0,.0f}" for x in deal['price_hist']]])
         df_price_hist = html.Table([html.Tr([html.Td(v) for v in row.values]) for i, row in df_hist.iterrows()])
-        price_discount_html = html.Div([html.Span("שינוי במחיר:"), get_html_span_pct(deal['price_pct'])])
+        price_discount_html = html.Div([html.Span("שינוי במחיר "), get_html_span_pct(deal['price_pct'])])
     carousel = None
     if len(image_urls):
         carousel = dbc.Carousel(
@@ -256,33 +256,36 @@ def build_sidebar(deal, fig):
             ride="carousel",
             # style="sidebar-carousel"
         )
-    left_col_width = 4
+    left_price_col_w = 4
+    right_price_col_w = 12 - left_price_col_w
     html_rent_est = None
     if is_forsale_deal:
         html_rent_est = html.Div([
-            dbc.Row([dbc.Col(f"שכירות צפויה:"),
+            dbc.Row([dbc.Col(f"שכירות צפויה ", width=right_price_col_w),
                      dbc.Col(html.Div(
                          f"₪{round_ai(deal['ai_price_rent']):,.0f} (±{deal['ai_std_pct_rent']:.1%})",
-                         className="text-ltr"), width=left_col_width)]),
-            dbc.Row([dbc.Col(f"תשואה מהשכירות:"),
-                     dbc.Col(html.Span(get_html_span_pct(deal['estimated_rent_annual_return'], plus=False),
-                                       className="text-ltr"), width=left_col_width)], style={"margin-top": "10px"})
+                         className="text-ltr"), width=left_price_col_w)]),
+            dbc.Row([dbc.Col(f"תשואה מהשכירות ", width=right_price_col_w),
+                     dbc.Col(html.Small(get_html_span_pct(deal['estimated_rent_annual_return'], plus=False),
+                                        className="text-ltr"), width=left_price_col_w)],
+                    style={"margin-top": "10px"})
         ], style={"margin-top": "10px"})
 
     price_html = html.Div(html.Span(f"₪{deal['price']:,.0f}", className="price-modal"))
-    price_median_html = html.Div([html.Span(f"ממחיר חציוני:"),
+    price_median_html = html.Div([html.Span(f"מרחק מהחציון באיזור "),
                                   get_html_span_pct(deal['pct_diff_median'])])
-    price_ai_html = html.Div([dbc.Row([dbc.Col(f"מחיר AI🚀:"),
+    price_ai_html = html.Div([dbc.Row([dbc.Col(f"מחיר AI🚀 ", width=right_price_col_w),
                                        dbc.Col(get_html_span_pct(deal['ai_price_pct']),
-                                               width=left_col_width)]),
+                                               width=left_price_col_w)]),
                               dbc.Row(
-                                  dbc.Col(html.Div(f"₪{round_ai(deal['ai_price']):,.0f} (±{deal['ai_std_pct']:.1%})",
+                                  dbc.Col(html.Div([html.Span(f"₪{round_ai(deal['ai_price']):,.0f}"),
+                                                    html.Small(f"(±{deal['ai_std_pct']:.1%})")],
                                                    className="text-ltr"))),
                               dbc.Row(dbc.Col(html_rent_est)),
 
                               ], style={"background": "#ddd",
                                         "border-radius": "0px 15px 15px 0px",
-                                        "padding": "15px",
+                                        "padding": "15px 10px 15px 15px",
                                         "margin-top": "20px"})
 
     square_meter_html = html.Div([
@@ -367,7 +370,7 @@ def build_sidebar(deal, fig):
             dbc.Row(dbc.Col(html.Div(html.Span(info_text, className='sidebar-info-text')))),
 
             dbc.Row([
-                dbc.Col(price_discount_html, width=4),
+                dbc.Col(price_discount_html, width=left_price_col_w),
                 dbc.Col(df_price_hist, className="price-diff-table text-ltr")]),
 
             dbc.Row(dbc.Col(html.Small([when_uploaded_html, when_updated_html]))),
@@ -375,7 +378,7 @@ def build_sidebar(deal, fig):
             dbc.Row(dbc.Col(buttons_html)),
             # TODO: Move this graph to the loading too, but a bit problem because it uses massive dataframe, maybe agg it and send it via state to front
             dbc.Row(dbc.Col(
-                html.H5("מחיר המוצע למודעות עם אותו מספר חדרים בסביבה", className="sidebar-info-graphs-header"), )),
+                html.H5("מחיר לדירות עם מספר חדרים זהה", className="sidebar-info-graphs-header"), )),
             dbc.Row(dbc.Col(price_median_html)),
             dbc.Row(dbc.Col(
                 dcc.Graph(id='histogram', figure=fig,
