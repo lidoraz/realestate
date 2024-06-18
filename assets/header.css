@@ -124,7 +124,7 @@ p.rtl {
 .tooltip-image {
     /*max-width: 150px;*/
     max-height: 100px;
-    width:150px;
+    width: 150px;
     opacity: 1 !important;
     object-fit: cover
 }
@@ -148,6 +148,18 @@ p.rtl {
 .sidebar-info-links-container {
     margin-top: 30px;
     text-align: center;
+}
+
+.sidebar-right-col {
+
+}
+
+.small-margin-bottom {
+    margin-bottom: 10px;
+}
+
+.sidebar-left-col {
+    padding: 0;
 }
 
 .sidebar-info-links {
