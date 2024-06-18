@@ -204,7 +204,7 @@ def build_sidebar(deal, fig):
     maps_url = f"http://maps.google.com/maps?z=12&t=m&q={deal['lat']}+{deal['long']}&hl=iw"  # ?hl=iw, t=k sattalite
     days_online = (datetime.today() - pd.to_datetime(deal['date_added'])).days
     days_updated = (datetime.today() - pd.to_datetime(deal['date_updated'])).days
-    days_str_txt = lambda x: 'היום' if x == 0 else 'אתמול' if x == 1 else f'{x} ימים'
+    days_str_txt = lambda x: 'מהיום' if x == 0 else 'אתמול' if x == 1 else f'{x} ימים'
     date_added = pd.to_datetime(deal['date_added'])
     is_forsale_deal = deal.get('ai_price_rent')
 
@@ -225,6 +225,12 @@ def build_sidebar(deal, fig):
         return html.Span(f"{plus_txt}{pct:.1%}",
                          style={"background-color": get_color(pct)},
                          className="span-color-pct text-ltr")
+
+    def round_ai(number):
+        if number >= 100_000:
+            return (number // 1_000) * 1_000
+        else:
+            return round(number, -2)
 
     df_price_hist = None
     price_discount_html = None
@@ -254,24 +260,25 @@ def build_sidebar(deal, fig):
     html_rent_est = None
     if is_forsale_deal:
         html_rent_est = html.Div([
-            dbc.Row([dbc.Col(f"שכירות"),
+            dbc.Row([dbc.Col(f"שכירות חזויה:"),
                      dbc.Col(html.Div(
-                         f"{deal['ai_price_rent']:,.0f}₪ (±{deal['ai_std_pct_rent']:.1%})",
+                         f"{round_ai(deal['ai_price_rent']):,.0f}₪ (±{deal['ai_std_pct_rent']:.1%})",
                          className="text-ltr"), width=left_col_width)]),
-            dbc.Row([dbc.Col(f"תשואה צפויה"),
+            dbc.Row([dbc.Col(f"תשואה משכירות:"),
                      dbc.Col(html.Span(get_html_span_pct(deal['estimated_rent_annual_return'], plus=False),
                                        className="text-ltr"), width=left_col_width)], style={"margin-top": "10px"})
         ], style={"margin-top": "10px"})
 
     price_html = html.Div(html.Span(f"{deal['price']:,.0f}₪", className="price-modal"))
-    price_median_html = html.Small(dbc.Row([dbc.Col(get_html_span_pct(deal['pct_diff_median']), width=left_col_width),
-                                            dbc.Col(html.Span(f"ממחיר מהחציון באיזור")), ]))
-    price_ai_html = html.Div([dbc.Row([dbc.Col(f"מחיר AI🚀 "),
+    price_median_html = html.Div([html.Span(f"ממחיר חציוני:"),
+                                  get_html_span_pct(deal['pct_diff_median'])])
+    price_ai_html = html.Div([dbc.Row([dbc.Col(f"מחיר AI🚀:"),
                                        dbc.Col(get_html_span_pct(deal['ai_price_pct']),
                                                width=left_col_width)]),
-                              dbc.Row(dbc.Col(html.Div(f"{deal['ai_price']:,.0f}₪ (±{deal['ai_std_pct']:.1%})",
-                                                       className="text-ltr"))),
-                              dbc.Row(dbc.Col(html_rent_est))
+                              dbc.Row(
+                                  dbc.Col(html.Div(f"{round_ai(deal['ai_price']):,.0f}₪ (±{deal['ai_std_pct']:.1%})",
+                                                   className="text-ltr"))),
+                              dbc.Row(dbc.Col(html_rent_est)),
 
                               ], style={"background": "#ddd",
                                         "border-radius": "0px 15px 15px 0px",
@@ -280,7 +287,7 @@ def build_sidebar(deal, fig):
 
     square_meter_html = html.Div([
         html.Span(f"{deal['square_meters']:,.0f}מ״ר", style={"padding-left": "10px"}),
-        html.Small(f"(למ״ר ₪{deal['price'] / deal['square_meters']:,.0f})")])
+        html.Span(f"(למ״ר ₪{deal['price'] / deal['square_meters']:,.0f})")])
 
     # street = deal['street'] if deal['street'] is not None else ""
     street_num = deal['street_num'] if deal['street_num'] else ""
@@ -295,7 +302,7 @@ def build_sidebar(deal, fig):
     parking = html.Div(f" חנייה: {deal['parking'] if deal['parking'] else 'ללא'} ")
     balcony = html.Div(f"{'עם מרפסת' if deal['balconies'] else 'ללא מרפסת'}")
     elevator = html.Div(f"{'עם מעלית' if deal['elevator'] else 'ללא מעלית'}")
-    when_uploaded_html = html.Div(f"הועלה:  {date_added.date()}, ({days_online / 7:0.1f} שבועות)")
+    when_uploaded_html = html.Div(f"הועלה:  {date_added.date()} ({days_online / 7:0.1f} שבועות)")
     when_updated_html = html.Div(
         f" עודכן: {deal['date_updated'].strftime('%Y-%m-%d %H:%M')} ({days_str_txt(days_updated)})")
     carousel_html = html.Div(children=[carousel], className="asset-images",
@@ -303,28 +310,32 @@ def build_sidebar(deal, fig):
     # CAN ADD THIS FROM GOVNADLAN:
     search_text = f"{deal['city']} {street if len(street) else neighborhood}"
     nadlan_gov_url = f"https://www.nadlan.gov.il/?search={search_text}"
-    print(nadlan_gov_url)
-    buttons_html = html.Div([html.A(href=maps_url, children=[html.Img(src=icon_maps), "למפה"],
-                                    className="sidebar-info-links", target="_blank"),
-                             html.A(href=f"https://www.yad2.co.il/item/{deal['id']}",
-                                    children=[html.Img(src=icon_real_estate), html.B("למודעה")],
-                                    className="sidebar-info-links", target="_blank"),
-                             dbc.Button(
-                                 [
-                                     html.Img(src=icon_share),
-                                     "העתק",
-                                     dcc.Clipboard(
-                                         content=os.getenv("BASE_URL_PATH") + "?asset_id=" + deal["id"],
-                                         className="position-absolute start-0 top-0 h-100 w-100 opacity-0",
-                                     ),
-                                 ],
-                                 className="position-relative sidebar-info-links nopadding",
-                                 color="white"),
-                             html.A(href=nadlan_gov_url,
-                                    children=[html.Img(src=icon_bureaucracy), "להלמ״ס"],
-                                    className="sidebar-info-links", target="_blank") if is_forsale_deal else None,
-                             ],
-                            className="sidebar-info-links-container"),
+
+    buttons_html = html.Div([dbc.Row(html.A(href=f"https://www.yad2.co.il/item/{deal['id']}",
+                                            children=[html.Img(src=icon_real_estate), html.B("למודעה")],
+                                            className="sidebar-info-links", target="_blank"), ),
+                             dbc.Row([dbc.Col(html.A(href=maps_url, children=[html.Img(src=icon_maps), "למפה"],
+                                                     className="sidebar-info-links", target="_blank")),
+                                      dbc.Col(
+                                          html.A(href=nadlan_gov_url,
+                                                 children=[html.Img(src=icon_bureaucracy), "להלמ״ס"],
+                                                 className="sidebar-info-links",
+                                                 target="_blank")
+                                      ) if is_forsale_deal else None,
+                                      dbc.Col(dbc.Button(
+                                          [
+                                              html.Img(src=icon_share),
+                                              "העתק",
+                                              dcc.Clipboard(
+                                                  content=os.getenv("BASE_URL_PATH") + "?asset_id=" + deal["id"],
+                                                  className="position-absolute start-0 top-0 h-100 w-100 opacity-0",
+                                              ),
+                                          ],
+                                          className="position-relative sidebar-info-links nopadding",
+                                          color="white")),
+                                      ]),
+
+                             ], "sidebar-info-links-container")
     margin_bottom = {"margin-bottom": "10px"}
     txt_html = html.Div([
         dbc.Row(dbc.Col(carousel_html, width=12)),
@@ -342,27 +353,28 @@ def build_sidebar(deal, fig):
                 ], width=6),
                 dbc.Col([
                     price_html,
-                    price_median_html,
+                    # price_median_html,
                     price_ai_html,
-                ], width=6, style={'padding-left': "0"}),
+                ], width=6, style={'padding': "0"}),
 
             ], style=margin_bottom),
             dbc.Row(dbc.Col(html.Div(html.Span(info_text, className='sidebar-info-text')))),
 
-            dbc.Row(dbc.Col(price_discount_html)),
-            dbc.Row(dbc.Col(df_price_hist, className="price-diff-table text-ltr")),
+            dbc.Row([
+                dbc.Col(price_discount_html, width=4),
+                dbc.Col(df_price_hist, className="price-diff-table text-ltr")]),
 
             dbc.Row(dbc.Col(html.Small([when_uploaded_html, when_updated_html]))),
             dbc.Row(dbc.Col(buttons_html)),
             dbc.Row(dbc.Col(html.Span(deal['id'], style={"display": "block", "font-size": "8pt"}), )),
+            # TODO: Move this graph to the loading too, but a bit problem because it uses massive dataframe, maybe agg it and send it via state to front
             dbc.Row(dbc.Col(
-                html.Div([
-                    html.H5("פילוח מס׳ עסקאות עם מספר חדרים זהה בסביבה", className="sidebar-info-graphs-header"),
-                    # TODO: Move this graph to the loading too, but a bit problem because it uses massive dataframe, maybe agg it and send it via state to front
-                    dcc.Graph(id='histogram', figure=fig,
-                              config={'displayModeBar': False,
-                                      'scrollZoom': False}),
-                ])
+                html.H5("מחיר המוצע למודעות עם אותו מספר חדרים בסביבה", className="sidebar-info-graphs-header"), )),
+            dbc.Row(dbc.Col(price_median_html)),
+            dbc.Row(dbc.Col(
+                dcc.Graph(id='histogram', figure=fig,
+                          config={'displayModeBar': False,
+                                  'scrollZoom': False})
             ))
         ], className="sidebar-info-container"),
 

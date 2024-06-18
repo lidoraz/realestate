@@ -11,7 +11,7 @@ date_updated_text = 'עודכן לפני'
 n_rooms_txt = 'חדרים'
 n_floor_txt = "קומה"
 median_price_txt = '% אחוז מהממוצע באיזור'
-ai_pct_txt = '% אחוז ממחיר מודל AI'
+ai_pct_txt = '% אחוז ממחיר מודל AI🚀'
 price_pct_txt = '% אחוז הורדה במחיר'
 rooms_marks = {r: str(r) for r in range(7)}
 rooms_marks[6] = '6+'
@@ -33,13 +33,15 @@ asset_type_cols = ['דירה', 'יחידת דיור', 'דירת גן', 'סאבל
                    'סטודיו/לופט', 'דופלקס', 'דירת נופש', 'משק חקלאי/נחלה', 'טריפלקס', 'החלפת דירות']
 
 marker_type_options = [
-    {'label': 'M', 'value': 'pct_diff_median', 'label_id': 'pct_diff_median'},
-    {'label': '%', 'value': 'price_pct', 'label_id': 'price_pct'},
     {'label': 'AI', 'value': 'ai_price_pct', 'label_id': 'ai_price_pct'},
+    {'label': '%', 'value': 'price_pct', 'label_id': 'price_pct'},
+    {'label': 'M', 'value': 'pct_diff_median', 'label_id': 'pct_diff_median'}
 ]
-tooltips = [dbc.Tooltip("הצג לפי ממוצע המחיר של נכסים עם אותו מספר חדרים באיזור", target="pct_diff_median"),
-            dbc.Tooltip("הצג את השינוי במחיר הנכס מרגע העלאה עד היום", target="price_pct"),
-            dbc.Tooltip("הצג את המחיר לעומת חיזוי של בינה מלאכותית AI🚀 ", target="ai_price_pct")]
+tooltips = [
+    dbc.Tooltip("הצג את המחיר לעומת חיזוי של בינה מלאכותית AI🚀 ", target="ai_price_pct"),
+    dbc.Tooltip("הצג את השינוי במחיר הנכס מרגע העלאה עד היום", target="price_pct"),
+    dbc.Tooltip("הצג לפי ממוצע המחיר של נכסים עם אותו מספר חדרים באיזור", target="pct_diff_median")
+]
 marker_type_default = 'ai_price_pct'
 btn_size = 'md'
 btn_color = 'primary'
@@ -146,16 +148,18 @@ def get_div_top_bar(config_defaults):
                     )],
                     className="slider-container-drop"),
 
-                html.Div([config_defaults['price_label'], dcc.RangeSlider(min=config_defaults["price-min"],
-                                                                          max=config_defaults["price-max"],
-                                                                          step=config_defaults['price_step'],
-                                                                          value=[config_defaults['price-from'],
-                                                                                 config_defaults['price-to']],
-                                                                          id='price-slider',
-                                                                          marks={config_defaults["price-max"]: '+',
-                                                                                 config_defaults["price-min"]: '-'},
-                                                                          allowCross=False,
-                                                                          tooltip=slider_tooltip)],
+                html.Div([config_defaults['price_label'],
+                          html.Div("לנכסים מעל יש להזיז את השמאלי עד הסוף ימינה", className="subtext-help"),
+                          dcc.RangeSlider(min=config_defaults["price-min"],
+                                          max=config_defaults["price-max"],
+                                          step=config_defaults['price_step'],
+                                          value=[config_defaults['price-from'],
+                                                 config_defaults['price-to']],
+                                          id='price-slider',
+                                          marks={config_defaults["price-max"]: '+',
+                                                 config_defaults["price-min"]: '-'},
+                                          allowCross=False,
+                                          tooltip=slider_tooltip)],
                          className="slider-container-drop"),
                 html.Div(["מחיר מקסימלי למטר",
                           dcc.Slider(min=0, max=50_000, step=1000,
@@ -220,6 +224,7 @@ def get_div_top_bar(config_defaults):
                 dbc.DropdownMenuItem(divider=True),
                 html.Div([
                     "תצוגה לפי",
+                    html.Div("לפי איזו מטריקה להציג את הנכסים במפה", className="subtext-help"),
                     dbc.RadioItems(
                         options=marker_type_options,
                         value=marker_type_default,
@@ -272,8 +277,9 @@ def get_div_top_bar(config_defaults):
 
                           ], className="text-rtl"),
                 # dbc.Button("נקה", id="button-clear", color="secondary", n_clicks=0),
+                html.Hr(),
                 dbc.Row(dbc.Label(id="updated-at")),
-                dbc.Row(dbc.Label("Made with ❤️"))
+                dbc.Row(dbc.Label("Made with ❤️", className='dropdown-bottom-label'))
             ],
                 className="dropdown-container")], label='אפשרויות', color=btn_color, size=btn_size),  # align_end=True,
         dbc.Button("נקה", id="button-clear", color=btn_color, size=btn_size, n_clicks=0),
