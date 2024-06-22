@@ -118,7 +118,8 @@ def get_asset_points(df_all, price_from=-np.inf, price_to=np.inf, max_avg_price_
     rooms_from = rooms_range[0] or 1
     rooms_to = rooms_range[1] or 100
     floor_from = floor_range[0] if floor_range[0] is not None else 0
-    floor_to = 9999 if floor_range[1] == 32 else floor_range[1] or 9999
+    floor_to = floor_range[1] if floor_range[1] is not None else 9999
+    floor_to = 9999 if floor_range[1] == 32 else floor_to
 
     sql_cond = dict(
         sql_city=f'(city.str.contains("{city}") or neighborhood.str.contains("{city}"))' if city else "",
