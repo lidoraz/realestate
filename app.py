@@ -28,7 +28,7 @@ scheduler = BackgroundScheduler()
 
 # multiple jobs are created because we want to update as soon as etl finishes
 ## the process starts at 19 UTC and usually finishes by 18:30
-scheduler.add_job(loop_until_remote_ready, 'cron', hour=18, minute=20)
+scheduler.add_job(loop_until_remote_ready, 'cron', hour=18, minute=5)
 if not is_cache_ok():
     download_remote(block=True)
 scheduler.start()
@@ -122,7 +122,7 @@ def before_request():
     user_id = request.args.get('user_id')
     asset_id = request.args.get('asset_id')
     asset_type = request.path.split('/')[1] if '/' in request.path else None
-    # url = request.url
+
     user_agent = request.headers.get('User-Agent')
     if ip not in sessions:
         print(f"""FIRST USER ACQ:: {ip}""")

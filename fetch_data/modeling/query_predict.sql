@@ -98,12 +98,12 @@ where 1=1
 and price is not null
 and active
 )
-select * from data_predict where 1=1
-and lat is not null
-and long is not null
 -- after fix lat/long fix:
 -- for 25 June - only assets with price:
 -- all loc (nulls as well) : 58356 (best)
 -- fixed loc (from city_street_num_locs) : 57462 (good enough)
 -- without fixing (as it was before): 53414 (used to be like this)
 --  7.5% more assets! that's great!
+select * from data_predict where 1=1
+and lat is not null
+and long is not null

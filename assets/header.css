@@ -11,7 +11,7 @@
 
 .top-toolbar {
     /*position: sticky;*/
-    gap: 2px;
+    gap: 3px;
     padding: 0 5px 2px 5px;
     background-color: white;
     font-size: smaller;
@@ -243,6 +243,21 @@ p.rtl {
     animation-duration: 1s;
     -webkit-animation-fill-mode: both;
     animation-fill-mode: both;
+}
+
+#button-clear{
+    width:100%;
+}
+
+#hello-modal .modal-content{
+    direction: rtl;
+    line-height: 1.7em;
+}
+#hello-modal .modal-content button{
+    margin: 0;
+}
+#hello-modal .modal-body ul{
+    list-style-type: disc;
 }
 
 @-webkit-keyframes fadeIn {
@@ -512,5 +527,6 @@ svg {
 .register-submit-row {
     margin-bottom: 150px;
 }
+
 
 /* register */

@@ -61,6 +61,8 @@ def _add_user_record(session, user_data):
 
 
 def add_user_activity_records(user_data_lst):
+    if not os.getenv("PRODUCTION", False):
+        return -1
     with Session(get_engine_no_vault()) as session:
         try:
             cnt = _add_user_activity_records(session, user_data_lst)

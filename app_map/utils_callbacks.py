@@ -117,11 +117,11 @@ def _process_asset_url(df, url_path, clear_button_n_clicks):
             output.update(
                 {"big-map_center": [r['lat'], r['long']], "big-map_zoom": r['zoom'], "search-input_invalid": False,
                  # "search-input_value": asset_id,
-                 "button-clear_color": "info",
+                 "button-clear_style": dict(display="block"),
                  "button-clear_n_clicks": 0})
     if clear_button_n_clicks:
         asset_id = None
-        output.update({"button-clear_color": "primary"})
+        output.update({"button-clear_style": dict(display="none")})
         print("clear_button_n_clicks clicked!")
     return output, asset_id, is_found_asset_by_search
 
@@ -164,7 +164,7 @@ show_assets_input_output = [Output("geojson", "data"),
                             # Output("button-around", "n_clicks"),
                             Output("updated-at", "children"),
                             Output('search-submit', 'n_clicks'),
-                            Output("button-clear", "color"),
+                            Output("button-clear", "style"),
                             ######## OPTIONS INPUTS ##
                             Input("price-slider", "value"),
                             Input("max-avg-price-meter-slider", "value"),
@@ -245,7 +245,7 @@ def show_assets(price_range, max_avg_price_meter,
         "button-clear_n_clicks": nthg,
         "updated-at_children": nthg,
         "search-submit": nthg,
-        "button-clear_color": nthg
+        "button-clear_style": nthg
     }
     # check submit to make search instantly show assets when clicked
     if search_submit_nclicks == 0 and limit_refresh(map_zoom):
@@ -440,6 +440,17 @@ def change_polygons_type(value, zoom, toggle):
     return [json_points]
 
 
+open_info_modal_input_outputs = [Output("hello-modal", "is_open"),
+                                 Input("button-info", "n_clicks"),
+                                 ]
+
+
+def open_info_modal(n_clicks):
+    if n_clicks:
+        return [True]
+    return [False]
+
+
 def add_callbacks(app, config):
     # global df_all, config_defaults
     # df_all = df
@@ -453,3 +464,4 @@ def add_callbacks(app, config):
     app.callback(toggle_cluster_input_outputs)(toggle_cluster)
     app.callback(gen_plots_lazy_input_outputs)(gen_plots_lazy)
     app.callback(change_polygons_type_input_outputs)(change_polygons_type)  # polygons
+    app.callback(open_info_modal_input_outputs)(open_info_modal)

@@ -28,9 +28,20 @@ asset_status_cols = ['חדש מקבלן (לא גרו בנכס)',
                      'חדש (גרו בנכס)',
                      'משופץ',
                      'במצב שמור',
-                     'דרוש שיפוץ'][::-1]
-asset_type_cols = ['דירה', 'יחידת דיור', 'דירת גן', 'סאבלט', 'דו משפחתי', 'מרתף/פרטר', 'גג/פנטהאוז', "בית פרטי/קוטג'",
-                   'סטודיו/לופט', 'דופלקס', 'דירת נופש', 'משק חקלאי/נחלה', 'טריפלקס', 'החלפת דירות']
+                     'דרוש שיפוץ']
+asset_type_cols = ["דירה",
+                   "בית פרטי/ קוטג'",
+                   "דירת גן",
+                   "גג/ פנטהאוז",
+                   "דו משפחתי",
+                   "דופלקס",
+                   "משק חקלאי/ נחלה",
+                   "טריפלקס",
+                   "תיירות ונופש",
+                   "יחידת דיור",
+                   "משק עזר",
+                   "סטודיו/ לופט",
+                   "מרתף/ פרטר"]
 
 marker_type_options = [
     {'label': 'AI', 'value': 'ai_price_pct', 'label_id': 'ai_price_pct'},
@@ -56,7 +67,7 @@ def get_page_menu():
                              dbc.DropdownMenuItem("🏠 Sale", href="/sale", external_link=True),
                              dbc.DropdownMenuItem("📊 Analytics", href="/analytics", external_link=True),
                              dbc.DropdownMenuItem("🏘️ Neighborhood", href="/neighborhood", external_link=True)],
-                            label="§עוד", color=btn_color, size=btn_size, style=dict(direction="ltr"))
+                            label="§ עוד", color=btn_color, size=btn_size, style=dict(direction="ltr"))
 
 
 def get_layout(default_config):
@@ -74,6 +85,69 @@ def get_layout(default_config):
         dcc.Store(id='data-store'),
     ])
     return layout
+
+
+def get_hello_modal():
+    modal = dbc.Modal(
+        [
+            dbc.ModalHeader(dbc.ModalTitle("היי! 😎"), close_button=True),
+            dbc.ModalBody(
+                html.Div(
+                    className="container",
+                    children=[
+                        html.Ul(
+                            children=[
+                                html.Li(
+                                    [
+                                        "כאן באתר תוכלו לחפש ולראות נכסים עם ",
+                                        "המחיר לנכס",
+                                        " והערכה של המחיר המוצע באמצעות",
+                                        html.B(" מודל AI🚀"),
+
+                                    ]
+                                ),
+                                html.Li(
+                                    [
+                                        "לחיצה על המודעה תתן פרטים על הנכס עם נתונים היסטורים החשובים לכדאיות העסקה."
+                                    ]
+                                ),
+                                html.Li(
+                                    [
+                                        "ניתן לסנן עסקאות, כולל ",
+                                        html.B("מחיר למטר"),
+                                        " או ",
+                                        html.B("דירות ללא תיווך"),
+                                        "."
+                                    ]
+                                )
+                            ]
+                        ),
+                        html.Div(
+                            className="sub-section",
+                            children=[
+                                html.Ul(
+                                    children=[
+                                        html.Li(["יש לוח גם לשוק השכירות / מכירה."]),
+                                        html.Li(["מפה המציגה ", html.B("מחירים לפי שכונות"), "."]),
+                                        html.Li(["מידע המרכז ", html.B("נתונים סטטיסטיים על שוק הנדלן בארץ"), "."]),
+                                    ]
+                                ),
+                            ]
+                        ),
+                        html.P("בהצלחה במציאת הדירה החדשה! 🏠"),
+                        # html.Div(dbc.Button("Close", id="close", className="ms-auto", n_clicks=0, ), className='d-flex justify-content-center')
+
+                    ]
+                )
+            ),
+            # dbc.ModalFooter(),
+        ],
+        centered=True,
+        # backdrop="static",
+        id="hello-modal",
+        is_open=False,
+    )
+    return modal
 
 
 def get_table_container():
@@ -164,14 +238,16 @@ def get_div_top_bar(config_defaults):
                 html.Div(["מחיר מקסימלי למטר",
                           dcc.Slider(min=0, max=50_000, step=1000,
                                      value=50_000, id="max-avg-price-meter-slider",
-                                     marks=None,
+                                     marks={50_000: '(הכל)+',
+                                            0: '-'},
                                      tooltip=slider_tooltip)],
                          style={"display": "none"} if config_defaults['name'] != "sale" else None
                          ),
                 html.Div(["שטח (במ״ר)",
                           dcc.Slider(min=0, max=200, step=10,
                                      value=0, id="min-meter-slider",
-                                     marks=None,
+                                     marks={200: '+',
+                                            0: '(הכל)-'},
                                      tooltip=slider_tooltip)]
                          ),
                 dbc.DropdownMenuItem(divider=True),
@@ -276,19 +352,21 @@ def get_div_top_bar(config_defaults):
                                    ])
 
                           ], className="text-rtl"),
-                # dbc.Button("נקה", id="button-clear", color="secondary", n_clicks=0),
                 html.Hr(),
                 dbc.Row(dbc.Label(id="updated-at")),
                 dbc.Row(dbc.Label("Made with ❤️", className='dropdown-bottom-label'))
             ],
                 className="dropdown-container")], label='אפשרויות', color=btn_color, size=btn_size),  # align_end=True,
-        dbc.Button("נקה", id="button-clear", color=btn_color, size=btn_size, n_clicks=0),
+        dbc.Button("i", id="button-info", color=btn_color, n_clicks=0),
         dbc.Button("טבלה", id="table-toggle", color=btn_color, size=btn_size),
-        # dbc.Button("סנן", id='button-return'),
         get_page_menu(),
-        html.H2(config_defaults['name'].capitalize(), style={"margin": "5px 5px 0px 5px"}),
+        html.H2(config_defaults['name'].capitalize(), style={"margin": "auto 7px auto 0px"}),
+        get_hello_modal()
     ])
-    return div_top_bar
+    rows = [div_top_bar,
+            dbc.Button("ביטול נעילה על הנכס", id="button-clear", color="dark", size=btn_size, n_clicks=0,
+                       style=dict(display="none"))]
+    return rows
 
 
 # Leaflet-style URL
