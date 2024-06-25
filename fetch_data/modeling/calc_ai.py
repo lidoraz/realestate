@@ -7,16 +7,16 @@ import pickle
 import time
 
 FILE_PATH = "resources/regressor_majority_{asset_type}_{n_folds}_{iterations}.pk"
-MAJORITY_N_FOLDS = 5
-ITERATIONS = 5000
-metric = 'MAE'
+# MAJORITY_N_FOLDS = 5
+# ITERATIONS = 5000
+metric = 'MAE'  # 'RMSE'
 
 
 ##  IF TRAINING MODEL ONCE PER WEEK // NEED TO DEVELOP WAY TO FILTER OUT LOCATIONS AS NULL
 ##  MAYBE HAVE SEPARATE LIST OF BAD LOCATIONS
 
 
-def get_train_config(iterations=3_000):
+def get_train_config(iterations=5_000):
     regressor_config = {
         'iterations': iterations,  # 15_000,
         'objective': metric,
@@ -52,8 +52,8 @@ def calc_within_pct(y_true, y_pred, tol_pct=7, verbose=False):
     return accurate_predictions_percentage
 
 
-def train_model(asset_type, n_folds=MAJORITY_N_FOLDS, regressor_config=None):
-    print(f"Training Regressor Majority vote model, {n_folds=}, {asset_type=}")
+def train_model(asset_type, n_folds, log_y, regressor_config=None):
+    print(f"Training Regressor Majority vote model, {n_folds=}, {log_y=}, {asset_type=}")
     if regressor_config is None:
         regressor_config = get_train_config()
     path = os.path.join(os.path.dirname(__file__), 'query_train.sql')
@@ -61,11 +61,11 @@ def train_model(asset_type, n_folds=MAJORITY_N_FOLDS, regressor_config=None):
     price_between_sql = _limit_prices(asset_type)
     query = query.format(asset_type=asset_type, price_between_sql=price_between_sql)
     df = get_df_from_pg(query)
-    print(f"Fetched {len(df)} rows from pg ({asset_type})")  # data updated to {df['processing_date'].max()}
+    print(f"Fetched {len(df)} rows from pg ({asset_type}), {price_between_sql=}")  # data updated to {df['processing_date'].max()}
 
     cols, cat_features = get_model_cols_n_cat()
     x, y = get_feat_target(df[cols])
-    clf = MajorityVote(n_folds, regressor_config)
+    clf = MajorityVote(n_folds, log_y, regressor_config)
     clf.fit(x, y, cat_features)
     print(clf.get_feat_importance())
     y_pred = clf.predict_price(x[x['is_active']])['ai_price']
@@ -139,9 +139,9 @@ def save_model(clfs, asset_type, n_folds, regressor_config):
         pickle.dump(clfs, f)
 
 
-def test_train_pipeline(asset_type, n_folds, cfg):
+def test_train_pipeline(asset_type, n_folds, log_y, cfg):
     t0 = time.time()
-    clfs = train_model(asset_type, n_folds, cfg)
+    clfs = train_model(asset_type, n_folds, log_y, cfg)
     save_model(clfs, asset_type, n_folds, cfg)
     plot_train_history(clfs.clfs[0], asset_type)
     elapsed = (time.time() - t0) / 3600
@@ -149,8 +149,17 @@ def test_train_pipeline(asset_type, n_folds, cfg):
 
 
 if __name__ == '__main__':
+    # Tests for 25 June 2024
+    # n_folds=5, log_y=True, asset_type='forsale' MAE (loc fix) => Accuracy within 7% tolerance range: 53.74%
+    # Accuracy within 7% tolerance range: 53.74%
+    # Accuracy within 7% tolerance range: 53.53% (LOG, MAE)
+    # Accuracy within 7% tolerance range: 52.69% (NO LOG, MAE)
+    # Accuracy within 7% tolerance range: 52.88% (NO LOG, after fix locations, MAE)
+    # Accuracy within 7% tolerance range: 52.56% (WITH LOG, after fix locations, RMSE)
+    # n_folds=5, log_y=False, asset_type='forsale' RMSE (loc fix) => Accuracy within 7% tolerance range: 46.41%
     cfg = get_train_config()
     cfg['iterations'] = 5_000  # 100_000 # 50000  # 5000
+    log_y = True
     n_folds = 5
-    test_train_pipeline("forsale", n_folds, cfg)
-    test_train_pipeline("rent", n_folds, cfg)
+    test_train_pipeline("forsale", n_folds, log_y, cfg)
+    # test_train_pipeline("rent", n_folds, log_y, cfg)

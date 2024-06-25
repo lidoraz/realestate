@@ -15,7 +15,16 @@ with price_history as (select id,
                        group by id
 --having (array_agg(processing_date order by processing_date desc))[1] > now() - interval '7' day
 --order by n_changes desc
-)
+),
+-- used when lat / long is missing from the data, it can be inferred from past data
+city_street_num_locs as(
+select city, street_num, min(lat) as lat, min(long) as long
+from (
+select city, street_num, lat, long from yad2_forsale_log union
+select city, street_num, lat, long from yad2_rent_log
+) a group by city, street_num
+),
+data_predict as (
 select a.id,
        price,
        active                                                               as is_active,
@@ -24,25 +33,23 @@ select a.id,
        dt_hist,
        coalesce(last_price / first_price::float - 1, 0)                     as price_pct,
        last_price - first_price                                             as price_diff,
-
        --coalesce(last_price / first_price::float - 1, 0)                     as pct_price_chg,
        --max_price - min_price                                                as diff_price_chg,
        avg_price_chg,
        std_price_chg,
        n_changes,
-
-       city,
+       a.city,
        rooms,
        coalesce(asset_status, 'U')                                          as asset_status,
        floor,
        coalesce(neighborhood, 'U')                                          as neighborhood,
        street,
-       street_num,
+       a.street_num,
        primary_area_id,
        area_id,
        is_agency,
-       lat,
-       long,
+       coalesce(a.lat, d.lat)                                               as lat,
+       coalesce(a.long, d.long)                                             as long,
        parking,
        balconies,
        coalesce(number_of_floors, 0)                                        as number_of_floors,
@@ -86,8 +93,17 @@ from yad2_{asset_type}_log a
 join yad2_{asset_type}_items_add b
 on a.id=b.id
     join price_history c on a.id= c.id
-where
-    price is not null
-  and lat is not null
-  and long is not null
-  and active
+    join city_street_num_locs d on a.city=d.city and a.street_num=d.street_num
+where 1=1
+and price is not null
+and active
+)
+select * from data_predict where 1=1
+and lat is not null
+and long is not null
+-- after fix lat/long fix:
+-- for 25 June - only assets with price:
+-- all loc (nulls as well) : 58356 (best)
+-- fixed loc (from city_street_num_locs) : 57462 (good enough)
+-- without fixing (as it was before): 53414 (used to be like this)
+--  7.5% more assets! that's great!

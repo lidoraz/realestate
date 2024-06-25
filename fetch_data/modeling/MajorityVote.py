@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 from catboost import CatBoostRegressor
 from sklearn.model_selection import KFold
@@ -5,14 +6,19 @@ from sklearn.model_selection import train_test_split
 
 
 class MajorityVote:
-    def __init__(self, n_folds, regressor_kwargs):
+    def __init__(self, n_folds, log_y, regressor_kwargs):
         self.clfs = [CatBoostRegressor(**regressor_kwargs,
                                        early_stopping_rounds=500,
                                        allow_writing_files=False) for _ in range(n_folds)]
         self.n_folds = n_folds
         self.df_feat_imp = None
+        self.log_y = log_y
+        if self.log_y:
+            print("MajorityVote - Log y= True")
 
     def fit(self, X, y, cat_features):
+        if self.log_y:
+            y = np.log(y)
         if self.n_folds == 1:
             X_train, X_test, y_train, y_test = train_test_split(X, y)
             self.clfs[0].fit(X_train,
@@ -32,11 +38,17 @@ class MajorityVote:
                         eval_set=(X.iloc[test_idx], y.iloc[test_idx]), verbose=100)
 
     def predict(self, x):
+        if not hasattr(self, 'log_y'):
+            self.log_y = False
         res = [clf.predict(x) for clf in self.clfs]
+        if self.log_y:
+            res = [np.exp(r) for r in res]
         return res
 
     def predict_mean(self, x):
         res = [clf.predict(x) for clf in self.clfs]
+        if self.log_y:
+            res = [np.exp(r) for r in res]
         res = pd.DataFrame(res).T
         res.index = x.index
         return res.mean(axis=1)

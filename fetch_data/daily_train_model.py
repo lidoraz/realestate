@@ -5,12 +5,14 @@ if __name__ == '__main__':
     job_name = "Training regression models"
     iterations = 5_000
     n_folds = 5
+    log_y = True
     try:
         cfg = get_train_config()
-        send_telegram_msg(f"⚪ Starting {job_name}, {n_folds=}, {iterations=}")
+        send_telegram_msg(f"⚪ Starting {job_name}, {n_folds=}, {iterations=}, {log_y=}")
         cfg['iterations'] = iterations
-        test_train_pipeline("forsale", n_folds, cfg)
-        test_train_pipeline("rent", n_folds, cfg)
+
+        # test_train_pipeline("forsale", n_folds, log_y, cfg)
+        test_train_pipeline("rent", n_folds, log_y, cfg)
 
         send_telegram_msg(f"🟢 FINISHED JOB in {job_name}")
     except Exception as e:
