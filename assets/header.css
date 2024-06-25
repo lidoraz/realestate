@@ -245,18 +245,25 @@ p.rtl {
     animation-fill-mode: both;
 }
 
-#button-clear{
-    width:100%;
+#button-clear {
+    width: 100%;
 }
 
-#hello-modal .modal-content{
+#hello-modal .modal-content {
     direction: rtl;
     line-height: 1.7em;
 }
-#hello-modal .modal-content button{
+
+#hello-modal .modal-title {
+    width: 100%;
+    font-weight: 600;
+}
+
+#hello-modal .modal-content button {
     margin: 0;
 }
-#hello-modal .modal-body ul{
+
+#hello-modal .modal-body ul {
     list-style-type: disc;
 }
 
