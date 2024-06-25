@@ -1,4 +1,3 @@
-import uuid
 import requests
 import pandas as pd
 from tqdm import tqdm
@@ -20,15 +19,15 @@ def is_last_page(city, page_num, url, headers):
 
 
 # Function to perform binary search to find the last page
-def find_last_page(city, url, headers, max_pages=10_000):
+def find_last_page(city_id, url, headers, max_pages=10_000):
     low, high = 1, max_pages
     last_page = low
 
     while low <= high:
-        print(city, low, high)
+        print(city_id, low, high)
         mid = (low + high) // 2
         try:
-            if is_last_page(city, mid, url, headers):
+            if is_last_page(city_id, mid, url, headers):
                 last_page = mid
                 high = mid - 1
             else:
@@ -66,12 +65,49 @@ def fetch_by_city_id(city_id, max_page_num, max_workers=15):
     return df
 
 
+file_path_template = "resources/output/df_{city_id}_{city}.pickle"
+
+
+def fetch_city(city, city_id, max_page_num=10_000):
+    file_path = file_path_template.format(city_id=city_id, city=city)
+    if os.path.exists(file_path) and os.path.getsize(file_path) > 500:
+        print(f"{city} Already Exists!")
+
+        return pd.read_pickle(file_path)
+    print(city)
+    max_page_num = find_last_page(city_id, url, headers)
+    df = fetch_by_city_id(city_id, max_page_num)
+    df['city'] = city
+    df.to_pickle(file_path)
+    return df
+
+
 def fetch_all_cities(cities, max_page_num=10_000, max_workers=15):
     for city, city_id in tqdm(cities.items()):
-        file_path = f"output/df_{city_id}_{city}.pickle"
-        if os.path.exists(file_path) and os.path.getsize(file_path) > 500:
-            continue
-        print(city)
-        max_page_num = find_last_page(city_id, url, headers)
-        df = fetch_by_city_id(city_id, max_page_num)
-        df.to_pickle(f"output/df_{city_id}_{city}.pickle")
+        fetch_city(city, city_id, max_page_num)
+
+
+if __name__ == '__main__':
+    # # this will fetch individual city data and insert it...
+    # from scrape_nadlan_gov.insert import insert_new_rows, NadlanGovTrans
+    # from scrape_nadlan_gov.process import process_nadlan_data
+    from scrape_nadlan_gov.update_cords import process_missing_coordinates
+    from ext.env import get_pg_engine
+    # city_id = 1247
+    # city = "חריש"
+    # df = fetch_city(city, city_id)
+    # max_days_back = 30 * 12 * 100
+    #
+    # df = process_nadlan_data(df)
+    engine = get_pg_engine()
+    # n_rows = df.to_sql(NadlanGovTrans.__tablename__, engine, if_exists='append', index=False)
+    #
+    # n_rows = insert_new_rows(df, engine, max_days_back)
+    # n_fixed_deals = process_missing_coordinates(engine)
+    # print("Inserted ", n_rows, " new rows", n_fixed_deals, "fixed deals")
+
+    i =0
+    while True:
+        i+=1
+        n_fixed_deals = process_missing_coordinates(engine)
+        print(f"{i=} 10,000 cords...", n_fixed_deals, "fixed deals")

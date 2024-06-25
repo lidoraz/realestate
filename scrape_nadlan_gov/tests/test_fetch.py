@@ -1,10 +1,12 @@
+import os
+os.chdir('..')
+
 import json
 import unittest
 from unittest import mock
 
 from scrape_nadlan_gov.process import process_nadlan_data
-from scrape_nadlan_gov.utils import add_lat_long_to_df
-import os
+from scrape_nadlan_gov.update_cords import add_lat_long_to_df
 
 
 def mock_make_request_ordered(payload):
@@ -33,3 +35,7 @@ class TestFetch(unittest.TestCase):
         df = process_nadlan_data(df)
         df = add_lat_long_to_df(df)
         print(df)
+
+
+if __name__ == '__main__':
+    unittest.main()

@@ -8,19 +8,19 @@ from tqdm import tqdm
 Base = declarative_base()
 
 
-class RealEstateDeal(Base):
-    __tablename__ = 'real_estate_deals'
+class NadlanGovTrans(Base):
+    __tablename__ = 'nadlan_gov_trans'
     trans_date = Column(Date, primary_key=True)
     city = Column(String)
     address = Column(String(255))
     price = Column(Numeric)
     rooms = Column(Numeric)
-    floor = Column(Integer)
-    n_floors = Column(Integer)
-    square_meters = Column(Numeric)
-    building_year = Column(Integer)
-    year_built = Column(Integer)
-    gush = Column(Integer)
+    floor = Column(Integer, nullable=True)
+    n_floors = Column(Integer, nullable=True)
+    square_meters = Column(Numeric, nullable=True)
+    building_year = Column(Integer, nullable=True)
+    year_built = Column(Integer, nullable=True)
+    gush = Column(Integer, nullable=True)
     helka = Column(Integer)
     tat_helka = Column(Integer)
     deal_desc = Column(String)
@@ -37,25 +37,27 @@ class RealEstateDeal(Base):
     insertion_time = Column(DateTime)
 
 
-def fetch_existing_primary_keys(session):
+### not efficent as it must be filterd out by city...
+def fetch_existing_primary_keys(session, min_date_back):
     existing_keys = session.query(
-        RealEstateDeal.gush_full,
-        RealEstateDeal.trans_date
-    ).all()
+        NadlanGovTrans.trans_date,
+        NadlanGovTrans.gush_full
+    ).filter(NadlanGovTrans.trans_date >= min_date_back).all()
     return set(existing_keys)
 
 
 def filter_new_data(df, existing_keys):
-    def is_existing(row):
-        return (row['gush_full'], row['trans_date']) in existing_keys
+    def is_existing(row):  # NadlanGovTrans.trans_date
+        return (row['trans_date'], row['gush_full']) in existing_keys
 
+    df = df.sort_values('trans_date', ascending=False)
     new_rows = df[~df.apply(is_existing, axis=1)]
     return new_rows
 
 
 def bulk_insert_new_rows(session, df):
     new_deals = [
-        RealEstateDeal(
+        NadlanGovTrans(
             trans_date=row['trans_date'],
             city=row['city'],
             address=row['address'],
@@ -87,17 +89,21 @@ def bulk_insert_new_rows(session, df):
     session.commit()
 
 
-def insert_new_rows(df, engine):
-    Session = sessionmaker(bind=engine)
-    session = Session()
+def insert_new_rows(df, engine, max_days_back):
+    sess = sessionmaker(bind=engine)
+    min_date_back = (pd.Timestamp.now() - pd.to_timedelta(max_days_back, unit="D")).date()
+    df = df[df['trans_date'] >= min_date_back]
+    with sess() as session:
+        # new_rows['n_floors'] = new_rows['n_floors'].fillna(pd.np.nan)
+        existing_keys = fetch_existing_primary_keys(session, min_date_back)
+        df_new_rows = filter_new_data(df, existing_keys)
+        print("len(df_new_rows):", len(df_new_rows))
+        if not df_new_rows.empty:
+            df_new_rows.to_sql(NadlanGovTrans.__tablename__, engine, if_exists='append', index=False)
+            session.commit()
+            # bulk_insert_new_rows(session, df_new_rows)
+        return len(df_new_rows)
 
-    existing_keys = fetch_existing_primary_keys(session)
-    new_rows = filter_new_data(df, existing_keys)
-    print("len(new_rows):", len(new_rows))
-    if not new_rows.empty:
-        bulk_insert_new_rows(session, new_rows)
-    session.close()
-    return len(new_rows)
 
 
 def get_engine(DATABASE_URI):

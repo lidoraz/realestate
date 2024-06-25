@@ -17,8 +17,8 @@ headers = {
     # "Content-Length": "704",
     "Origin": "https://www.nadlan.gov.il",
     "Connection": "keep-alive",
-    "Referer": "https://www.nadlan.gov.il/?",
-    "Cookie": "",
+    "Referer": "https://www.nadlan.gov.il/",
+    "Cookie": "p_hosting=!28Hz/64OtrA4lR4LfoWcnEfK+F/M7X2T9T9Y+uo1gs4eqlj8+SaX4nno5qCLm+7WcnqTDKSa/HnPIqI=; TS01c75138=0124934a81c86ab815c92886929c00b722adfdec1f383aa7031667d604bd66d98003beeb1bb1568a96cb5fb6c9f46cf9b3f9876d2ccc85ea1f36a39708e0e732523411c4ac; TS0100db2f=0124934a813e6930dd1dfa64c8cbc0e43511b44e3840b5a5b58471d1a5f6a1396410456be27fc23b18522a0c411ed7441968c9d02e48c9522b406675803380163b9ece5aa3; TS624e36da027=08b707dd67ab2000ad9aefe526c2c528695d9235096dc5f29f908ffbe5254ea28738c84ce492dd1908bdf1993b113000f7dd8643486e6ca308054d60b07e1a2a1699fb2ca85e5903a27fd7867c2be28c0cd0202861d36ddc5b0372cecff15491",
     "Sec-Fetch-Dest": "empty",
     "Sec-Fetch-Mode": "cors",
     "Sec-Fetch-Site": "same-origin"}

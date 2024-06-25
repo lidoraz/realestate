@@ -1,8 +1,11 @@
+import os
+
+os.chdir('..')
+
 import unittest
 from unittest import mock
 import pandas as pd
-from scrape_nadlan_gov.insert import get_engine, create_table, insert_new_rows, create_session, RealEstateDeal, Base
-from scrape_nadlan_gov.update_cords import process_missing_coordinates
+from scrape_nadlan_gov.insert import get_engine, create_table, insert_new_rows, create_session, NadlanGovTrans, Base
 
 
 def load_new_data():
@@ -40,8 +43,11 @@ def load_new_data():
     return new_data_df
 
 
-DATABASE_URI = 'sqlite:///real_estate_deals.db'
+db_name = "__test_insert.db"
 
+DATABASE_URI = f'sqlite:///{db_name}'
+
+max_day_back = 30 * 12 * 100 # a lot of time
 
 class TestFetch(unittest.TestCase):
     @classmethod
@@ -50,37 +56,41 @@ class TestFetch(unittest.TestCase):
         cls.uri = DATABASE_URI
 
     def setUp(cls):
-        DATABASE_URI = 'sqlite:///real_estate_deals.db'
         engine = get_engine(cls.uri)
         create_table(engine)
 
     def test_create_insert(cls):
         new_data_df = load_new_data()
         engine = get_engine(cls.uri)
-        n_new = insert_new_rows(new_data_df, engine)
+        n_new = insert_new_rows(new_data_df, engine, max_day_back)
         assert n_new == 2
-        import pandas as pd
         session = create_session(engine)
-        df_f = pd.read_sql(session.query(RealEstateDeal).statement, session.bind)
+        df_f = pd.read_sql(session.query(NadlanGovTrans).statement, session.bind)
         print(df_f)
 
     def test_exist(cls):
         new_data_df = load_new_data()
         engine = get_engine(cls.uri)
-        n_new = insert_new_rows(new_data_df, engine)
+        n_new = insert_new_rows(new_data_df, engine, max_day_back)
         assert n_new == 2
-        n_new = insert_new_rows(new_data_df, engine)
+        n_new = insert_new_rows(new_data_df, engine, max_day_back)
         assert n_new == 0
 
     def test_fix_cords(cls):
-        mock.patch('scrape_nadlan_gov.utils.get_lat_long_osm', return_value={'lat': 32.0, 'long': 34.0})
+        mock.patch('scrape_nadlan_gov.update_cords.get_lat_long', return_value={'lat': 32.0, 'long': 34.0}).start()
+        from scrape_nadlan_gov.update_cords import process_missing_coordinates
         new_data_df = load_new_data()
         engine = get_engine(cls.uri)
-        n_new = insert_new_rows(new_data_df, engine)
-        assert n_new == 2
-        process_missing_coordinates(engine)
+        n_new = insert_new_rows(new_data_df[:1], engine, max_day_back)
+        assert n_new == 1
+        n_fixed_deals = process_missing_coordinates(engine)
+        assert n_fixed_deals == 1
+        n_new = insert_new_rows(new_data_df[1:], engine, max_day_back)
+        assert n_new == 1
+        n_fixed_deals = process_missing_coordinates(engine)
+        assert n_fixed_deals == 1
         session = create_session(engine)
-        df = pd.read_sql(session.query(RealEstateDeal).statement, session.bind)
+        df = pd.read_sql(session.query(NadlanGovTrans).statement, session.bind)
         assert len(df) == 2
         assert df['lat'].notnull().all()
         assert df['long'].notnull().all()
@@ -88,8 +98,12 @@ class TestFetch(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
-        os.remove('real_estate_deals.db')
+        os.remove(db_name)
 
     def tearDown(cls):
         engine = get_engine(cls.uri)
-        Base.metadata.tables['real_estate_deals'].drop(engine)
+        Base.metadata.tables['nadlan_gov_trans'].drop(engine)
+
+
+if __name__ == '__main__':
+    unittest.main()

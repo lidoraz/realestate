@@ -53,7 +53,7 @@ def process_nadlan_data(df):
     df['price'] = df['DEALAMOUNT'].str.replace(",", "").astype(int)
     df['price_meter'] = df['price'] / df['square_meters']
     df['floor'] = process_floors(df['FLOORNO'])
-    df['n_floors'] = df['BUILDINGFLOORS'].fillna(-1).astype(int)
+    df['n_floors'] = df['BUILDINGFLOORS']
     df['address'] = df['DISPLAYADRESS'].replace('', None)
     df['street'] = df['address'].str.replace('\d+', '', regex=True).str.strip()
     df['house_num'] = df['address'].str.extract('(\d+)')[0]  # get the first group of digits
@@ -68,6 +68,8 @@ def process_nadlan_data(df):
     df['insertion_time'] = pd.Timestamp.now()
     df = df[cols_to_keep]
     assert set(df.columns) == set(cols_to_keep), "Columns mismatch"
+    # Replace np.nan with None
+    df = df.where(pd.notnull(df), None)
 
     df = df.sort_values('trans_date', ascending=False)
     return df
