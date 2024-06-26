@@ -79,11 +79,11 @@ js_draw_price = assign("""function(feature) {{
         """.format(**colors_grad))
 
 _html_title_style = {"position": "absolute", "direction": "rtl", "z-index": "999", "right": "0px",
-                     "border-radius": "15%", "margin": "0px",
+                     "margin": "0px",
                      "padding": "5px 20px 5px 15px", "background-color": "#FFFFFFB3"}
 # "position": "absolute", "z-index": "999",
-_html_radio_style = { "top": "30px", "left": "80px",
-                     #"font-size": "1.0em",
+_html_radio_style = {"top": "30px", "left": "80px",
+                     # "font-size": "1.0em",
                      "padding": "5px 15px 5px 5px", "border-radius": "20%"}
 
 
@@ -132,21 +132,26 @@ def get_dash(server):
 
     app.layout = html.Div([
         html.Div([
-            get_page_menu(),
-            html.H2("מפת המחירים"),
-            dash.dcc.RadioItems(
-                [{'label': 'שכירות', 'value': 'rent'},
-                 {'label': 'מכירה', 'value': 'forsale'}],
-                'rent', id="radio-asset_type"),
-            html.H5("הצג לפי"),
-            dash.dcc.RadioItems(
-                [{'label': 'מחיר', 'value': 'price'},
-                 {'label': 'שינוי במחיר', 'value': 'pct_chg'}],
-                'price', id="radio-metric"),
-            html.Sub("(רבעון נוכחי מול קודם)"),
-            dash.dcc.Checklist(["Y"], ["Y"], id="polygon_toggle"),
-
-        ], style=_html_title_style),
+            dbc.Row([dbc.Col(
+                dbc.DropdownMenu(html.Div([
+                    html.H5("סוג נכסים"),
+                    dash.dcc.RadioItems(
+                        [{'label': 'שכירות', 'value': 'rent'},
+                         {'label': 'מכירה', 'value': 'forsale'}],
+                        'rent', id="radio-asset_type"),
+                    html.H5("הצג לפי"),
+                    dash.dcc.RadioItems(
+                        [{'label': 'מחיר', 'value': 'price'},
+                         {'label': 'שינוי במחיר', 'value': 'pct_chg'}],
+                        'price', id="radio-metric"),
+                    html.Sub("(רבעון נוכחי מול קודם)"),
+                    dash.dcc.Checklist(["Y"], ["Y"], id="polygon_toggle"),
+                ], className="dropdown-container"), label="תצוגה"),
+                width=4),
+                dbc.Col(get_page_menu(), width=4),
+                dbc.Col(html.H2("שכונות", style={"direction": "rtl", "margin": "auto 7px auto 0px"}), width=4),
+            ]),
+        ], style=_html_title_style, className="top-toolbar"),
         dl.Map([
             dl.TileLayer(),
             get_json_layer()],
