@@ -20,8 +20,9 @@ with price_history as (select id,
 city_street_num_locs as(
 select city, street_num, min(lat) as lat, min(long) as long
 from (
-select city, street_num, lat, long from yad2_forsale_log union
-select city, street_num, lat, long from yad2_rent_log
+select city, street_num, lat, long from yad2_forsale_log where processing_date >= now() - interval '1' year
+union
+select city, street_num, lat, long from yad2_rent_log where processing_date >= now() - interval '1' year
 ) a group by city, street_num
 ),
 data_predict as (
