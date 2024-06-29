@@ -50,7 +50,7 @@ def fetch_by_city(city: str, max_days_back: int, max_pages=10_000):
         if min_date < fetch_until:
             break
     df['city'] = city
-    print(f"Fetched {len(df)} rows up to {min_date}")
+    print(f"Fetched {len(df)} in {city=} rows up to {min_date}")
     return df
 
 
