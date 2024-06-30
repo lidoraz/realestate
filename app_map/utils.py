@@ -290,7 +290,7 @@ def build_sidebar(deal, fig):
                                         "margin-top": "20px"})
 
     square_meter_html = html.Div([
-        html.Span(f"{deal['square_meters']:,.0f} מ״ר", style={"padding-left": "10px"}),
+        html.Span(f"{deal['square_meters']:,.0f} מ״ר בנוי", style={"padding-left": "10px"}),
         # ( למ״ר
         html.Strong(html.Span(f"₪{deal['price'] / deal['square_meters']:,.0f}")),
         html.Span(" למ״ר")
