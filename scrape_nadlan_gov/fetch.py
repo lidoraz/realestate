@@ -1,7 +1,4 @@
-import requests
 import concurrent.futures
-import urllib3
-
 from scrape_nadlan_gov.process import process_nadlan_data
 from scrape_nadlan_gov.utils import load_json
 
@@ -46,7 +43,7 @@ def fetch_by_city(city: str, max_days_back: int, max_pages=10_000):
         df_ = fetch_page_data(city_id, i)
         df = pd.concat([df, df_], axis=0)
         min_date = pd.to_datetime(df_["DEALDATETIME"]).min()
-        print(f"{city=}, {i=}, min_date={str(min_date.date())}, fetch_until={str(fetch_until.date())}")
+        # print(f"{city=}, {i=}, min_date={str(min_date.date())}, fetch_until={str(fetch_until.date())}")
         if min_date < fetch_until:
             break
     df['city'] = city
@@ -88,7 +85,6 @@ def test_fetch_all_cities():
     # 4 months -> 11860 2153 (35 min)
     df = concurrent_fetch_all_cities(max_days_back=30 * 4)
     print(len(df), (time.time() - t0) / 60)
-    print()
 
 
 if __name__ == '__main__':
