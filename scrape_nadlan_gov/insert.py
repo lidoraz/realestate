@@ -97,7 +97,7 @@ def insert_new_rows(df, engine, max_days_back):
         # new_rows['n_floors'] = new_rows['n_floors'].fillna(pd.np.nan)
         existing_keys = fetch_existing_primary_keys(session, min_date_back)
         df_new_rows = filter_new_data(df, existing_keys)
-        print("len(df_new_rows):", len(df_new_rows))
+        print(f"Inserted {len(df_new_rows)} new rows to db")
         if not df_new_rows.empty:
             df_new_rows.to_sql(NadlanGovTrans.__tablename__, engine, if_exists='append', index=False)
             session.commit()

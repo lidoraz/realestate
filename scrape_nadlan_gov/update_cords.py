@@ -70,7 +70,7 @@ def update_rows_with_coordinates(session, deals):
     return n_fixed_deals
 
 
-def process_missing_coordinates(engine, limit_per_run=1_000, limit_date=None):
+def process_missing_coordinates(engine, limit_per_run=500, limit_date=None):
     Session = sessionmaker(bind=engine)
     with Session() as s:
         missing_coords_deals = fetch_missing_coordinates(s, limit_per_run, limit_date)
