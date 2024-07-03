@@ -69,6 +69,11 @@ style = """
 results = requests.post(url, json={"limit": LIMIT}).json()
 df = pd.DataFrame(results['data_today_both_rent_sale'])
 default_img = "https://ateamymm.ca/defaulthouse.jpg"
+
+url_site = "https://realestate1.up.railway.app/"
+
+df['sale_link'] = url_site + "sale/?asset_id=" + df['sale_link'].str.split("/").str[-1]
+df['rent_link'] = url_site + "rent/?asset_id=" + df['rent_link'].str.split("/").str[-1]
 df["sale_img"] = df["sale_img"].replace("", default_img)
 df["rent_img"] = df["rent_img"].replace("", default_img)
 df["sale_added"] = pd.to_datetime(df["sale_added"]).dt.date

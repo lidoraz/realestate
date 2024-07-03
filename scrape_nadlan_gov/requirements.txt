@@ -1,0 +1,11 @@
+pandas==1.5.2
+numpy==1.24.2
+requests==2.24.0
+sqlalchemy==1.4.46
+psycopg2
+apscheduler
+boto3
+protobuf==3.20.0
+colorlover
+colour
+tqdm
