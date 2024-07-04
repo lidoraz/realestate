@@ -29,7 +29,7 @@ headers = {
     "Sec-Fetch-Mode": "cors",
     "Sec-Fetch-Site": "same-origin"}
 
-cities = load_json('resources/cities_ids.json')
+cities = load_json('scrape_nadlan_gov/resources/cities_ids.json')
 
 
 def fetch_by_city(city: str, max_days_back: int, max_pages=10_000):

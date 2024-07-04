@@ -1,10 +1,9 @@
 import pandas as pd
-import os
 import json
 
 
 def process_floors(floors: pd.Series):
-    with open("resources/floor_mapper.json", "r") as f:
+    with open("scrape_nadlan_gov/resources/floor_mapper.json", "r") as f:
         floors_dict = json.load(f)
     return floors.map(floors_dict)
 
