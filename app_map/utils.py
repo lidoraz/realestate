@@ -107,6 +107,7 @@ def get_asset_points(df_all, price_from=-np.inf, price_to=np.inf, max_avg_price_
                      with_parking=None,
                      with_balconies=None,
                      with_elevator=None,
+                     with_shelter=None,
                      asset_status=(),
                      asset_type=(),
                      map_bounds=None, id_=None):
@@ -132,6 +133,7 @@ def get_asset_points(df_all, price_from=-np.inf, price_to=np.inf, max_avg_price_
         sql_is_parking="parking > 0" if with_parking else "",
         sql_is_balcony="balconies == True" if with_balconies else "",
         sql_is_elevator="elevator == True" if with_elevator else "",
+        sql_is_shelter="shelter == True" if with_shelter else "",
         sql_asset_status=sql_asset_status,
         sql_asset_type=sql_asset_type,
         sql_median_price_pct=f"group_size > 30 and {price_median_pct_range[0] / 100}<=pct_diff_median <= {price_median_pct_range[1] / 100}" if is_price_median_pct_range else "",

@@ -280,10 +280,9 @@ def get_div_top_bar(config_defaults):
                          className="asset-dropdown"),
                      ], className=""),
                 html.Div([
-                    dcc.Checklist(options=[{'label': 'עם תיווך', 'value': 'Y'}], value=['Y'], inline=True,
+                    dcc.Checklist(options=[{'label': 'תיווך', 'value': 'Y'}], value=['Y'], inline=True,
                                   inputClassName="rounded-checkbox",
                                   id='agency-check'),
-                    html.H6("חייב לכלול"),
                     dcc.Checklist(options=[{'label': 'חניה', 'value': 'Y'}], value=[], inline=True,
                                   inputClassName="rounded-checkbox",
                                   id='parking-check'),
@@ -293,9 +292,9 @@ def get_div_top_bar(config_defaults):
                     dcc.Checklist(options=[{'label': 'מעלית', 'value': 'Y'}], value=[], inline=True,
                                   inputClassName="rounded-checkbox",
                                   id='elevator-check'),
-                    # dcc.Checklist(options=[{'label': 'מקלט', 'value': 'Y'}], value=[], inline=True,
-                    #               inputClassName="rounded-checkbox",
-                    #               id='shelter-check')
+                    dcc.Checklist(options=[{'label': 'ממ״ד', 'value': 'Y'}], value=[], inline=True,
+                                  inputClassName="rounded-checkbox",
+                                  id='shelter-check')
                 ], className="dash-options"),
                 dbc.DropdownMenuItem(divider=True),
                 html.Div([
