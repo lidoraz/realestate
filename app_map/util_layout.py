@@ -52,7 +52,8 @@ marker_type_options = [
 tooltips = [
     dbc.Tooltip("הצג את המחיר לעומת חיזוי של בינה מלאכותית 🚀AI ", target="ai_price_pct"),
     dbc.Tooltip("הצג את השינוי במחיר הנכס מרגע העלאה עד היום", target="price_pct"),
-    dbc.Tooltip("הצג לפי ממוצע המחיר של נכסים עם אותו מספר חדרים באיזור", target="pct_diff_median")
+    dbc.Tooltip("הצג לפי ממוצע המחיר של נכסים עם אותו מספר חדרים באיזור", target="pct_diff_median"),
+    dbc.Tooltip("הצג לפי תשואה משכירות צפויה על הנכס", target="estimated_rent_annual_return")
 ]
 marker_type_default = 'ai_price_pct'
 btn_size = 'md'

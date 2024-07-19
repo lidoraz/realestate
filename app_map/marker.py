@@ -133,58 +133,37 @@ def create_tooltip(deal):
     return html_tp
 
 
-from colour import Color
-
-max_colors = 4
-col1 = "green"
-col2 = "red"
-col3 = "gray"  # Charcoal
-g_colors = list(Color(col1).range_to(col3, max_colors))
-r_colors = list(Color(col2).range_to(col3, max_colors))[::-1]
-colors = (g_colors[:-1] + r_colors)  # [::-1]
-colors = [
-"#23bd00",
-"#3ca200",
-"#558700",
-"#6e6c00",
-"#865100",
-"#9f3600",
-"#b81b00",
-"#d10000",
-
-]
-
-# print("len(colors)", len(colors))
-# https://stackoverflow.com/questions/929103/convert-a-number-range-to-another-range-maintaining-ratio
-old_range = (1 - (-1))
-new_range = ((len(colors) - 1) - 0)
+colors = ["#dc0000",
+          "#cb4600",
+          "#b36600",
+          "#997c00",
+          "#7b8d00",
+          "#559c00",
+          "#00a800",
+          ][::-1]
+gray_col = "#444"
 
 
 def get_color(x, min_v=-.2, max_v=.2, reverse=False):
-    # x = x * multiplier
-    # x = max(min(x, max_v), min_v)
-    # idx = int((((x - min_v) * new_range) / old_range) + 0)
     normalized_x = (x - min_v) / (max_v - min_v)
     normalized_x = max(0, min(1, normalized_x))
     idx = int(normalized_x * (len(colors) - 1))
-    if np.random.rand() < 0.05:
-        print(f"x: {x}, idx: {idx}, color: {colors[idx]}, len(colors): {len(colors)}, normalized_x: {normalized_x}")
     if reverse:
         idx = len(colors) - 1 - idx
     return colors[idx]
 
 
-marker_metric_limits = {'ai_price_pct': (-0.20, 0.20, False),
+marker_metric_limits = {'ai_price_pct': (-0.15, 0.15, False),
                         'price_pct': (-0.15, 0.15, False),
-                        'estimated_rent_annual_return': (0, 0.05, True),
+                        'estimated_rent_annual_return': (0.01, 0.045, True),
                         'pct_diff_median': (-0.15, 0.15, False)}
 
 
 def generate_icon_custom(deal, marker_metric):
     p = deal['metadata'][marker_metric]
     if np.isnan(p):
-        p_text = "."
-        color = "gray"
+        p_text = "⌂"
+        color = gray_col
     else:
         prefix = '+' if p > 0 else '-' if p < 0 else ''
         if marker_metric == 'estimated_rent_annual_return':
@@ -193,7 +172,7 @@ def generate_icon_custom(deal, marker_metric):
             p_text = f"{abs(p):.0%}"
         p_text = f"{prefix}{p_text}"
         min_v, max_v, reverse = marker_metric_limits[marker_metric]
-        color = get_color(p, min_v=min_v, max_v=max_v, reverse=reverse) if abs(p) > 0.005 else "#444"  # "#00000000"
+        color = get_color(p, min_v=min_v, max_v=max_v, reverse=reverse) if abs(p) > 0.005 else gray_col
     return dict(_marker_text=p_text, _marker_color=color, _price_s=deal['metadata']['price_s'])
 
 
