@@ -55,7 +55,7 @@ def preprocess_to_str_deals(df):
 
 
 meta_data_cols = ['lat', 'long', 'price', 'price_s', 'asset_status', 'floor', 'avg_price_m', 'square_meters', 'rooms',
-                  'price_pct', 'img_url',
+                  'price_pct', 'img_url', 'estimated_rent_annual_return',
                   'ai_price_pct', 'pct_diff_median']
 
 

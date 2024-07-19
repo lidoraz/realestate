@@ -14,6 +14,7 @@ icon_real_estate = "https://cdn-icons-png.flaticon.com/128/602/602275.png"
 icon_share = "https://cdn-icons-png.flaticon.com/128/4855/4855052.png"
 icon_bureaucracy = "https://cdn-icons-png.flaticon.com/128/3511/3511207.png"
 
+
 def get_icon(deal, marker_metric='median'):
     p = deal['metadata'][marker_metric]
     if -0.1 < p <= -0.05:
@@ -132,39 +133,46 @@ def create_tooltip(deal):
     return html_tp
 
 
-from colour import Color
-
-max_colors = 6
-multiplier = 4.0
-col1 = "green"
-col2 = "red"
-col3 = "darkgray"  # Charcoal
-g_colors = list(Color(col1).range_to(col3, max_colors))
-r_colors = list(Color(col2).range_to(col3, max_colors))[::-1]
-colors = (g_colors[:-1] + r_colors)  # [::-1]
-# print("len(colors)", len(colors))
-# https://stackoverflow.com/questions/929103/convert-a-number-range-to-another-range-maintaining-ratio
-old_range = (1 - (-1))
-new_range = ((len(colors) - 1) - 0)
+colors = ["#dc0000",
+          "#cb4600",
+          "#b36600",
+          "#997c00",
+          "#7b8d00",
+          "#559c00",
+          "#00a800",
+          ][::-1]
+gray_col = "#444"
 
 
-def get_color(x):
-    x = x * multiplier
-    x = max(min(x, 1), -1)
-    idx = int((((x - (-1)) * new_range) / old_range) + 0)
-    return colors[idx].hex
+def get_color(x, min_v=-.2, max_v=.2, reverse=False):
+    normalized_x = (x - min_v) / (max_v - min_v)
+    normalized_x = max(0, min(1, normalized_x))
+    idx = int(normalized_x * (len(colors) - 1))
+    if reverse:
+        idx = len(colors) - 1 - idx
+    return colors[idx]
+
+
+marker_metric_limits = {'ai_price_pct': (-0.15, 0.15, False),
+                        'price_pct': (-0.15, 0.15, False),
+                        'estimated_rent_annual_return': (0.01, 0.045, True),
+                        'pct_diff_median': (-0.15, 0.15, False)}
 
 
 def generate_icon_custom(deal, marker_metric):
     p = deal['metadata'][marker_metric]
     if np.isnan(p):
-        p_text = "."
-        color = "gray"
+        p_text = "⌂"
+        color = gray_col
     else:
         prefix = '+' if p > 0 else '-' if p < 0 else ''
-        p_text = f"{abs(p):.0%}" if p != 0 else "."
+        if marker_metric == 'estimated_rent_annual_return':
+            p_text = f"{abs(p):.1%}"
+        else:
+            p_text = f"{abs(p):.0%}"
         p_text = f"{prefix}{p_text}"
-        color = get_color(p) if abs(p) > 0.003 else "gray"  # "#00000000"
+        min_v, max_v, reverse = marker_metric_limits[marker_metric]
+        color = get_color(p, min_v=min_v, max_v=max_v, reverse=reverse) if abs(p) > 0.005 else gray_col
     return dict(_marker_text=p_text, _marker_color=color, _price_s=deal['metadata']['price_s'])
 
 

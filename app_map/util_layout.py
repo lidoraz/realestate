@@ -46,12 +46,14 @@ asset_type_cols = ["דירה",
 marker_type_options = [
     {'label': 'AI', 'value': 'ai_price_pct', 'label_id': 'ai_price_pct'},
     {'label': '%', 'value': 'price_pct', 'label_id': 'price_pct'},
-    {'label': 'M', 'value': 'pct_diff_median', 'label_id': 'pct_diff_median'}
+    {'label': 'M', 'value': 'pct_diff_median', 'label_id': 'pct_diff_median'},
+    {'label': 'R', 'value': 'estimated_rent_annual_return', 'label_id': 'estimated_rent_annual_return'}
 ]
 tooltips = [
     dbc.Tooltip("הצג את המחיר לעומת חיזוי של בינה מלאכותית 🚀AI ", target="ai_price_pct"),
     dbc.Tooltip("הצג את השינוי במחיר הנכס מרגע העלאה עד היום", target="price_pct"),
-    dbc.Tooltip("הצג לפי ממוצע המחיר של נכסים עם אותו מספר חדרים באיזור", target="pct_diff_median")
+    dbc.Tooltip("הצג לפי ממוצע המחיר של נכסים עם אותו מספר חדרים באיזור", target="pct_diff_median"),
+    dbc.Tooltip("הצג לפי תשואה משכירות צפויה על הנכס", target="estimated_rent_annual_return")
 ]
 marker_type_default = 'ai_price_pct'
 btn_size = 'md'
