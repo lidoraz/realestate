@@ -31,6 +31,8 @@ def app_preprocess_df(df_all):
     df_all['date_updated_d'] = (datetime.today() - df_all['date_updated']).dt.days
 
     df_all = preprocess_to_str_deals(df_all)
+    if 'estimated_rent_annual_return' not in df_all:
+        df_all['estimated_rent_annual_return'] = np.nan
     df_all = df_all.reset_index()  # to extract id
     # df_f = df.query('price < 3000000 and -0.9 < price_pct < -0.01 and price_diff < 1e7')  # [:30]
     return df_all
