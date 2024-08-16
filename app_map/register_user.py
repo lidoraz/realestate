@@ -20,11 +20,11 @@ def get_asset_options_html(asset_type):
     # Default values for rent and sale options
     default_price_from, default_price_to = (3000, 7000) if asset_type == "rent" else (1_000_000, 3_000_000)
     sale_min_price = 100_000
-    sale_max_price = 5000000
+    sale_max_price = 10_000_000
     rent_min_price = 1000
     rent_max_price = 10_000
-    sale_price_marks = {sale_min_price: '100k', 1_000_000: '1M', 2000000: '2M', 3000000: '3M', 4000000: '4M',
-                        sale_max_price: '5M+'}
+    sale_price_marks = {sale_min_price: '100k', 1_000_000: '1M', 2000000: '2M', 3000000: '3M', 5000000: '5M',
+                        7500000: '7.5M', sale_max_price: '10M+'}
     rent_price_marks = {rent_min_price: '1K', 2000: '2K', 4000: '4K', 6000: '6K', 8000: '8K',
                         rent_max_price: '10K+'}
     rooms_marks = {i: f'{i}' for i in range(7)}
@@ -343,7 +343,7 @@ def get_dash(server):
 
         sale_preferences = generate_preferences(
             sale_price_range, sale_rooms_range, sale_asset_cond, sale_cities, sale_more_options
-        ) if sale_is_open else None #
+        ) if sale_is_open else None  #
 
         time_now = datetime.utcnow()
         print(f"Adding {time_now=}, {telegram_id=}, {rent_preferences=}, {sale_preferences=}")

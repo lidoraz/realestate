@@ -82,6 +82,7 @@ def add_ai_price(df, asset_type, model_params, set_no_active=True, filter_bad_lo
     assert os.path.exists(path), f"Model is missing, train first.\n({path})"
     with open(path, 'rb') as f:
         clf = pickle.load(f)
+        print("model created at:", pd.to_datetime(os.path.getctime(path), unit='s'))
     cols, _ = get_model_cols_n_cat()
     df_f = df.copy()
     if filter_bad_locs:
