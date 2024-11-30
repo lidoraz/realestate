@@ -1,4 +1,3 @@
-
 sql_time_series_nadlan = """
 
 -- HISTORY PRICE CHANGES OVER TIME REAL TRANS
@@ -44,14 +43,16 @@ SELECT
 price,
 square_meters,
 rooms,
+date_added,
 processing_date
 from {table_name}
 where active = False
 and processing_date >= '2023-03-01' -- Only from March data is consist
+and date_added >= '2023-03-01'
 )
 
 SELECT
-    DATE_TRUNC('month', processing_date)::date::varchar AS week,
+    DATE_TRUNC('month', date_added)::date::varchar AS week,
     count(*) as cnt,
     count(case when round(rooms) = round({rooms}) then 1 end) as cnt_room,
     percentile_cont(0.5) WITHIN GROUP (ORDER BY CASE WHEN square_meters > 0 THEN price / square_meters END)::int AS avg_price,
