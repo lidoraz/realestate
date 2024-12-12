@@ -17,10 +17,11 @@ def format_telegram(idx, sr, asset_type, group_id=None):
     else:
         price_meter_str = ""
     balcony_parking = ""
-    if sr['parking'] > 0 or sr['balconies'] or sr['elevator']:
+    if sr['parking'] > 0 or sr['balconies'] or sr['elevator'] or sr['shelter']: #
         balcony_parking = (f"\n<b>עם:</b> {'חניה🅿️' if sr['parking'] > 0 else ''}"
                            f" {'מרפסת☀️' if sr['balconies'] else ''}"
-                           f" {'מעלית🛗' if sr['elevator'] else ''}")  #
+                           f" {'מעלית🛗' if sr['elevator'] else ''}"
+                           f" {'ממ״ד🛡' if sr['elevator'] else ''}")  #
     text_info = sr['info_text'].replace('\n', ',')
     text_info = text_info[:max_text_limit] + '...' if len(text_info) > max_text_limit else text_info
     text_info = text_info + "\n" if len(text_info) else text_info
