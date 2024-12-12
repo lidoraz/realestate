@@ -220,7 +220,6 @@ def build_sidebar(deal, fig):
         info_text = add_info.pop('info_text')
         # add_info_text = [html.Tr(html.Td(f"{k}: {v}")) for k, v in add_info.items()]
     else:
-        image_urls = []
         info_text = deal['info_text']
         # add_info_text = None
 

@@ -17,6 +17,7 @@ def _get_user_data_1():
                     'must_parking': True,
                     'must_balcony': True,
                     'must_no_agency': None,
+                    'must_shelter': True,
                 },
                 sale_preferences={
                     'min_price': 1000000,

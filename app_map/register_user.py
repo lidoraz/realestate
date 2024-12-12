@@ -123,7 +123,7 @@ def get_asset_options_html(asset_type):
                         [
                             dbc.Label("Is Balcony, Parking a must have?\n What about agency?", className="mt-3 mb-2"),
                             dcc.Checklist(
-                                ['Parking', 'Balcony', 'No Agency'],
+                                ['Parking', 'Balcony', 'Elevator', 'Shelter', 'No Agency'],
                                 [],
                                 inputStyle={"margin-left": "20px", "margin-right": "5px"},
                                 id=f"input-{asset_type}-more-options",
@@ -140,7 +140,7 @@ def get_asset_options_html(asset_type):
 
 def create_asset_preferences(price_from, price_to, rooms_from,
                              rooms_to, asset_cond, cities,
-                             must_parking, must_balcony, must_no_agency):
+                             must_balcony, must_parking, must_elevator, must_shelter, must_no_agency):
     asset_preferences = {
         "min_price": price_from,
         "max_price": price_to,
@@ -150,6 +150,8 @@ def create_asset_preferences(price_from, price_to, rooms_from,
         "cities": cities,
         "must_parking": must_parking,
         "must_balcony": must_balcony,
+        "must_elevator": must_elevator,
+        "must_shelter": must_shelter,
         "must_no_agency": must_no_agency,
     }
     return asset_preferences
@@ -267,16 +269,18 @@ def get_dash(server):
         must_balcony = 'Balcony' in more_options
         must_parking = 'Parking' in more_options
         must_no_agency = 'No Agency' in more_options
-        return must_balcony, must_parking, must_no_agency
+        must_elevator = 'Elevator' in more_options
+        must_shelter = 'Shelter' in more_options
+        return must_balcony, must_parking, must_elevator, must_shelter, must_no_agency
 
     def generate_preferences(price_range, rooms_range, asset_cond, cities, more_options):
         price_from, price_to = extract_range_values(price_range)
         rooms_from, rooms_to = extract_range_values(rooms_range)
-        must_balcony, must_parking, must_no_agency = process_more_options(more_options)
+        must_balcony, must_parking, must_elevator, must_shelter, must_no_agency = process_more_options(more_options)
 
         return create_asset_preferences(
             price_from, price_to, rooms_from, rooms_to, asset_cond, cities,
-            must_parking, must_balcony, must_no_agency
+            must_balcony, must_parking, must_elevator, must_shelter, must_no_agency
         ) if price_range else None
 
     @app.callback(

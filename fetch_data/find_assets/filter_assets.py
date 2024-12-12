@@ -9,6 +9,10 @@ def filter_assets_by_config(df, c):
     # print(df['city'].value_counts().to_dict())
     df = df[df['balconies']] if c['must_balcony'] else df
     df = df[df['parking'] > 0] if c['must_parking'] else df
+    # get as it can be None
+    df = df[df['elevator']] if c.get('must_elevator') else df
+    df = df[df['shelter']] if c.get('must_shelter') else df
+
     df = df[~df['is_agency']] if c['must_no_agency'] else df
     # note the change in name
     df = df[df['asset_status'].isin(c['asset_status'])] if c.get('asset_status') else df
