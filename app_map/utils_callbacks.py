@@ -322,12 +322,12 @@ def show_assets(price_range, max_avg_price_meter,
     return list(output.values())
 
 
-toggle_model_input_outputs = [Output("geojson", "click_feature"),  # output none to reset button for re-click
+toggle_model_input_outputs = [Output("geojson", "clickData"),  # output none to reset button for re-click
                               Output("modal", "is_open"),
                               Output("modal-title", "children"),
                               Output("modal-body", "children"),
                               Output('data-store', 'data'),
-                              Input("geojson", "click_feature")]
+                              Input("geojson", "clickData")]
 
 
 def toggle_modal(feature):

@@ -9,11 +9,11 @@ psycopg2
 apscheduler
 boto3
 protobuf==3.20.0
-dash==2.14.2
+dash==2.18.2 #==2.14.2
 dash-bootstrap-components
 dash-table
 dash-extensions
-dash-leaflet==0.1.23  # not updated will be later updated .
+dash-leaflet==1.0.15 # ==0.1.23  # not updated will be later updated .
 colorlover
 colour
 tqdm
