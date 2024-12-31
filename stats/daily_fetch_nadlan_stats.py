@@ -244,8 +244,8 @@ def run_nadlan_stats(is_local=False):
         df = get_data_nadlan(eng)
     df = add_metrics(df, diff_year=0)
     plot_timeline_new_vs_old_f(df, '30D', get_ir())
+    df_agg_time_line_all, df_agg_time_line_new, df_agg_time_line_old = calc_agg_by_metrics(df)
     # This CODE IS NOT RELEVANT TO A DAILY JOB!
-    # df_agg_time_line_all, df_agg_time_line_new, df_agg_time_line_old = calc_agg_by_metrics(df)
     # TODO ADD HERE, but first must auth bucket.
     # print_recent(df)
     # df = add_columns(df)
@@ -259,7 +259,7 @@ def run_nadlan_stats(is_local=False):
 
 
 if __name__ == '__main__':
-    is_local = True
+    is_local = False
 
     if is_local:
         print("READING FROM LOCAL")
