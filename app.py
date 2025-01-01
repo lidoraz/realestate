@@ -28,23 +28,23 @@ scheduler = BackgroundScheduler()
 
 # multiple jobs are created because we want to update as soon as etl finishes
 ## the process starts at 19 UTC and usually finishes by 18:30
-scheduler.add_job(loop_until_remote_ready, 'cron', hour=18, minute=5)
-if not is_cache_ok():
-    download_remote(block=True)
-scheduler.start()
+# scheduler.add_job(loop_until_remote_ready, 'cron', hour=18, minute=5)
+# if not is_cache_ok():
+#     download_remote(block=True)
+# scheduler.start()
 
 
 def create_app(server):
-    from app_map.dashboard_yad2_forsale import get_dash as get_dash_sale
-    server, _ = get_dash_sale(server)
-    from app_map.dashboard_yad2_rent import get_dash as get_dash_rent
-    server, _ = get_dash_rent(server)
-    from app_map.dashboard_stats import get_dash as get_dash_stats
-    server, _ = get_dash_stats(server)
+    # from app_map.dashboard_yad2_forsale import get_dash as get_dash_sale
+    # server, _ = get_dash_sale(server)
+    # from app_map.dashboard_yad2_rent import get_dash as get_dash_rent
+    # server, _ = get_dash_rent(server)
+    # from app_map.dashboard_stats import get_dash as get_dash_stats
+    # server, _ = get_dash_stats(server)
     from app_map.dashboard_neighborhood import get_dash as get_dash_neightbor
     server, _ = get_dash_neightbor(server)
-    from app_map.register_user import get_dash as get_dash_register_bot
-    server, _ = get_dash_register_bot(server)
+    # from app_map.register_user import get_dash as get_dash_register_bot
+    # server, _ = get_dash_register_bot(server)
 
     is_prod = os.getenv("PRODUCTION", False)
     if is_prod:
