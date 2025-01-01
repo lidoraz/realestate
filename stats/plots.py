@@ -214,15 +214,18 @@ def plot_line(df, x, y, y2, hover_data, color='Blue'):
     for i, d in enumerate(fig.data):
         if d.type == 'scatter':
             # : IndexError: index -1 is out of bounds for axis 0 with size 0
-            text = str(format_number(d.y[-1]))
-            fig.add_annotation(x=d.x[-1], y=d.y[-1],
-                               text=text,
-                               showarrow=False,
-                               bgcolor='white', #rgba(255, 255, 255, 0.5)',  # white 50%
-                               opacity=0.8,
-                               font=dict(size=10),
-                               # yshift=10
-                               )
+            try:
+                text = str(format_number(d.y[-1]))
+                fig.add_annotation(x=d.x[-1], y=d.y[-1],
+                                   text=text,
+                                   showarrow=False,
+                                   bgcolor='white', #rgba(255, 255, 255, 0.5)',  # white 50%
+                                   opacity=0.8,
+                                   font=dict(size=10),
+                                   # yshift=10
+                                   )
+            except Exception as e:
+                print("$$$$ Error in adding annotation $$$$", e)
 
     fig.update_yaxes(rangemode="tozero")
     fig.update_layout(
