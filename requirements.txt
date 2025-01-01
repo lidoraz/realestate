@@ -10,9 +10,9 @@ apscheduler
 boto3
 protobuf==3.20.0
 dash==2.14.2
-dash-bootstrap-components
-dash-table
-dash-extensions
+dash-bootstrap-components==1.6.0
+dash-table==5.0.0
+dash-extensions==1.0.9
 dash-leaflet==0.1.23  # not updated will be later updated .
 colorlover
 colour
