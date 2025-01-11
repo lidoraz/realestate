@@ -4,6 +4,17 @@ from datetime import datetime, timedelta
 AI_STD_PCT = 0.07  # checks if ensemble agrees, removes anomalies
 
 
+
+def filter_by_neighborhoods(df, city_neighborhoods):
+    print(f"Filtering by neighborhoods: {city_neighborhoods}, {len(df)}")
+    predicates = [(df['city'] == city) & (df['neighborhood'].isin(neighborhoods))
+                  for city, neighborhoods in city_neighborhoods.items() if neighborhoods]
+    if predicates:
+        df = df[pd.concat(predicates, axis=1).any(axis=1)]
+    print(f"Filtered by neighborhoods: {len(df)}")
+    return df
+
+
 def filter_assets_by_config(df, c):
     df = df[df['city'].isin(c['cities'])]
     # print(df['city'].value_counts().to_dict())
@@ -12,6 +23,9 @@ def filter_assets_by_config(df, c):
     # get as it can be None
     df = df[df['elevator']] if c.get('must_elevator') else df
     df = df[df['shelter']] if c.get('must_shelter') else df
+
+    if c.get('wanted_neighborhoods'):
+        df = filter_by_neighborhoods(df, c['wanted_neighborhoods'])
 
     df = df[~df['is_agency']] if c['must_no_agency'] else df
     # note the change in name

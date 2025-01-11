@@ -320,6 +320,10 @@ def build_sidebar(deal, fig):
     agency_html = html.Div(html.B('תיווך') if deal['is_agency'] else html.B('לא תיווך'))
     # CAN ADD THIS FROM GOVNADLAN:
     search_text = f"{deal['city']} {street if len(street) else neighborhood}"
+
+    # TODO: Replace the old link with a mechanism to get the object id from the search text and then use the object id
+    # nadlan_gov_url_text_to_object = f"https://es.govmap.gov.il/TldSearch/api/DetailsByQuery?query={search_text}&lyrs=1&gid=nadlan"
+    # nadlan_gov_url_object = f"https://www.nadlan.gov.il/?view=address&id={object_id}&page=deals"
     nadlan_gov_url = f"https://www.nadlan.gov.il/?search={search_text}"
 
     buttons_html = html.Div([dbc.Row(html.A(href=f"https://www.yad2.co.il/item/{deal['id']}",

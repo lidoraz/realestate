@@ -6,8 +6,27 @@ from fetch_data.find_assets.publish_ai_utils import publish
 from ext.publish import send_to_telegram_channel
 from ext.env import load_vault
 
-config_rent = dict(min_price=4000, max_price=8000, min_rooms=3, max_rooms=4,
-                   ai_price_pct_less_than=-0.07,
+wanted_neighborhoods = {'תל אביב יפו': ['ביצרון ורמת ישראל',
+                                        'נחלת יצחק',
+                                        'תל חיים',
+                                        'גני שרונה, קרית הממשלה',
+                                        'מונטיפיורי, הרכבת'],
+                        'גבעתיים': [
+                            # means everything is allowed
+                            ## 'בורוכוב',
+                            # 'גבעת הרמבם',
+                            # 'שינקין',
+                            # 'הל"ה',
+                        ],
+                        'רמת גן': ['חרוזים',
+                                   'שכונת הראשונים',
+                                  # 'שכונת גפן',
+                                   'שכונת הותיקים',
+                                   ]
+                        }
+
+config_rent = dict(min_price=4000, max_price=10000, min_rooms=3, max_rooms=4,
+                   ai_price_pct_less_than=+0.05,
                    # must_balcony must_parking no_agency
                    must_parking=True, must_balcony=True, must_no_agency=False,
                    asset_status=["משופץ", "חדש (גרו בנכס)", "חדש מקבלן (לא גרו בנכס)"],
@@ -15,6 +34,7 @@ config_rent = dict(min_price=4000, max_price=8000, min_rooms=3, max_rooms=4,
                        "תל אביב יפו",
                        "רמת גן",
                        "גבעתיים"],
+                   wanted_neighborhoods=wanted_neighborhoods,
                    ai_std_pct=0.07, asset_type="rent")
 config_sale = dict(min_price=1_000_000, max_price=3_000_000, min_rooms=3, max_rooms=4,
                    ai_price_pct_less_than=-0.10,
@@ -44,7 +64,7 @@ def publish_once_a_week(config):
     from datetime import datetime
     import json
     isoweekday = datetime.now().date().isoweekday()
-    if isoweekday == 1:  # sunday
+    if isoweekday == 0:  # sunday
         msg = f"'{config['asset_type']}' config details:\n" + json.dumps(config, ensure_ascii=False)
         send_to_telegram_channel(msg, group_id, bot_id)
 
@@ -71,9 +91,9 @@ def find_and_publish_run_all():
 
 
 if __name__ == '__main__':
-    def send_to_telegram_channel(a, b, c):  # overrides when running this
-        print(b, c)
-        print(a)
+    # def send_to_telegram_channel(a, b, c):  # overrides when running this
+    #     print(b, c)
+    #     print(a)
 
 
     find_and_publish_run_all()
