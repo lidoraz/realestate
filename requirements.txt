@@ -3,7 +3,7 @@ pandas==1.5.2
 # geopandas==0.14
 numpy==1.24.2
 matplotlib
-plotly
+plotly==5.13.1
 requests
 sqlalchemy==1.4.46
 psycopg2
