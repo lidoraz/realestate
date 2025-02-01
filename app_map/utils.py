@@ -214,6 +214,7 @@ def build_sidebar(deal, fig):
     is_forsale_deal = deal.get('ai_price_rent')
 
     add_info = _get_parse_item_add_info(deal['id'])
+    image_urls = []
     if add_info:
         image_urls = add_info.pop('image_urls')
         image_urls = image_urls if image_urls is not None else []
@@ -243,6 +244,14 @@ def build_sidebar(deal, fig):
         df_price_hist = html.Table([html.Tr([html.Td(v) for v in row.values]) for i, row in df_hist.iterrows()])
         price_discount_html = html.Div([html.Span("שינוי במחיר "), get_html_span_pct(deal['price_pct'])])
     carousel = None
+    if add_info is None:
+        html_txt = html.Div([
+            html.H2("לא נמצאו פרטים"),
+            html.P("אולי המודעה נמחקה?"),
+            html.P("לבדיקה באתר בו נמצאה המודעה: "),
+            html.A("yad2", href=f"https://www.yad2.co.il/item/{deal['id']}", target="_blank")
+        ], className="sidebar-info-container")
+        return "", html_txt
     if len(image_urls):
         carousel = dbc.Carousel(
             items=[{"key": f"{idx + 1}",
