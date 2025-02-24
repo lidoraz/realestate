@@ -57,7 +57,7 @@ def preprocess_to_str_deals(df):
 
 
 meta_data_cols = ['lat', 'long', 'price', 'price_s', 'asset_status', 'floor', 'avg_price_m', 'square_meters', 'rooms',
-                  'price_pct', 'img_url', 'estimated_rent_annual_return',
+                  'price_pct', 'img_url', 'estimated_rent_annual_return', 'is_agency',
                   'ai_price_pct', 'pct_diff_median']
 
 
@@ -318,9 +318,10 @@ def build_sidebar(deal, fig):
     floor = f" קומה  {round(deal['floor']) if deal['floor'] > 0 else 'קרקע'} "
     n_floors_building = round(deal['number_of_floors']) if deal['number_of_floors'] > 0 else None
     n_floors_building_str = f' (מתוך {n_floors_building})' if n_floors_building else ""
-    parking = html.Div(f" חנייה: {deal['parking'] if deal['parking'] else 'ללא'} ")
-    balcony = html.Div(f"{'עם מרפסת' if deal['balconies'] else 'ללא מרפסת'}")
-    elevator = html.Div(f"{'עם מעלית' if deal['elevator'] else 'ללא מעלית'}")
+    parking = html.Div(f" 🅿️ חניה: {deal['parking'] if deal['parking'] else 'ללא'} ")
+    balcony = html.Div(f"{'☀️ מרפסת' if deal['balconies'] else 'ללא מרפסת'}")
+    elevator = html.Div(f"{'🛗 מעלית' if deal['elevator'] else 'ללא מעלית'}")
+    shelter = html.Div(f"{'🛡 ממ״ד' if deal['shelter'] else 'ללא ממ״ד'}")
     when_uploaded_html = html.Div(f"הועלה:  {date_added.date()} ({days_online / 7:0.1f} שבועות)")
     when_updated_html = html.Div(
         f" עודכן: {deal['date_updated'].strftime('%Y-%m-%d %H:%M')} ({days_str_txt(days_updated)})")
@@ -374,7 +375,7 @@ def build_sidebar(deal, fig):
                     html.Div([f"מצב הנכס: ", deal['asset_status'],
                               agency_html],
                              className="small-margin-bottom"),
-                    html.Div([parking, balcony, elevator]),
+                    html.Div([parking, balcony, elevator, shelter]),
 
                 ], width=6, className="sidebar-right-col"),
                 dbc.Col([
