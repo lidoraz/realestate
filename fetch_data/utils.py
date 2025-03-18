@@ -111,7 +111,8 @@ def filter_by_dist(df, deal, distance, is_cords_radians=False):
 def get_more_info(id, is_forsale):
     # recent fix as api gateway is being monitored by a captcha
     type_ = 'forsale' if is_forsale else "rent"
-    df = get_df_from_pg(f"SELECT * FROM yad2_{type_}_items_add where id = '{id}'")
+    q = f"SELECT * FROM yad2_{type_}_items_add where id = '{id}'"
+    df = get_df_from_pg(q, use_vault=False)
     if not len(df):
         return None
     items = df.squeeze().to_dict()

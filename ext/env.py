@@ -31,10 +31,10 @@ def get_pg_engine(echo=False, use_vault=True):
     return eng
 
 
-def get_df_from_pg(query):
+def get_df_from_pg(query, use_vault=True):
     import pandas as pd
     from sqlalchemy import text
-    eng = get_pg_engine()
+    eng = get_pg_engine(use_vault=use_vault)
     with eng.connect() as conn:
         return pd.read_sql(text(query), conn)
 
