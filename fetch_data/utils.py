@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from datetime import datetime
+from ext.env import get_df_from_pg
 from scrape_yad2.config import sql_today_dtypes, sql_items_dtypes
 
 DF_NADLAN_RECENT_PK = "resources/df_nadlan_recent.pk"
@@ -105,3 +106,16 @@ def filter_by_dist(df, deal, distance, is_cords_radians=False):
     df['dist'] = dist
     df = df[df['dist'] < distance]
     return df
+
+
+def get_more_info(id, is_forsale):
+    # recent fix as api gateway is being monitored by a captcha
+    type_ = 'forsale' if is_forsale else "rent"
+    df = get_df_from_pg(f"SELECT * FROM yad2_{type_}_items_add where id = '{id}'")
+    if not len(df):
+        return None
+    items = df.squeeze().to_dict()
+    if items['image_urls'] is not None:
+        items['image_urls'] = items['image_urls'][1:-1].split(',')
+
+    return items

@@ -7,6 +7,7 @@ from stats.plots import plot_deal_vs_sale_sold
 from app_map.marker import *
 from app_map.util_layout import *
 from scrape_yad2.utils import _get_parse_item_add_info
+from fetch_data.utils import get_more_info
 from fetch_data.utils import filter_by_dist
 from ext.format import format_number
 from stats.plots import plot_line
@@ -213,7 +214,7 @@ def build_sidebar(deal, fig):
     date_added = pd.to_datetime(deal['date_added'])
     is_forsale_deal = deal.get('ai_price_rent')
 
-    add_info = _get_parse_item_add_info(deal['id'])
+    add_info = get_more_info(deal['id'], is_forsale_deal) # _get_parse_item_add_info(deal['id'])
     image_urls = []
     if add_info:
         image_urls = add_info.pop('image_urls')
