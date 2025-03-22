@@ -8,12 +8,12 @@ def _scraper():
     engine = get_pg_engine()
     with engine.connect() as conn:
         print(f"{datetime.today()} Starting to fetch!")
+        scraper = get_scraper_yad2_rent()
+        scraper.scraper_yad2(conn)
+        print(f"{datetime.today()} Finished! get_scraper_yad2_rent!")
         scraper = get_scraper_yad2_forsale()
         scraper.scraper_yad2(conn)
         print(f"{datetime.today()} Finished get_scraper_yad2_forsale!")
-        scraper = get_scraper_yad2_rent()
-        scraper.scraper_yad2(conn)
-        print(f"{datetime.today()} Finished!")
     engine.dispose()
 
 

@@ -8,7 +8,7 @@ history_dtype = {
 url_forsale_apartments_houses = "https://gw.yad2.co.il/feed-search-legacy/realestate/forsale?propertyGroup=apartments,houses&page={}&forceLdLoad=true"
 url_rent_apartments_houses = "https://gw.yad2.co.il/feed-search-legacy/realestate/rent?propertyGroup=apartments,houses&page={}&forceLdLoad=true"
 TRIES = 5
-N_THREADS_ITEM_ADD = 10
+N_THREADS_ITEM_ADD = 2
 cols_renamer_today = {
     "hometypeid_text": "asset_type",
     "id": "id",

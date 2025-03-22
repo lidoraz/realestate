@@ -101,12 +101,17 @@ class ScraperYad2:
         con.execute(f"DROP table {self.today_table}_temp")
         remove_dup(self.history_table, ['id', 'processing_date'], con, debug)
 
-    def _preprocess(self, df, today_str):
-        df = df[df['type'] == 'ad'].copy()
+    def _preprocess(self, df_, today_str):
+        df = df_[df_['type'] == 'ad'].copy()
         df.columns = [c.lower() for c in df.columns]
         df['processing_date'] = today_str
         res_cords = pd.DataFrame(df['coordinates'].to_list())
         df = pd.concat([df.reset_index(drop=True), res_cords.reset_index(drop=True)], axis=1)
+
+        # Adhoc fix for missing columns when missing (when all rows are from agents)
+        for c in ['street', 'neighborhood']:
+            if c not in df.columns:
+                df[c] = None
         df = df.rename(columns=cols_renamer_today)
         df = df[cols_renamer_today.values()]
         re_digits = "(\d+)"
@@ -203,3 +208,77 @@ class ScraperYad2:
         ids_not_changed = merged[equal_cond | equal_nan_cond]['id'].to_list()
         df = df[~df['id'].isin(ids_not_changed)]
         df.to_sql(name=self.history_table, con=con, if_exists='append', index=False, dtype=history_dtype)
+
+
+if __name__ == '__main__':
+    scraper = ScraperYad2(url_forsale_apartments_houses, 'yad2_forsale_today', 'yad2_forsale_history',
+                          'yad2_forsale_log', 'yad2_forsale_items_add')
+
+    # debug = True
+    # first_page = 1000 + 40
+    # last_page = 1200
+    # today_dt = datetime.today()
+    # for p in tqdm(range(first_page, last_page + 1)):
+    #     try:
+    #         data = scraper._get_retry_json(p)
+    #         data = data.get('data')
+    #         if data is None:  # [ for x in df['row_4'].tolist()]
+    #             print(f"CAUTION - Could not fetch data for part {p}")
+    #         df = pd.DataFrame.from_dict(data['feed']['feed_items'])
+    #         df = scraper._preprocess(df, today_dt)
+    #         if debug:
+    #             escape_quote(df, [k for k, v in sql_today_dtypes.items() if v == sqlalchemy.String])
+    #         # scraper.log_history(df, df_today_history, con)
+    #         # scraper.insert_today_temp(df, con)
+    #     except Exception as e:
+    #         print("Caught an exception in loop! ", e)
+    #         if debug:
+    #             raise e
+    from ext.env import get_pg_engine
+    engine = get_pg_engine()
+    with engine.connect() as conn:
+        scraper.insert_to_items(conn, debug=False)
+
+    # Failed to fetch for v2ndshpj
+    # Failed to fetch for wcmj30t1
+    # Failed to fetch for wxn4uyvf
+    # Failed to fetch for eg9cjggr
+    # Failed to fetch for y0iwk2x6
+    # Failed to fetch for a18p5ied
+    # Failed to fetch for i89vprf0
+    # Failed to fetch for jprmli8y
+    # Failed to fetch for 0gj96mon
+    # Failed to fetch for egfhrhi5
+    # Failed to fetch for 65mx3b7d
+    # Failed to fetch for bz4lkadc
+    # Failed to fetch for 4x3tiir8
+    # Failed to fetch for wos8rby3
+    # Failed to fetch for cxoec2op
+    # Failed to fetch for mpjsgbga
+    # Failed to fetch for t8fiygcs
+    # Failed to fetch for m7y1y1fm
+    # Failed to fetch for msop3gk9
+    # Failed to fetch for x7rho2vl
+    # Failed to fetch for r9u2ni7g
+    # Failed to fetch for w3j9famk
+    # Failed to fetch for 9wjaech6
+    # Failed to fetch for q1jdh645
+    # Failed to fetch for v86c72ij
+    # Failed to fetch for 5885oak6
+    # Failed to fetch for e7yymd1y
+    # Failed to fetch for l21b4ffb
+    # Failed to fetch for z3xpra39
+    # Failed to fetch for bil0e90u
+    # Failed to fetch for x1zzhu4r
+    # Failed to fetch for qvxqxcvv
+    # Failed to fetch for 8d6h4ogi
+    # Failed to fetch for k4uymcee
+    # Failed to fetch for os97l22g
+    # Failed to fetch for h8dnl629
+    # Failed to fetch for ntd44i7n
+    # Failed to fetch for 0sdim48h
+    # Failed to fetch for 526shjg9
+    # Failed to fetch for m10rbfld
+
+
+    # 1090
