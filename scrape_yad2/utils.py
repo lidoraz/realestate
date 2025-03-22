@@ -1,10 +1,17 @@
 import requests
 
+HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+    'Accept': 'application/json, */*',
+    'Accept-Language': 'he,en-US;q=0.9,en;q=0.8',
+    'Sec-Fetch-Site': 'same-origin',
+}
+
 
 def _get_parse_item_add_info(item_id):
     yad2_url_item = "https://gw.yad2.co.il/feed-search-legacy/item?token={}"
     try:
-        d = requests.get(yad2_url_item.format(item_id)).json()['data']
+        d = requests.get(yad2_url_item.format(item_id), headers=HEADERS).json()['data']
         is_bad = d.get('error_message') is not None
         if is_bad:
             return None

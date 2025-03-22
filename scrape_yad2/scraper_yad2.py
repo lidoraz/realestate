@@ -8,7 +8,7 @@ import numpy as np
 import sqlalchemy
 
 from scrape_nadlan.utils_insert import get_table, create_ignore_if_exists
-from scrape_yad2.utils import _get_parse_item_add_info
+from scrape_yad2.utils import _get_parse_item_add_info, HEADERS
 from scrape_yad2.config import *
 
 
@@ -46,7 +46,7 @@ class ScraperYad2:
         res = None
         for _ in range(TRIES):
             try:
-                res = requests.get(self.url.format(p))
+                res = requests.get(self.url.format(p), headers=HEADERS)
                 if res.status_code == 200:
                     break
                 else:
